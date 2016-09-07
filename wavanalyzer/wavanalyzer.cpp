@@ -31,6 +31,7 @@ int main(int argc, char* argv[])
 
 	wavFileParse *parse = new wavFileParse;
 	parse->openWavFile(argv[1]);
+	parse->parseLRSync();
 	parse->closeWavFile();
 cleanup:
 	return 0;

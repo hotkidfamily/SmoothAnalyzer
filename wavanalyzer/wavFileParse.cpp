@@ -52,6 +52,8 @@ const char* wavFileParse::getWavFileFormat(int format_type)
 
 int wavFileParse::dumpWavFileHeaders()
 {
+	int durationInSecond = 0;
+	durationInSecond = dataHeader.subchunk2Size*8/fmtHeader.nbChannels/fmtHeader.bitsPerSample/fmtHeader.sampleRate;
 #define expanse4bytes(x) x[0],x[1],x[2],x[3]
 
 	inter_log(Debug, "Riff: %c%c%c%c", expanse4bytes(wavHeader.chunkID));
@@ -70,6 +72,7 @@ int wavFileParse::dumpWavFileHeaders()
 	inter_log(Debug, "");
 	inter_log(Debug, "Data maker: %c%c%c%c", expanse4bytes(dataHeader.subchunk2ID));
 	inter_log(Debug, "Data size: %d", dataHeader.subchunk2Size);
+	inter_log(Debug, "Duration: %02d:%02d:%02d", durationInSecond/(60*60), durationInSecond/60, durationInSecond%60);
 
 #undef  expanse4bytes
 
@@ -80,9 +83,9 @@ int wavFileParse::readWavFile(char* buffer, uint32_t data_size)
 {
 	wavFile.read(buffer, data_size);
 	if(wavFile){
-		inter_log(Warning, "Read %d bytes.", data_size);
+		inter_log(FileSystem, "Read %d bytes.", data_size);
 	}else{
-		inter_log(Warning, "Only read %d bytes.", wavFile.gcount());
+		inter_log(FileSystem, "Only read %d bytes.", wavFile.gcount());
 	}
 	
 	return wavFile.gcount();
@@ -149,3 +152,58 @@ int wavFileParse::closeWavFile()
 	return 0;
 }
 
+int wavFileParse::separateLRChannel(char *data, uint32_t data_size)
+{
+	int16_t *dataPtr = (int16_t*)data;
+	int16_t *lchannelData = NULL;
+	int16_t *rchannelData = NULL;
+	lChannel.resize(data_size/fmtHeader.nbChannels, 0);
+	RChannel.resize(data_size/fmtHeader.nbChannels, 0);
+
+	lchannelData = (int16_t*)lChannel.c_str();
+	rchannelData = (int16_t*)RChannel.c_str();
+
+	for(size_t i = 0; i<lChannel.size(); i++){	
+		*lchannelData = *dataPtr;
+		*rchannelData = *(dataPtr+1);
+		lchannelData ++;
+		rchannelData ++;
+		dataPtr += fmtHeader.packageSize/fmtHeader.nbChannels;
+	}
+
+	return 0;
+}
+
+int wavFileParse::parseLRSync()
+{
+	uint32_t dataSizeIn10MS = fmtHeader.sampleRate * fmtHeader.packageSize / 100 ; // 10ms
+	std::string tenMSDataBuffer;
+	tenMSDataBuffer.resize(dataSizeIn10MS, 0);
+	char* buffer = (char*)tenMSDataBuffer.c_str();
+	int32_t duration  = 0;
+	inter_log(Info, "10 ms data size %d, %d samples", dataSizeIn10MS, dataSizeIn10MS/fmtHeader.packageSize);
+	
+	dumpLChannelFile.open("c:/lchannel.pcm", std::ios::binary);
+	dumpRChannelFile.open("c:/rchannel.pcm", std::ios::binary);
+
+	while(readWavFile(buffer, tenMSDataBuffer.size()) == tenMSDataBuffer.size()){
+		separateLRChannel(buffer, tenMSDataBuffer.size());
+		dumpLChannelFile.write(lChannel.c_str(), lChannel.size());
+		dumpRChannelFile.write(RChannel.c_str(), RChannel.size());
+
+		reportProgress(duration);
+		duration += 10;
+	}
+
+	dumpLChannelFile.close();
+	dumpRChannelFile.close();
+
+	return 0;
+}
+
+void wavFileParse::reportProgress(int32_t durationInMS)
+{
+	int durationInSecond = 0;
+	durationInSecond = dataHeader.subchunk2Size*8/fmtHeader.nbChannels/fmtHeader.bitsPerSample/fmtHeader.sampleRate;
+	printf("\tProcess %0.2f%%...\r", durationInMS/durationInSecond);
+}

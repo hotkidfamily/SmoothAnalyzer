@@ -1,6 +1,7 @@
 #pragma once
 
 enum log_level {
+	FileSystem,
 	Debug,
 	Info,
 	Warning,

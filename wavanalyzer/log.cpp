@@ -5,6 +5,7 @@
 #define to_str(x) #x
 
 const char* level_strs[] = {
+	to_str(FileSystem),
 	to_str(Debug),
 	to_str(Info),
 	to_str(Warning),
