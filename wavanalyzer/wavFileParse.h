@@ -4,14 +4,20 @@
 #include "csvFileMaker.h"
 #include "wavFileFormat.h"
 
-class wavFileParse
+enum debug_flags{
+	DEBUG_CHANNEL_DATA = 1<<0,
+	DEBUG_SOURCE_DATA = 1<<1,
+};
+
+class WAVFileParse
 {
 public:
-	wavFileParse(void);
-	~wavFileParse(void);
+	WAVFileParse(void);
+	~WAVFileParse(void);
+	WAVFileParse(uint32_t flag);
 
 	int openWavFile(const char* filename);
-	int parseLRSync();
+	int getLRChannelData(std::string &lChannel, std::string &rChannel);
 	int closeWavFile();
 
 private:
@@ -19,7 +25,7 @@ private:
 	int readWavFile(char* buffer, uint32_t data_size);
 	int parseWavParameter();
 
-	int separateLRChannel(char *data, uint32_t data_size);
+	int separateLRChannel(char *data, uint32_t data_size, std::string &lChannel, std::string &rChannel);
 	int findStart(int16_t *data, uint32_t data_size);
 	int findEnd(int16_t *data, uint32_t data_size);
 
@@ -36,11 +42,10 @@ private:
 	std::ifstream  wavFile;
 	std::string theWorkingWithFileName;
 
-	std::string lChannel;
-	std::string RChannel;
-
-	csvOutput recorder;
-
 	std::ofstream dumpLChannelFile;
 	std::ofstream dumpRChannelFile;
+
+	int32_t readSamples;
+
+	uint32_t debugFlag;
 };

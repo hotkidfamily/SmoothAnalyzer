@@ -1,6 +1,6 @@
 #include "StdAfx.h"
+#include "log.h"
 #include "csvFileMaker.h"
-#include <stdarg.h>
 
 csvOutput::csvOutput(void)
 {
@@ -29,6 +29,7 @@ void csvOutput::outputResult()
 {
 	if(m_dataList.size()){
 		csvFile.open(csvFilePath.c_str());
+		inter_log(Info, "Create file %s.", csvFilePath.c_str());
 		if(csvFile.is_open()){
 			while(m_dataList.size()){
 				syncTimestamp &time = m_dataList.front();
