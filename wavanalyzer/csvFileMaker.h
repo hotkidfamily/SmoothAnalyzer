@@ -10,6 +10,11 @@ struct syncTimestamp{
 		memset(this, 0, sizeof(syncTimestamp));
 	}
 
+	void reset(){
+		start = 0;
+		end = 0;
+	}
+
 	enum CHANNELID{
 		LCHANNEL,
 		RCHANNEL
