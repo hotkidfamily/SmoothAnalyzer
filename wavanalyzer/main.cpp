@@ -12,7 +12,9 @@
 char* debug_args[] ={
 	"",
 	//"e:/Resources/iphone.wav",
-	"e:/avsync_test_result/movie test with devices/",
+	//"e:/avsync_test_result/movie test with devices/",
+	//"E:/avsync_test_result/movie test with devices/oppo r9 plus aac fix.wav"
+	"."
 };
 #endif
 
@@ -56,7 +58,6 @@ int analyzeFile(std::string file)
 	inter_log(Info, "Analysize file %s", file.c_str());
 
 	if(parse->openWavFile(file.c_str()) < 0){
-		inter_log(Error, "file %s is not supported", file.c_str());
 		return -1;
 	}
 
@@ -130,15 +131,26 @@ int main(int argc, char* argv[])
 		// directory 
 		inter_log(Info, "working in directory %s", workFilePath.c_str());
 
+		// absolute path
 		if((buffer[workFilePath.size()-1] == '\\') || (buffer[workFilePath.size()-1] == '/')){
-			workFilePath.append("*");
-		}else{
-			workFilePath.append("\\*");
+			
+		}else if(workFilePath == "."){ // relative path
+			std::string currentPath;
+			char buffer[MAX_PATH] = {0,};
+			if(GetCurrentDirectoryA(MAX_PATH, buffer) == 0){
+				inter_log(Fatal, "No support path %s, error code %d", workFilePath.c_str(), GetLastError());
+				goto cleanup;
+			}
+			workFilePath.clear();
+			workFilePath.assign(buffer);
+			workFilePath.append("\\");
+		}else {
+			workFilePath.append("\\");
 		}
 		
-		fileFinder->enumDirectory(workFilePath, ".wav");
+		fileFinder->enumDirectory(workFilePath+"*", ".wav");
 		while(!fileFinder->getFile(files)){
-			files.insert(0, argv[1]);
+			files.insert(0, workFilePath);
 			analyzeFile(files);
 		}
 	}else {
