@@ -2,6 +2,7 @@
 
 enum log_level {
 	FileSystem,
+	Pulse,
 	Debug,
 	Info,
 	Warning,

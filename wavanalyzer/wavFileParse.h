@@ -19,6 +19,7 @@ public:
 	int openWavFile(const char* filename);
 	int getLRChannelData(std::string &lChannel, std::string &rChannel);
 	int closeWavFile();
+	double covertSampleToMS(uint32_t sampleIndex);
 
 private:
 	int dumpWavFileHeaders();

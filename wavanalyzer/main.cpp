@@ -14,9 +14,9 @@ char* debug_args[] ={
 };
 #endif
 
-static void print_usage()
+static void print_usage(const char *program_name)
 {
-	inter_log(Info, "usage: %s input");
+	printf("usage: %s <input file>\n", program_name);
 }
 
 static void makeRecordFileName(const char *filename, std::string &recordFilePath)
@@ -35,7 +35,7 @@ static int parse_parameters(int argc, char* argv[])
 {
 	int ret = 0;
 	if(argc < 2){
-		print_usage();
+		print_usage(argv[0]);
 		ret = -1;
 	}
 	return ret;
@@ -60,21 +60,28 @@ int main(int argc, char* argv[])
 	WAVFileParse *parse = new WAVFileParse(DEBUG_CHANNEL_DATA);
 	makeRecordFileName(argv[1], recordFileName);
 	csvOutput *csvFile = new csvOutput(recordFileName.c_str());
-	waveAnalyzer *analyzer = new waveAnalyzer;
+	waveAnalyzer *lChannelAnalyzer = new waveAnalyzer("lchannel");
+	waveAnalyzer *rChannelAnalyzer = new waveAnalyzer("rchannel");
 
 	parse->openWavFile(argv[1]);
 	while(1){
 		int32_t ms = 0;
+		uint32_t startSampleIndex = 0;
+		uint32_t endSampleIndex = 0;
 		int ret = parse->getLRChannelData(lChannelData, rChannelData);
 		retType retAnalyzer = RET_OK;
 		
-		retAnalyzer = analyzer->analyzer(lChannelData, ms);
+		retAnalyzer = lChannelAnalyzer->analyzer(lChannelData, startSampleIndex, endSampleIndex);
 		if(retAnalyzer == RET_FIND_START){
-			csvFile->recordTimestamp(2, ms, 0);
+			csvFile->recordTimestamp(syncTimestamp::LCHANNEL, parse->covertSampleToMS(startSampleIndex), parse->covertSampleToMS(endSampleIndex));
 		}
-		retAnalyzer = analyzer->analyzer(rChannelData, ms);
+
+
+		startSampleIndex = 0;
+		endSampleIndex = 0;
+		retAnalyzer = rChannelAnalyzer->analyzer(rChannelData, startSampleIndex, endSampleIndex);
 		if(retAnalyzer == RET_FIND_START){
-			csvFile->recordTimestamp(2, ms, 0);
+			csvFile->recordTimestamp(syncTimestamp::RCHANNEL, parse->covertSampleToMS(startSampleIndex), parse->covertSampleToMS(endSampleIndex));
 		}
 
 		if(ret < 0 ){
@@ -91,8 +98,12 @@ int main(int argc, char* argv[])
 	if(csvFile){
 		delete csvFile;
 	}
-	if(analyzer){
-		delete analyzer;
+	if(lChannelAnalyzer){
+		delete lChannelAnalyzer;
+	}
+
+	if(rChannelAnalyzer){
+		delete rChannelAnalyzer;
 	}
 
 cleanup:

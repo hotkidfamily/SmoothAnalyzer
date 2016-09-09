@@ -10,9 +10,14 @@ struct syncTimestamp{
 		memset(this, 0, sizeof(syncTimestamp));
 	}
 
-	int32_t start;
-	int32_t end;
-	int32_t channelID;
+	enum CHANNELID{
+		LCHANNEL,
+		RCHANNEL
+	};
+
+	double start;
+	double end;
+	CHANNELID channelID;
 };
 
 class csvOutput
@@ -22,13 +27,14 @@ public:
 	~csvOutput(void);
 	csvOutput(const char* filename);
 
-	void recordTimestamp(int32_t channelID, int32_t start, int32_t end);
+	void recordTimestamp(syncTimestamp::CHANNELID channelID, double start, double end);
 	void outputResult();
 private:
 	void writeCsvFile(const char* format,  ...);
 
 private:
-	std::list<syncTimestamp> m_dataList;
+	std::list<syncTimestamp> m_dataListLChannel;
+	std::list<syncTimestamp> m_dataListRChannel;
 	std::ofstream  csvFile;
 	std::string csvFilePath;
 };

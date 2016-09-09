@@ -6,6 +6,7 @@
 
 const char* level_strs[] = {
 	to_str(FileSystem),
+	to_str(Pulse),
 	to_str(Debug),
 	to_str(Info),
 	to_str(Warning),

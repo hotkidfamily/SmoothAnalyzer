@@ -1,6 +1,5 @@
 #include "StdAfx.h"
 #include "log.h"
-#include "endianCovert.h"
 #include "wavFileParse.h"
 
 WAVFileParse::WAVFileParse(uint32_t flag)
@@ -9,8 +8,8 @@ WAVFileParse::WAVFileParse(uint32_t flag)
 , readSamples(0)
 {
 	if(debugFlag & DEBUG_CHANNEL_DATA){
-		dumpLChannelFile.open("c:/lchannel.pcm", std::ios::binary);
-		dumpRChannelFile.open("c:/rchannel.pcm", std::ios::binary);
+		dumpLChannelFile.open("c:/lChannelOriginal.pcm", std::ios::binary);
+		dumpRChannelFile.open("c:/rChannelOriginal.pcm", std::ios::binary);
 	}
 }
 
@@ -185,10 +184,12 @@ int WAVFileParse::separateLRChannel(char *data, uint32_t dataSize, std::string &
 	int16_t *lchannelData = NULL;
 	int16_t *rchannelData = NULL;
 
+	lChannel.resize(dataSize/fmtHeader.nbChannels, 0);
+	rChannel.resize(dataSize/fmtHeader.nbChannels, 0);
 	lchannelData = (int16_t*)lChannel.c_str();
 	rchannelData = (int16_t*)rChannel.c_str();
 
-	for(size_t i = 0; i<lChannel.size()/(fmtHeader.bitsPerSample/8); i++){	
+	for(size_t i = 0; i<rChannel.size()/(fmtHeader.bitsPerSample/8); i++){	
 		*lchannelData = *dataPtr;
 		*rchannelData = *(dataPtr+1);
 		lchannelData ++;
@@ -199,15 +200,16 @@ int WAVFileParse::separateLRChannel(char *data, uint32_t dataSize, std::string &
 	return 0;
 }
 
+// 100ms data one time
 int WAVFileParse::getLRChannelData(std::string &lChannel, std::string &rChannel)
 {
 	int ret = 0;
-	uint32_t nbSamples10MS = fmtHeader.sampleRate / 100;
-	uint32_t dataSizeIn10MS = nbSamples10MS * fmtHeader.packageSize ; // 10ms
+	uint32_t nbReadSamples = fmtHeader.sampleRate / 10;
+	uint32_t nbSampleDataSize = nbReadSamples * fmtHeader.packageSize ; // 10ms
 	uint32_t readDataLength = 0;
 	
 	std::string tenMSDataBuffer;
-	tenMSDataBuffer.resize(dataSizeIn10MS, 0);
+	tenMSDataBuffer.resize(nbSampleDataSize, 0);
 	char* buffer = (char*)tenMSDataBuffer.c_str();
 	
 	//inter_log(Debug, "10 ms data size %d, %d samples", dataSizeIn10MS, dataSizeIn10MS/fmtHeader.packageSize);
@@ -227,11 +229,16 @@ int WAVFileParse::getLRChannelData(std::string &lChannel, std::string &rChannel)
 	readSamples += readDataLength/fmtHeader.packageSize;
 
 	reportProgress(readSamples);
-	if(readDataLength < dataSizeIn10MS){
+	if(readDataLength < nbSampleDataSize){
 		ret = -1;
 	}
 
 	return ret;
+}
+
+double WAVFileParse::covertSampleToMS(uint32_t sampleIndex)
+{
+	return sampleIndex*1.0/fmtHeader.sampleRate;
 }
 
 void WAVFileParse::reportProgress(int32_t nbProcessedSamples)

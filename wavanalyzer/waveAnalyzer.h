@@ -3,6 +3,7 @@
 #include <fstream>
 
 #include "stdint.h"
+
 typedef enum tagRetType{
 	RET_OK,
 	RET_NEED_MORE_DATA,
@@ -13,11 +14,19 @@ class waveAnalyzer
 {
 public:
 	waveAnalyzer(void);
+	waveAnalyzer(const char *dumpFileName);
 	~waveAnalyzer(void);
 
-	retType analyzer(std::string &lChannel, int32_t &ms);
+	retType analyzer(std::string &channelData, uint32_t &start, uint32_t &end);
 
 private:
-	int filter(std::string &channelData);
-	int findStart(std::string &channelData);
+	int absFilter(std::string &channelData);
+	int findPulse(std::string &channelData, uint32_t &start, uint32_t &end);
+
+private:
+	std::ofstream dumpfilter;
+	std::ofstream dump2Value;
+	bool bInPulse;
+	uint32_t pulseSampleIndex;
+	uint32_t totalSampleCount;
 };
