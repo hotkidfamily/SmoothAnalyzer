@@ -69,7 +69,7 @@ int waveAnalyzer::updateThreshold(std::string &channelData)
 
 	if(maxThreshold - minThreshold > 10000){
 		isThresholdValid = true;
-		inter_log(Debug, "threshold is %d", getThreshold());
+		inter_log(Debug, "threshold is %d, min %d, max %d at sample %d", getThreshold(), minThreshold, maxThreshold, totalSampleCount);
 	}
 
 	return 0;
@@ -90,9 +90,7 @@ int waveAnalyzer::findPulse(std::string &channelData, uint32_t &start, uint32_t 
 	int32_t threahold = getThreshold();
 	int32_t nbFilterWorkSamples = 0;
 
-	nbFilterWorkSamples = channelData.size()/2/10;
-
-//#define filter_samples (441) // analyzer 10ms one time
+	nbFilterWorkSamples = channelData.size()/2/10; // 10ms
 
 	while(count < channelData.size()){
 		sum = 0;
@@ -129,8 +127,6 @@ int waveAnalyzer::findPulse(std::string &channelData, uint32_t &start, uint32_t 
 		data += nbFilterWorkSamples;
 		count += nbFilterWorkSamples*2;
 	}
-
-	totalSampleCount += channelData.size()/2;
 		
 	return 0;
 }
@@ -142,14 +138,17 @@ retType waveAnalyzer::analyzer(std::string &channelData, uint32_t &start, uint32
 
 	if(!ifThresholdValid()){
 		updateThreshold(channelData);
+		dump2Value.write(channelData.c_str(), channelData.size());
 	}else{
 		findPulse(channelData, start, end);
 		dump2Value.write(channelData.c_str(), channelData.size());
-
-		if(start && end){
-			return RET_FIND_START;
-		}
 	}
 
-	return RET_OK;
+	totalSampleCount += channelData.size()/2;
+
+	if(start && end){
+		return RET_FIND_START;
+	}else{
+		return RET_OK;
+	}	
 }
