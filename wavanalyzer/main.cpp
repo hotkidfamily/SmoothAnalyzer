@@ -6,12 +6,13 @@
 #include "wavFileParse.h"
 #include "csvFileMaker.h"
 #include "waveAnalyzer.h"
+#include "fileEnum.h"
 
 #ifdef _DEBUG
 char* debug_args[] ={
 	"",
 	//"e:/Resources/iphone.wav",
-	"e:/avsync_test_result/movie test with devices/VIVO XPLAY5 24fps.wav",
+	"e:/avsync_test_result/movie test with devices/",
 };
 #endif
 
@@ -20,16 +21,15 @@ static void print_usage(const char *program_name)
 	printf("usage: %s <input file>\n", program_name);
 }
 
-static void makeRecordFileName(const char *filename, std::string &recordFilePath)
+static void makeRecordFileName(std::string recordFilePath, std::string &statiFile)
 {
 	SYSTEMTIME systime;
 	char buffer[256] = "";
-
 	GetLocalTime(&systime);
-	recordFilePath.assign(filename, strlen(filename));
 	sprintf_s(buffer, 256-1, "_%04d%02d%02d%02d%02d%02d.csv", systime.wYear, systime.wMonth, systime.wDay, systime.wHour, systime.wMinute, systime.wSecond);
 
-	recordFilePath.insert(strlen(filename), buffer);
+	statiFile = recordFilePath;
+	statiFile.insert(statiFile.size(), buffer);
 }
 
 static int parse_parameters(int argc, char* argv[])
@@ -42,30 +42,22 @@ static int parse_parameters(int argc, char* argv[])
 	return ret;
 }
 
-int main(int argc, char* argv[])
-{	
-	std::string recordFileName;
+int analyzeFile(std::string file)
+{
 	std::string lChannelData;
 	std::string rChannelData;
-
-#ifdef _DEBUG
-	argc = sizeof(debug_args)/sizeof(debug_args[0]);
-	debug_args[0] = argv[0];
-	argv = debug_args;
-#endif
-
-	if(parse_parameters(argc, argv) < 0){
-		goto cleanup;
-	}
-	
+	std::string statiticsFile;
 	WAVFileParse *parse = new WAVFileParse(DEBUG_CHANNEL_DATA);
-	makeRecordFileName(argv[1], recordFileName);
-	csvOutput *csvFile = new csvOutput(recordFileName.c_str());
+	makeRecordFileName(file, statiticsFile);
+	csvOutput *csvFile = new csvOutput(statiticsFile.c_str());
 	waveAnalyzer *lChannelAnalyzer = new waveAnalyzer("lchannel");
 	waveAnalyzer *rChannelAnalyzer = new waveAnalyzer("rchannel");
 
-	if(parse->openWavFile(argv[1]) < 0){
-		goto cleanup;
+	inter_log(Info, "Analysize file %s", file.c_str());
+
+	if(parse->openWavFile(file.c_str()) < 0){
+		inter_log(Error, "file %s is not supported", file.c_str());
+		return -1;
 	}
 
 	while(1){
@@ -74,7 +66,7 @@ int main(int argc, char* argv[])
 		uint32_t endSampleIndex = 0;
 		int ret = parse->getLRChannelData(lChannelData, rChannelData);
 		retType retAnalyzer = RET_OK;
-		
+
 		retAnalyzer = lChannelAnalyzer->analyzer(lChannelData, startSampleIndex, endSampleIndex);
 		if(retAnalyzer == RET_FIND_START){
 			csvFile->recordTimestamp(syncTimestamp::LCHANNEL, parse->covertSampleToMS(startSampleIndex), parse->covertSampleToMS(endSampleIndex));
@@ -91,7 +83,7 @@ int main(int argc, char* argv[])
 			break;
 		}
 	}
-	
+
 	parse->closeWavFile();
 	csvFile->outputResult();
 
@@ -109,6 +101,52 @@ int main(int argc, char* argv[])
 		delete rChannelAnalyzer;
 	}
 
+	return 0;
+}
+
+int main(int argc, char* argv[])
+{	
+	std::string workFilePath;
+
+#ifdef _DEBUG
+	argc = sizeof(debug_args)/sizeof(debug_args[0]);
+	debug_args[0] = argv[0];
+	argv = debug_args;
+#endif
+
+	if(parse_parameters(argc, argv) < 0){
+		goto cleanup;
+	}
+	workFilePath = argv[1];
+
+	fileEnum *fileFinder = new fileEnum();
+	int ret = fileFinder->isDirectory(workFilePath);
+	if(ret < 0){
+		inter_log(Fatal, "path %s is invalid.", workFilePath.c_str());
+	}else if (ret > 0){
+		std::string files;
+		char *buffer = (char*)workFilePath.c_str();
+
+		// directory 
+		inter_log(Info, "working in directory %s", workFilePath.c_str());
+
+		if((buffer[workFilePath.size()-1] == '\\') || (buffer[workFilePath.size()-1] == '/')){
+			workFilePath.append("*");
+		}else{
+			workFilePath.append("\\*");
+		}
+		
+		fileFinder->enumDirectory(workFilePath, ".wav");
+		while(!fileFinder->getFile(files)){
+			files.insert(0, argv[1]);
+			analyzeFile(files);
+		}
+	}else {
+		analyzeFile(workFilePath);
+	}
+
+	delete fileFinder;
+	
 cleanup:
 	return 0;
 }

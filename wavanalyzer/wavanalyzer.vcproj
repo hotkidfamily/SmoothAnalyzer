@@ -175,6 +175,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\fileEnum.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\log.cpp"
 				>
 			</File>
@@ -218,6 +222,10 @@
 			>
 			<File
 				RelativePath=".\csvFileMaker.h"
+				>
+			</File>
+			<File
+				RelativePath=".\fileEnum.h"
 				>
 			</File>
 			<File
