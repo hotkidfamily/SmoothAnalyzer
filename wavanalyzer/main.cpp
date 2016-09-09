@@ -10,7 +10,8 @@
 #ifdef _DEBUG
 char* debug_args[] ={
 	"",
-	"e:/Resources/iphone.wav",
+	//"e:/Resources/iphone.wav",
+	"e:/avsync_test_result/movie test with devices/VIVO XPLAY5 24fps.wav",
 };
 #endif
 
@@ -63,7 +64,10 @@ int main(int argc, char* argv[])
 	waveAnalyzer *lChannelAnalyzer = new waveAnalyzer("lchannel");
 	waveAnalyzer *rChannelAnalyzer = new waveAnalyzer("rchannel");
 
-	parse->openWavFile(argv[1]);
+	if(parse->openWavFile(argv[1]) < 0){
+		goto cleanup;
+	}
+
 	while(1){
 		int32_t ms = 0;
 		uint32_t startSampleIndex = 0;
@@ -75,7 +79,6 @@ int main(int argc, char* argv[])
 		if(retAnalyzer == RET_FIND_START){
 			csvFile->recordTimestamp(syncTimestamp::LCHANNEL, parse->covertSampleToMS(startSampleIndex), parse->covertSampleToMS(endSampleIndex));
 		}
-
 
 		startSampleIndex = 0;
 		endSampleIndex = 0;

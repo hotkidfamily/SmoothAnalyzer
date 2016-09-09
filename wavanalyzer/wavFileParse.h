@@ -33,6 +33,8 @@ private:
 	const char* getWavFileFormat(int format_type);
 
 	void reportProgress(int32_t durationInMS);
+
+	int getSampleRate() const {return fmtHeader.sampleRate; }
 	
 private:
 	WAV_RIFF_HEADER wavHeader;

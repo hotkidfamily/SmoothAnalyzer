@@ -43,7 +43,7 @@ int WAVFileParse::openWavFile(const char* filename)
 
 	theWorkingWithFileName.assign(filename, strlen(filename));
 
-	parseWavParameter();
+	ret = parseWavParameter();
 
 	readSamples = 0;
 
@@ -117,17 +117,18 @@ int WAVFileParse::readWavFile(char* buffer, uint32_t data_size)
 int WAVFileParse::parseWavParameter()
 {
 	int ret = -1;
+	int readSize = 0;
 	char *ptr = (char*)&wavHeader;
-	ret = readWavFile(ptr, sizeof(WAV_RIFF_HEADER));
-	if(ret != sizeof(WAV_RIFF_HEADER)){
-		inter_log(Error, "Get WAV_RIFF_HEADER %d need %d", ret, sizeof(WAV_RIFF_HEADER));
+	readSize = readWavFile(ptr, sizeof(WAV_RIFF_HEADER));
+	if(readSize != sizeof(WAV_RIFF_HEADER)){
+		inter_log(Error, "Get WAV_RIFF_HEADER %d need %d", readSize, sizeof(WAV_RIFF_HEADER));
 		goto cleanup;
 	}
 
 	ptr = (char*)&fmtHeader;
-	ret = readWavFile(ptr, sizeof(WAV_FMT_HEADER));
-	if(ret != sizeof(WAV_FMT_HEADER)){
-		inter_log(Error, "Get WAV_FMT_HEADER %d need %d", ret, sizeof(WAV_FMT_HEADER));
+	readSize = readWavFile(ptr, sizeof(WAV_FMT_HEADER));
+	if(readSize != sizeof(WAV_FMT_HEADER)){
+		inter_log(Error, "Get WAV_FMT_HEADER %d need %d", readSize, sizeof(WAV_FMT_HEADER));
 		goto cleanup;
 	}
 
@@ -137,16 +138,16 @@ int WAVFileParse::parseWavParameter()
 			extraParamBuffer = NULL;
 		}
 		extraParamBuffer = new char[fmtHeader.extraParamSize];
-		ret = readWavFile(extraParamBuffer, fmtHeader.extraParamSize);
-		if(ret != fmtHeader.extraParamSize){
-			inter_log(Error, "Get extra params %d need %d", ret, fmtHeader.extraParamSize);
+		readSize = readWavFile(extraParamBuffer, fmtHeader.extraParamSize);
+		if(readSize != fmtHeader.extraParamSize){
+			inter_log(Error, "Get extra params %d need %d", readSize, fmtHeader.extraParamSize);
 			goto cleanup;
 		}
 	}
 	ptr = (char*)&dataHeader;
-	ret = readWavFile(ptr, sizeof(WAV_DATA_HEADER));
-	if(ret != sizeof(WAV_DATA_HEADER)){
-		inter_log(Error, "Get WAV_DATA_HEADER %d need %d", ret, sizeof(WAV_DATA_HEADER));
+	readSize = readWavFile(ptr, sizeof(WAV_DATA_HEADER));
+	if(readSize != sizeof(WAV_DATA_HEADER)){
+		inter_log(Error, "Get WAV_DATA_HEADER %d need %d", readSize, sizeof(WAV_DATA_HEADER));
 		goto cleanup;
 	}
 

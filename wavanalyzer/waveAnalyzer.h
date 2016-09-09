@@ -22,6 +22,9 @@ public:
 private:
 	int absFilter(std::string &channelData);
 	int findPulse(std::string &channelData, uint32_t &start, uint32_t &end);
+	int updateThreshold(std::string &channelData);
+	int getThreshold();
+	bool ifThresholdValid() const { return isThresholdValid; }
 
 private:
 	std::ofstream dumpfilter;
@@ -29,4 +32,7 @@ private:
 	bool bInPulse;
 	uint32_t pulseSampleIndex;
 	uint32_t totalSampleCount;
+	int16_t minThreshold;
+	int16_t maxThreshold;
+	bool isThresholdValid;
 };
