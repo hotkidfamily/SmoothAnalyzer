@@ -18,6 +18,8 @@ public:
 	~waveAnalyzer(void);
 
 	retType analyzer(std::string &channelData, uint32_t &start, uint32_t &end);
+	void setBytesPerSample(uint32_t bytesPerSample) { nbBytesPerSample = bytesPerSample; }
+	uint32_t getBytesPerSample(void) const { return nbBytesPerSample; }
 
 private:
 	int absFilter(std::string &channelData);
@@ -35,4 +37,5 @@ private:
 	int16_t minThreshold;
 	int16_t maxThreshold;
 	bool isThresholdValid;
+	uint32_t nbBytesPerSample;
 };

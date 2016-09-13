@@ -19,7 +19,11 @@ public:
 	int openWavFile(const char* filename);
 	int getLRChannelData(std::string &lChannel, std::string &rChannel);
 	int closeWavFile();
+
 	double covertSampleToMS(uint32_t sampleIndex);
+
+	int getSampleRate() const {return fmtHeader.sampleRate; }
+	int getBytesPerSample() const {return fmtHeader.bitsPerSample/8; }
 
 private:
 	int dumpWavFileHeaders();
@@ -31,10 +35,7 @@ private:
 	int findEnd(int16_t *data, uint32_t data_size);
 
 	const char* getWavFileFormat(int format_type);
-
 	void reportProgress(int32_t durationInMS);
-
-	int getSampleRate() const {return fmtHeader.sampleRate; }
 	
 private:
 	WAV_RIFF_HEADER wavHeader;

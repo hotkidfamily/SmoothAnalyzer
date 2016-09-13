@@ -61,6 +61,9 @@ int analyzeFile(std::string file)
 		return -1;
 	}
 
+	lChannelAnalyzer->setBytesPerSample(parse->getBytesPerSample());
+	rChannelAnalyzer->setBytesPerSample(parse->getBytesPerSample());
+
 	while(1){
 		int32_t ms = 0;
 		uint32_t startSampleIndex = 0;

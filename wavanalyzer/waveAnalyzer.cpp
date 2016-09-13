@@ -10,6 +10,7 @@ waveAnalyzer::waveAnalyzer(void)
 , minThreshold(0x7fff)
 , maxThreshold(0)
 , isThresholdValid(false)
+, nbBytesPerSample(2)
 {
 }
 
@@ -20,15 +21,14 @@ waveAnalyzer::waveAnalyzer(const char *dumpFileName)
 , minThreshold(0x7fff)
 , maxThreshold(0)
 , isThresholdValid(false)
+, nbBytesPerSample(2)
 {
-	uint32_t first_size = 0;
 	std::string file = dumpFileName;
 	file.insert(0, "c:/");
-	first_size = file.size();
 	file.insert(file.size(), "abs.pcm");
 	dumpfilter.open(file.c_str(), std::ios::binary);
 
-	file.resize(0,0);
+	file.clear();
 	file = dumpFileName;
 	file.insert(0, "c:/");
 	file.insert(file.size(), "2value.pcm");
@@ -50,7 +50,7 @@ int waveAnalyzer::absFilter(std::string &channelData)
 	char *filter_data = (char *)channelData.c_str();
 
 	data = (int16_t *)filter_data;
-	for(size_t i=0; i<channelData.size()/2; i++){
+	for(size_t i=0; i<channelData.size()/getBytesPerSample(); i++){
 		*(data+i) = abs(*(data+i));
 	}
 
@@ -62,7 +62,7 @@ int waveAnalyzer::updateThreshold(std::string &channelData)
 	int sum = 0;
 	int16_t *data = (int16_t *)channelData.c_str();
 
-	for(size_t i=0; i<channelData.size()/2; i++){
+	for(size_t i=0; i<channelData.size()/getBytesPerSample(); i++){
 		minThreshold = min(*data, minThreshold);
 		maxThreshold = max(*data, maxThreshold);
 		data ++;
@@ -91,7 +91,7 @@ int waveAnalyzer::findPulse(std::string &channelData, uint32_t &start, uint32_t 
 	int32_t threahold = getThreshold();
 	int32_t nbFilterWorkSamples = 0;
 
-	nbFilterWorkSamples = channelData.size()/2/10; // 10ms
+	nbFilterWorkSamples = channelData.size()/getBytesPerSample()/10; // 10ms
 
 	while(count < channelData.size()){
 		sum = 0;
@@ -103,12 +103,12 @@ int waveAnalyzer::findPulse(std::string &channelData, uint32_t &start, uint32_t 
 		if(sum > threahold){
 			if(!bInPulse){
 				bInPulse = true;
-				pulseSampleIndex = totalSampleCount + count/2;
+				pulseSampleIndex = totalSampleCount + count/getBytesPerSample();
 			}
 		}else{
 			if(bInPulse){
 				bInPulse = false;
-				endSampleIndex = totalSampleCount + count/2;
+				endSampleIndex = totalSampleCount + count/getBytesPerSample();
 				inter_log(Pulse, "pulse start %d, end %d, length %fms", pulseSampleIndex, endSampleIndex, (endSampleIndex - pulseSampleIndex)*1.0 / 44100);
 				start = pulseSampleIndex;
 				end = endSampleIndex;
@@ -126,7 +126,7 @@ int waveAnalyzer::findPulse(std::string &channelData, uint32_t &start, uint32_t 
 		}
 
 		data += nbFilterWorkSamples;
-		count += nbFilterWorkSamples*2;
+		count += nbFilterWorkSamples*getBytesPerSample();
 	}
 		
 	return 0;
@@ -148,7 +148,7 @@ retType waveAnalyzer::analyzer(std::string &channelData, uint32_t &start, uint32
 	if(dump2Value.is_open())
 		dump2Value.write(channelData.c_str(), channelData.size());
 
-	totalSampleCount += channelData.size()/2;
+	totalSampleCount += channelData.size()/getBytesPerSample();
 
 	if(start && end){
 		return RET_FIND_START;
