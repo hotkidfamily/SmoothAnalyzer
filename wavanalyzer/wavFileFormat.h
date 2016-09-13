@@ -3,27 +3,27 @@
 #include "stdint.h"
 
 struct WAV_RIFF_HEADER{
-	unsigned char chunkID[4];			// RIFF string
-	unsigned int chunkSize;				// overall size of file in bytes
-	unsigned char format[4];			// WAVE string
+	uint8_t  chunkID[4];			// RIFF string
+	uint32_t chunkSize;			// overall size of file in bytes
+	uint8_t  format[4];			// WAVE string
 };
 
 #pragma pack(push)
 #pragma pack(2)
 struct WAV_FMT_HEADER{
-	unsigned char subchunk1ID[4];		// fmt string with trailing null char
-	unsigned int subchunk1Size;			// length of the format data
-	uint16_t audioFormat;				// format type. 1-PCM, 3- IEEE float, 6 - 8bit A law, 7 - 8bit mu law
-	uint16_t nbChannels;				// no.of channels
-	unsigned int sampleRate;			// sampling rate (blocks per second)
-	unsigned int byteRate;				// SampleRate * NumChannels * BitsPerSample/8
-	uint16_t packageSize;				// NumChannels * BitsPerSample/8
-	uint16_t bitsPerSample;				// bits per sample, 8- 8bits, 16- 16 bits etc
-	uint16_t extraParamSize;			// extra param size, if PCM, then doesn't exist
+	uint8_t  subchunk1ID[4];		// fmt string with trailing null char
+	uint32_t subchunk1Size;			// length of the format data
+	uint16_t audioFormat;			// format type. 1-PCM, 3- IEEE float, 6 - 8bit A law, 7 - 8bit mu law
+	uint16_t nbChannels;			// no.of channels
+	uint32_t sampleRate;			// sampling rate (blocks per second)
+	uint32_t byteRate;				// SampleRate * NumChannels * BitsPerSample/8
+	uint16_t packageSize;			// NumChannels * BitsPerSample/8
+	uint16_t bitsPerSample;			// bits per sample, 8- 8bits, 16- 16 bits etc
+	uint16_t extraParamSize;		// extra param size, if PCM, then doesn't exist
 };
 #pragma pack(pop)
 
 struct WAV_DATA_HEADER{
-	unsigned char subchunk2ID [4];		// DATA string or FLLR string
-	unsigned int subchunk2Size;			// NumSamples * NumChannels * BitsPerSample/8 - size of the next chunk that will be read
+	uint8_t  subchunk2ID[4];		// DATA string or FLLR string
+	uint32_t subchunk2Size;			// NumSamples * NumChannels * BitsPerSample/8 - size of the next chunk that will be read
 };
