@@ -11,7 +11,7 @@
 #ifdef _DEBUG
 char* debug_args[] ={
 	"",
-	//"e:/Resources/iphone.wav",
+	"e:/Resources/huawei.wav",
 	//"e:/avsync_test_result/movie test with devices/",
 	//"E:/avsync_test_result/movie test with devices/oppo r9 plus aac fix.wav"
 	"."

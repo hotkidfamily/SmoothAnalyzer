@@ -52,16 +52,22 @@ int WAVFileParse::openWavFile(const char* filename)
 
 const char* WAVFileParse::getWavFileFormat(int format_type)
 {
-	const char *type_str = "Error";
+	const char *type_str = "not supported";
 	switch(format_type){
-		case 1:
+		case WAVE_FORMAT_PCM:
 			type_str = "PCM";
 			break;
-		case 6:
+		case WAVE_FORMAT_IEEE_FLOAT:
+			type_str = "IEEE float";
+			break;
+		case WAVE_FORMAT_ALAW:
 			type_str = "A-law";
 			break;
-		case 7:
+		case WAVE_FORMAT_MULAW:
 			type_str = "Mu-law";
+			break;
+		case WAVE_FORMAT_EXTENSIBLE:
+			type_str = "extensible";
 			break;
 		default:
 			break;
@@ -83,8 +89,8 @@ int WAVFileParse::dumpWavFileHeaders()
 	inter_log(Debug, "File size: %d, %d Kb", wavHeader.chunkSize+8, (wavHeader.chunkSize+8)/1024);
 	inter_log(Debug, "Wav marker: %c%c%c%c", expanse4bytes(wavHeader.format));
 	inter_log(Debug, "");
-	inter_log(Debug, "Fmt marker: %c%c%c%c", expanse4bytes(fmtHeader.subchunk1ID));
-	inter_log(Debug, "Fmt header Size: %u", fmtHeader.subchunk1Size);
+	inter_log(Debug, "Fmt marker: %c%c%c%c", expanse4bytes(chunkHeader.subchunk1ID));
+	inter_log(Debug, "Fmt header Size: %u", chunkHeader.subchunk1Size);
 	inter_log(Debug, "Format type: %s", getWavFileFormat(fmtHeader.audioFormat));
 	inter_log(Debug, "Channels: %u", fmtHeader.nbChannels);
 	inter_log(Debug, "Sample rate: %u", fmtHeader.sampleRate);
@@ -125,11 +131,22 @@ int WAVFileParse::parseWavParameter()
 		goto cleanup;
 	}
 
+	ptr = (char*)&chunkHeader;
+	readSize = readWavFile(ptr, sizeof(WAV_CHUCK_HEADER));
+	if(readSize != sizeof(WAV_CHUCK_HEADER)){
+		inter_log(Error, "Get WAV_CHUCK_HEADER %d need %d", readSize, sizeof(WAV_CHUCK_HEADER));
+		goto cleanup;
+	}
+
 	ptr = (char*)&fmtHeader;
-	readSize = readWavFile(ptr, sizeof(WAV_FMT_HEADER));
-	if(readSize != sizeof(WAV_FMT_HEADER)){
+	readSize = readWavFile(ptr, chunkHeader.subchunk1Size);
+	if(readSize != chunkHeader.subchunk1Size){
 		inter_log(Error, "Get WAV_FMT_HEADER %d need %d", readSize, sizeof(WAV_FMT_HEADER));
 		goto cleanup;
+	}
+
+	if(chunkHeader.subchunk1Size == 16){
+		fmtHeader.extraParamSize = 0;
 	}
 
 	if(fmtHeader.extraParamSize > 0){
@@ -152,7 +169,7 @@ int WAVFileParse::parseWavParameter()
 	}
 
 	if((fmtHeader.audioFormat == 1) && (fmtHeader.extraParamSize != 0)){
-		inter_log(Error, "WAV file contain pcm data should not have extra parameters.");
+		inter_log(Error, "WAV file in pcm data should not have extra parameters.");
 		goto cleanup;
 	}else if(fmtHeader.audioFormat != 1){
 		inter_log(Error, "Do not support format without %s", getWavFileFormat(fmtHeader.audioFormat));
