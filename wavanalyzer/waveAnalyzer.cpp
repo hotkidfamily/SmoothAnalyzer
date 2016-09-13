@@ -11,8 +11,6 @@ waveAnalyzer::waveAnalyzer(void)
 , maxThreshold(0)
 , isThresholdValid(false)
 {
-	dumpfilter.open("c:/filter.pcm", std::ios::binary);
-	dump2Value.open("c:/2value.pcm", std::ios::binary);
 }
 
 waveAnalyzer::waveAnalyzer(const char *dumpFileName)
@@ -39,8 +37,11 @@ waveAnalyzer::waveAnalyzer(const char *dumpFileName)
 
 waveAnalyzer::~waveAnalyzer(void)
 {
-	dumpfilter.close();
-	dump2Value.close();
+	if(dumpfilter.is_open())
+		dumpfilter.close();
+
+	if(dump2Value.is_open())
+		dump2Value.close();
 }
 
 int waveAnalyzer::absFilter(std::string &channelData)
@@ -134,15 +135,18 @@ int waveAnalyzer::findPulse(std::string &channelData, uint32_t &start, uint32_t 
 retType waveAnalyzer::analyzer(std::string &channelData, uint32_t &start, uint32_t &end)
 {
 	absFilter(channelData);
-	dumpfilter.write(channelData.c_str(), channelData.size());
+
+	if(dumpfilter.is_open())
+		dumpfilter.write(channelData.c_str(), channelData.size());
 
 	if(!ifThresholdValid()){
 		updateThreshold(channelData);
-		dump2Value.write(channelData.c_str(), channelData.size());
 	}else{
 		findPulse(channelData, start, end);
-		dump2Value.write(channelData.c_str(), channelData.size());
 	}
+
+	if(dump2Value.is_open())
+		dump2Value.write(channelData.c_str(), channelData.size());
 
 	totalSampleCount += channelData.size()/2;
 
