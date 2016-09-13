@@ -52,7 +52,7 @@ int32_t WAVFileParse::openWavFile(const char* filename)
 
 const char* WAVFileParse::getWavFileFormat(int32_t format_type)
 {
-	const char *type_str = "not supported";
+	const char *type_str = "unknow";
 	switch(format_type){
 		case WAVE_FORMAT_PCM:
 			type_str = "PCM";
@@ -172,7 +172,7 @@ int32_t WAVFileParse::parseWavParameter()
 		inter_log(Error, "WAV file in pcm data should not have extra parameters.");
 		goto cleanup;
 	}else if(fmtHeader.audioFormat != 1){
-		inter_log(Error, "Do not support format without %s", getWavFileFormat(fmtHeader.audioFormat));
+		inter_log(Error, "WAV in %s format is not been supported.", getWavFileFormat(fmtHeader.audioFormat));
 		goto cleanup;
 	}
 
