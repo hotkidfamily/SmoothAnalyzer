@@ -9,9 +9,9 @@ fileEnum::~fileEnum(void)
 {
 }
 
-int fileEnum::getFile(std::string &filename)
+int32_t fileEnum::getFile(std::string &filename)
 {
-	int ret = 0;
+	int32_t ret = 0;
 	std::string listFile;
 	if(m_filesList.size()){
 		listFile = m_filesList.front();
@@ -24,9 +24,9 @@ int fileEnum::getFile(std::string &filename)
 	return ret;
 }
 
-int fileEnum::isDirectory(std::string path)
+int32_t fileEnum::isDirectory(std::string path)
 {
-	int bRet = 0;
+	int32_t bRet = 0;
 	DWORD fileAttr = 0;
 	fileAttr = GetFileAttributesA(path.c_str());
 	if(fileAttr & FILE_ATTRIBUTE_DIRECTORY){
@@ -42,9 +42,8 @@ int fileEnum::isDirectory(std::string path)
 	return bRet;
 }
 
-int fileEnum::enumDirectory(std::string path, std::string postPix)
+int32_t fileEnum::enumDirectory(std::string path, std::string postPix)
 {
-	LARGE_INTEGER filesize;
 	std::string filename;
 	try{
 		WIN32_FIND_DATAA fd = {0};
@@ -57,8 +56,6 @@ int fileEnum::enumDirectory(std::string path, std::string postPix)
 
 		do{
 			if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)){
-				filesize.LowPart = fd.nFileSizeLow;
-				filesize.HighPart = fd.nFileSizeHigh;
 				filename.assign(fd.cFileName);
 				char *pFile = (char*)filename.c_str();
 				if(memcmp((pFile+filename.size()-postPix.size()), postPix.c_str(), postPix.size()) == 0){

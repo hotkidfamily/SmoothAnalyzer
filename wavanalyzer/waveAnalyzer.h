@@ -22,10 +22,10 @@ public:
 	uint32_t getBytesPerSample(void) const { return nbBytesPerSample; }
 
 private:
-	int absFilter(std::string &channelData);
-	int findPulse(std::string &channelData, uint32_t &start, uint32_t &end);
-	int updateThreshold(std::string &channelData);
-	int getThreshold();
+	int32_t absFilter(std::string &channelData);
+	int32_t findPulse(std::string &channelData, uint32_t &start, uint32_t &end);
+	int32_t updateThreshold(std::string &channelData);
+	int32_t getThreshold();
 	bool ifThresholdValid() const { return isThresholdValid; }
 
 private:

@@ -13,10 +13,10 @@ public:
 	fileEnum(void);
 	~fileEnum(void);
 
-	int enumDirectory(std::string path, std::string postFix);
-	int isDirectory(std::string path);
+	int32_t enumDirectory(std::string path, std::string postFix);
+	int32_t isDirectory(std::string path);
 	
-	int getFile(std::string &file);
+	int32_t getFile(std::string &file);
 
 private:
 	std::list<std::string> m_filesList;

@@ -14,5 +14,8 @@
 #include <windows.h>
 
 
+#include "stdint.h"
+
+
 
 // TODO: reference additional headers your program requires here

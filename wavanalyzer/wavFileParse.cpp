@@ -33,9 +33,9 @@ WAVFileParse::~WAVFileParse(void)
 		dumpRChannelFile.close();
 }
 
-int WAVFileParse::openWavFile(const char* filename)
+int32_t WAVFileParse::openWavFile(const char* filename)
 {
-	int ret = -1;
+	int32_t ret = -1;
 	wavFile.open(filename, std::ios::binary);
 	if(wavFile.is_open()){
 		ret = 0;
@@ -50,7 +50,7 @@ int WAVFileParse::openWavFile(const char* filename)
 	return ret;
 }
 
-const char* WAVFileParse::getWavFileFormat(int format_type)
+const char* WAVFileParse::getWavFileFormat(int32_t format_type)
 {
 	const char *type_str = "not supported";
 	switch(format_type){
@@ -75,10 +75,10 @@ const char* WAVFileParse::getWavFileFormat(int format_type)
 	return type_str;
 }
 
-int WAVFileParse::dumpWavFileHeaders()
+int32_t WAVFileParse::dumpWavFileHeaders()
 {
-	int durationInSecond = 0;
-	int durationLastMs = 0;
+	int32_t durationInSecond = 0;
+	int32_t durationLastMs = 0;
 	uint32_t nb_samples = dataHeader.subchunk2Size*8/fmtHeader.nbChannels/fmtHeader.bitsPerSample;
 	durationInSecond = nb_samples/fmtHeader.sampleRate;
 	durationLastMs = nb_samples%fmtHeader.sampleRate;
@@ -108,7 +108,7 @@ int WAVFileParse::dumpWavFileHeaders()
 	return 0;
 }
 
-int WAVFileParse::readWavFile(char* buffer, uint32_t data_size)
+int32_t WAVFileParse::readWavFile(char* buffer, uint32_t data_size)
 {
 	wavFile.read(buffer, data_size);
 	if(wavFile){
@@ -120,10 +120,10 @@ int WAVFileParse::readWavFile(char* buffer, uint32_t data_size)
 	return wavFile.gcount();
 }
 
-int WAVFileParse::parseWavParameter()
+int32_t WAVFileParse::parseWavParameter()
 {
-	int ret = -1;
-	int readSize = 0;
+	int32_t ret = -1;
+	int32_t readSize = 0;
 	char *ptr = (char*)&wavHeader;
 	readSize = readWavFile(ptr, sizeof(WAV_RIFF_HEADER));
 	if(readSize != sizeof(WAV_RIFF_HEADER)){
@@ -187,7 +187,7 @@ cleanup:
 	return ret;
 }
 
-int WAVFileParse::closeWavFile()
+int32_t WAVFileParse::closeWavFile()
 {
 	if(wavFile.is_open()){
 		wavFile.close();
@@ -196,7 +196,7 @@ int WAVFileParse::closeWavFile()
 	return 0;
 }
 
-int WAVFileParse::separateLRChannel(char *data, uint32_t dataSize, std::string &lChannel, std::string &rChannel)
+int32_t WAVFileParse::separateLRChannel(char *data, uint32_t dataSize, std::string &lChannel, std::string &rChannel)
 {
 	int16_t *dataPtr = (int16_t*)data;
 	int16_t *lchannelData = NULL;
@@ -219,9 +219,9 @@ int WAVFileParse::separateLRChannel(char *data, uint32_t dataSize, std::string &
 }
 
 // 100ms data one time
-int WAVFileParse::getLRChannelData(std::string &lChannel, std::string &rChannel)
+int32_t WAVFileParse::getLRChannelData(std::string &lChannel, std::string &rChannel)
 {
-	int ret = 0;
+	int32_t ret = 0;
 	uint32_t nbReadSamples = fmtHeader.sampleRate / 10;
 	uint32_t nbSampleDataSize = nbReadSamples * fmtHeader.packageSize ; // 10ms
 	uint32_t readDataLength = 0;

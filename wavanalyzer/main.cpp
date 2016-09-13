@@ -34,9 +34,9 @@ static void makeRecordFileName(std::string recordFilePath, std::string &statiFil
 	statiFile.insert(statiFile.size(), buffer);
 }
 
-static int parse_parameters(int argc, char* argv[])
+static int32_t parse_parameters(int32_t argc, char* argv[])
 {
-	int ret = 0;
+	int32_t ret = 0;
 	if(argc < 2){
 		print_usage(argv[0]);
 		ret = -1;
@@ -44,7 +44,7 @@ static int parse_parameters(int argc, char* argv[])
 	return ret;
 }
 
-int analyzeFile(std::string file)
+int32_t analyzeFile(std::string file)
 {
 	std::string lChannelData;
 	std::string rChannelData;
@@ -68,7 +68,7 @@ int analyzeFile(std::string file)
 		int32_t ms = 0;
 		uint32_t startSampleIndex = 0;
 		uint32_t endSampleIndex = 0;
-		int ret = parse->getLRChannelData(lChannelData, rChannelData);
+		int32_t ret = parse->getLRChannelData(lChannelData, rChannelData);
 		retType retAnalyzer = RET_OK;
 
 		retAnalyzer = lChannelAnalyzer->analyzer(lChannelData, startSampleIndex, endSampleIndex);
@@ -108,7 +108,7 @@ int analyzeFile(std::string file)
 	return 0;
 }
 
-int main(int argc, char* argv[])
+int32_t main(int32_t argc, char* argv[])
 {	
 	std::string workFilePath;
 
@@ -124,7 +124,7 @@ int main(int argc, char* argv[])
 	workFilePath = argv[1];
 
 	fileEnum *fileFinder = new fileEnum();
-	int ret = fileFinder->isDirectory(workFilePath);
+	int32_t ret = fileFinder->isDirectory(workFilePath);
 	if(ret < 0){
 		inter_log(Fatal, "path %s is invalid.", workFilePath.c_str());
 	}else if (ret > 0){

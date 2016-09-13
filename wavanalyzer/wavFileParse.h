@@ -16,25 +16,25 @@ public:
 	~WAVFileParse(void);
 	WAVFileParse(uint32_t flag);
 
-	int openWavFile(const char* filename);
-	int getLRChannelData(std::string &lChannel, std::string &rChannel);
-	int closeWavFile();
+	int32_t openWavFile(const char* filename);
+	int32_t getLRChannelData(std::string &lChannel, std::string &rChannel);
+	int32_t closeWavFile();
 
 	double covertSampleToMS(uint32_t sampleIndex);
 
-	int getSampleRate() const {return fmtHeader.sampleRate; }
-	int getBytesPerSample() const {return fmtHeader.bitsPerSample/8; }
+	int32_t getSampleRate() const {return fmtHeader.sampleRate; }
+	int32_t getBytesPerSample() const {return fmtHeader.bitsPerSample/8; }
 
 private:
-	int dumpWavFileHeaders();
-	int readWavFile(char* buffer, uint32_t data_size);
-	int parseWavParameter();
+	int32_t dumpWavFileHeaders();
+	int32_t readWavFile(char* buffer, uint32_t data_size);
+	int32_t parseWavParameter();
 
-	int separateLRChannel(char *data, uint32_t data_size, std::string &lChannel, std::string &rChannel);
-	int findStart(int16_t *data, uint32_t data_size);
-	int findEnd(int16_t *data, uint32_t data_size);
+	int32_t separateLRChannel(char *data, uint32_t data_size, std::string &lChannel, std::string &rChannel);
+	int32_t findStart(int16_t *data, uint32_t data_size);
+	int32_t findEnd(int16_t *data, uint32_t data_size);
 
-	const char* getWavFileFormat(int format_type);
+	const char* getWavFileFormat(int32_t format_type);
 	void reportProgress(int32_t durationInMS);
 	
 private:
