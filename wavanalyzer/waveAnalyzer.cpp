@@ -144,7 +144,13 @@ int32_t waveAnalyzer::splitDataAndFindPulse(std::string &channelData, uint32_t &
 	
 	size_t nbTotalSamples = channelData.size()/getBytesPerSample();
 
-	nbSampleSplitStep = nbTotalSamples/100; // 10ms
+	if(nbTotalSamples > 100){
+		nbSampleSplitStep = nbTotalSamples/100; // 10ms
+	}else{
+		nbSampleSplitStep = nbTotalSamples; // 10ms
+	}
+	
+	
 	inter_log(Pulse, "analyzer size is %d", nbSampleSplitStep);
 
 	nbProcessSamples = nbSampleSplitStep;
