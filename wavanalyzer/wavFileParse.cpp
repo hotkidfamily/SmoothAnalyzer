@@ -217,7 +217,7 @@ int32_t WAVFileParse::getLRChannelData(std::string &lChannel, std::string &rChan
 {
 	int32_t ret = 0;
 	uint32_t nbReadSamples = fmtHeader.sampleRate / 10;
-	uint32_t nbSampleDataSize = nbReadSamples * fmtHeader.packageSize ; // 10ms
+	uint32_t nbSampleDataSize = nbReadSamples * fmtHeader.packageSize ; // 100ms
 	uint32_t readDataLength = 0;
 	
 	std::string tenMSDataBuffer;
