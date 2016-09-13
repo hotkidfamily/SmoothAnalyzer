@@ -5,32 +5,19 @@
 WAVFileParse::WAVFileParse(uint32_t flag)
 : extraParamBuffer(NULL)
 , debugFlag(flag)
-, readSamples(0)
+, totalReadSamplesCount(0)
 {
-	if(debugFlag & DEBUG_CHANNEL_DATA){
-		dumpLChannelFile.open("c:/lChannelOriginal.pcm", std::ios::binary);
-		dumpRChannelFile.open("c:/rChannelOriginal.pcm", std::ios::binary);
-	}
 }
 
 WAVFileParse::WAVFileParse(void)
 : extraParamBuffer(NULL)
 , debugFlag(0)
-, readSamples(0)
+, totalReadSamplesCount(0)
 {
 }
 
 WAVFileParse::~WAVFileParse(void)
 {
-	if(extraParamBuffer){
-		delete extraParamBuffer;
-		extraParamBuffer = NULL;
-	}
-	if(dumpLChannelFile.is_open())
-		dumpLChannelFile.close();
-
-	if(dumpRChannelFile.is_open())
-		dumpRChannelFile.close();
 }
 
 int32_t WAVFileParse::openWavFile(const char* filename)
@@ -45,7 +32,12 @@ int32_t WAVFileParse::openWavFile(const char* filename)
 
 	ret = parseWavParameter();
 
-	readSamples = 0;
+	if(debugFlag & DEBUG_CHANNEL_DATA){
+		dumpLChannelFile.open("c:/lChannelOriginal.pcm", std::ios::binary);
+		dumpRChannelFile.open("c:/rChannelOriginal.pcm", std::ios::binary);
+	}
+
+	totalReadSamplesCount = 0;
 
 	return ret;
 }
@@ -189,8 +181,10 @@ cleanup:
 
 int32_t WAVFileParse::closeWavFile()
 {
-	if(wavFile.is_open()){
-		wavFile.close();
+
+	if(extraParamBuffer){
+		delete extraParamBuffer;
+		extraParamBuffer = NULL;
 	}
 
 	return 0;
@@ -234,8 +228,9 @@ int32_t WAVFileParse::getLRChannelData(std::string &lChannel, std::string &rChan
 	
 	readDataLength = readWavFile(buffer, tenMSDataBuffer.size());
 
-	if((readSamples*fmtHeader.packageSize + readDataLength) > dataHeader.subchunk2Size){
-		readDataLength = dataHeader.subchunk2Size - readSamples*fmtHeader.packageSize;
+	if((totalReadSamplesCount*fmtHeader.packageSize + readDataLength) > dataHeader.subchunk2Size){
+		// should not overflow chunk size
+		readDataLength = dataHeader.subchunk2Size - totalReadSamplesCount*fmtHeader.packageSize;
 	}
 	separateLRChannel(buffer, readDataLength, lChannel, rChannel);
 
@@ -244,9 +239,9 @@ int32_t WAVFileParse::getLRChannelData(std::string &lChannel, std::string &rChan
 	if(dumpRChannelFile.is_open())
 		dumpRChannelFile.write(rChannel.c_str(), rChannel.size());
 
-	readSamples += readDataLength/fmtHeader.packageSize;
+	totalReadSamplesCount += readDataLength/fmtHeader.packageSize;
 
-	reportProgress(readSamples);
+	reportProgress(totalReadSamplesCount);
 	if(readDataLength < nbSampleDataSize){
 		ret = -1;
 	}

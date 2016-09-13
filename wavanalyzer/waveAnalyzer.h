@@ -23,7 +23,11 @@ public:
 
 private:
 	int32_t absFilter(std::string &channelData);
-	int32_t findPulse(std::string &channelData, uint32_t &start, uint32_t &end);
+
+	int32_t splitDataAndFindPulse(std::string &channelData, uint32_t &start, uint32_t &end);
+	void findPulse(const int16_t *buffer, uint32_t nb_samples, uint32_t &start, uint32_t &end, uint32_t count);
+	void replaceValue(const int16_t *buffer, uint32_t nb_samples, bool bInPulse);
+
 	int32_t updateThreshold(std::string &channelData);
 	int32_t getThreshold();
 	bool ifThresholdValid() const { return isThresholdValid; }

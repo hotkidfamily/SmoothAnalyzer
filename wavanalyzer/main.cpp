@@ -46,10 +46,8 @@ static int32_t parse_parameters(int32_t argc, char* argv[])
 
 int32_t analyzeFile(std::string file)
 {
-	std::string lChannelData;
-	std::string rChannelData;
 	std::string statiticsFile;
-	WAVFileParse *parse = new WAVFileParse(DEBUG_CHANNEL_DATA);
+	WAVFileParse *parse = new WAVFileParse();
 	makeRecordFileName(file, statiticsFile);
 	csvOutput *csvFile = new csvOutput(statiticsFile.c_str());
 	waveAnalyzer *lChannelAnalyzer = new waveAnalyzer("lchannel");
@@ -68,6 +66,8 @@ int32_t analyzeFile(std::string file)
 		int32_t ms = 0;
 		uint32_t startSampleIndex = 0;
 		uint32_t endSampleIndex = 0;
+		std::string lChannelData;
+		std::string rChannelData;
 		int32_t ret = parse->getLRChannelData(lChannelData, rChannelData);
 		retType retAnalyzer = RET_OK;
 

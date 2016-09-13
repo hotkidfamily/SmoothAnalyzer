@@ -25,7 +25,7 @@ void csvOutput::recordTimestamp(syncTimestamp::CHANNELID channelID, double start
 	time.end = end;
 
 	if(end - start < 0.010){
-		inter_log(Debug, "pulse duration(%d) is not width enough.", (end-start));
+		inter_log(Debug, "pulse duration(%f) is not width enough.", (end-start));
 		return;
 	}
 
@@ -49,7 +49,7 @@ void csvOutput::recordTimestamp(syncTimestamp::CHANNELID channelID, double start
 		m_dataListRChannel.push_back(time);
 	}
 
-	inter_log(Pulse, "%s pulse start %f, end %f, length %fms", (channelID == syncTimestamp::LCHANNEL)?"L":"R", start, end, end - start);
+	inter_log(Debug, "%s pulse start %f, end %f, length %fms", (channelID == syncTimestamp::LCHANNEL)?"L":"R", start, end, end - start);
 }
 
 void csvOutput::outputResult()
@@ -105,8 +105,6 @@ void csvOutput::outputResult()
 					lChannelTime.channelID, lindex, lChannelTime.start, lChannelTime.end, (lChannelTime.end - lChannelTime.start) * 1000, 0, 
 					rChannelTime.channelID, rindex, rChannelTime.start, rChannelTime.end, (rChannelTime.end - rChannelTime.start) * 1000, 0);
 			}
-
-			csvFile.close();
 		}
 	}
 }

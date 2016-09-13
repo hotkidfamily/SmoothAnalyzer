@@ -47,10 +47,9 @@ private:
 	std::ifstream  wavFile;
 	std::string theWorkingWithFileName;
 
-	std::ofstream dumpLChannelFile;
-	std::ofstream dumpRChannelFile;
-
-	int32_t readSamples;
+	int32_t totalReadSamplesCount;
 
 	uint32_t debugFlag;
+	std::ofstream dumpLChannelFile;
+	std::ofstream dumpRChannelFile;
 };
