@@ -150,7 +150,7 @@ int32_t waveAnalyzer::splitDataAndFindPulse(std::string &channelData, uint32_t &
 		nbSampleSplitStep = nbTotalSamples;
 	}
 	
-	inter_log(Debug, "analyzer size is %d", nbSampleSplitStep);
+	inter_log(Pulse, "analyzer size is %d", nbSampleSplitStep);
 
 	do{
 		if(nbSampleSplitStep + processedSamplesCount > nbTotalSamples){

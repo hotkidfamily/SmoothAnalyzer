@@ -13,7 +13,7 @@ char* debug_args[] ={
 	"",
 	//"e:/Resources/huawei.wav",
 	//"e:/avsync_test_result/movie test with devices/",
-	"E:/avsync_test_result/movie test with devices/VIVO X65 24fps.wav"
+	"E:/avsync_test_result/movie test with devices/huawei p9.wav"
 	//"."
 };
 #endif
