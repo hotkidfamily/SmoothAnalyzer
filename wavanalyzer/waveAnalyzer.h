@@ -20,6 +20,8 @@ public:
 	retType analyzer(std::string &channelData, uint32_t &start, uint32_t &end);
 	void setBytesPerSample(uint32_t bytesPerSample) { nbBytesPerSample = bytesPerSample; }
 	uint32_t getBytesPerSample(void) const { return nbBytesPerSample; }
+	void setSampleRate(uint32_t sampleRate);
+	uint32_t getSampleRate() const {return nbSampleRate;}
 
 private:
 	int32_t absFilter(std::string &channelData);
@@ -42,4 +44,5 @@ private:
 	int16_t maxThreshold;
 	bool isThresholdValid;
 	uint32_t nbBytesPerSample;
+	uint32_t nbSampleRate;
 };

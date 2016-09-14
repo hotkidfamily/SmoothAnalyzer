@@ -11,6 +11,7 @@ waveAnalyzer::waveAnalyzer(void)
 , maxThreshold(0)
 , isThresholdValid(false)
 , nbBytesPerSample(2)
+, nbSampleRate(44100)
 {
 }
 
@@ -22,6 +23,7 @@ waveAnalyzer::waveAnalyzer(const char *dumpFileName)
 , maxThreshold(0)
 , isThresholdValid(false)
 , nbBytesPerSample(2)
+, nbSampleRate(44100)
 {
 	std::string file = dumpFileName;
 	file.insert(0, "c:/");
@@ -63,9 +65,9 @@ int32_t waveAnalyzer::updateThreshold(std::string &channelData)
 		data ++;
 	}
 
-	if(maxThreshold - minThreshold > 10000){
+	if(totalSampleCount/getSampleRate() > 10){
 		isThresholdValid = true;
-		inter_log(Debug, "threshold is %d, min %d, max %d at sample %f", getThreshold(), minThreshold, maxThreshold, (totalSampleCount+channelData.size()/getBytesPerSample())*1.0/44100);
+		inter_log(Info, "threshold is %d, min %d, max %d at sample %f", getThreshold(), minThreshold, maxThreshold, (totalSampleCount+channelData.size()/getBytesPerSample())*1.0/44100);
 	}
 
 	return 0;
@@ -197,4 +199,9 @@ retType waveAnalyzer::analyzer(std::string &channelData, uint32_t &start, uint32
 	}else{
 		return RET_OK;
 	}	
+}
+
+void waveAnalyzer::setSampleRate(uint32_t sampleRate)
+{
+	nbSampleRate = sampleRate;
 }
