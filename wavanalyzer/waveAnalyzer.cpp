@@ -160,6 +160,9 @@ int32_t waveAnalyzer::splitDataAndFindPulse(std::string &channelData, uint32_t &
 		}
 
 		findPulse(data, nbProcessSamples, start, end, processedSamplesCount);
+		if(start && end){
+			return 0;
+		}
 
 		replaceValue(data, nbProcessSamples, bInPulse);
 
