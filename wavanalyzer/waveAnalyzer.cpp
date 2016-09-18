@@ -67,7 +67,7 @@ int32_t waveAnalyzer::updateThreshold(std::string &channelData)
 
 	if(totalSampleCount/getSampleRate() > 10){
 		isThresholdValid = true;
-		inter_log(Info, "threshold is %d, min %d, max %d at sample %f", getThreshold(), minThreshold, maxThreshold, (totalSampleCount+channelData.size()/getBytesPerSample())*1.0/44100);
+		inter_log(Info, "threshold is %d, min %d, max %d", getThreshold(), minThreshold, maxThreshold);
 	}
 
 	return 0;
