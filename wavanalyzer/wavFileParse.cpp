@@ -162,9 +162,13 @@ int32_t WAVFileParse::parseWavParameter()
 		goto cleanup;
 	}
 
-	if((fmtHeader.audioFormat == 1) && (extraParamSize != 0)){
-		inter_log(Error, "WAV file in pcm data should not have extra parameters.");
-		goto cleanup;
+	if(fmtHeader.audioFormat == 1){
+		uint16_t *extraParam = (uint16_t*)extraParamBuffer;
+		if((extraParamSize > 2)
+			&& ((extraParamSize == 2) && (*extraParam != 0))){
+			inter_log(Error, "WAV file in pcm data should not have extra parameters.");
+			goto cleanup;
+		}
 	}else if(fmtHeader.audioFormat != 1){
 		inter_log(Error, "WAV in %s format is not been supported.", getWavFileFormat(fmtHeader.audioFormat));
 		goto cleanup;

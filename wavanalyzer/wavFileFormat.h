@@ -20,6 +20,22 @@ struct WAV_RIFF_HEADER{
 	uint8_t  format[4];			// WAVE string
 };
 
+/*
+ckID	4	Chunk ID: fmt 
+cksize	4	Chunk size: 16, 18 or 40
+	wFormatTag		2	Format code
+	nChannels		2	Number of interleaved channels
+	nSamplesPerSec	4	Sampling rate (blocks per second)
+	nAvgBytesPerSec	4	Data rate
+	nBlockAlign		2	Data block size (bytes)
+	wBitsPerSample	2	Bits per sample
+	cbSize			2	Size of the extension (0 or 22)
+	wValidBitsPerSample	2	Number of valid bits
+	dwChannelMask	4	Speaker position mask
+	SubFormat		16	GUID, including the data format code
+
+*/
+
 struct WAV_CHUCK_HEADER{
 	uint8_t  subchunk1ID[4];		// fmt string with trailing null char
 	uint32_t subchunk1Size;			// length of the format data

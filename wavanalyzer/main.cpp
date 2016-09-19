@@ -11,9 +11,9 @@
 #ifdef _DEBUG
 char* debug_args[] ={
 	"",
-	"C:/Program Files (x86)/Microsoft Office/Office14/MEDIA/CAMERA.WAV",
+	//"C:/Program Files (x86)/Microsoft Office/Office14/MEDIA/CAMERA.WAV",
 	//"e:/avsync_test_result/movie test with devices/",
-	//"E:/avsync_test_result/movie test with devices/pc_publish_pc_view_win7_64bit_silk.wav"
+	"E:/avsync_test_result/movie test with devices/android-baofeng-hongmi1s-24fps.wav",
 	//"."
 };
 #endif
@@ -75,14 +75,14 @@ int32_t analyzeFile(std::string file)
 
 		retAnalyzer = lChannelAnalyzer->analyzer(lChannelData, startSampleIndex, endSampleIndex);
 		if(retAnalyzer == RET_FIND_START){
-			csvFile->recordTimestamp(syncTimestamp::LCHANNEL, parse->covertSampleToMS(startSampleIndex), parse->covertSampleToMS(endSampleIndex));
+			csvFile->recordTimestamp(1, parse->covertSampleToMS(startSampleIndex), parse->covertSampleToMS(endSampleIndex));
 		}
 
 		startSampleIndex = 0;
 		endSampleIndex = 0;
 		retAnalyzer = rChannelAnalyzer->analyzer(rChannelData, startSampleIndex, endSampleIndex);
 		if(retAnalyzer == RET_FIND_START){
-			csvFile->recordTimestamp(syncTimestamp::RCHANNEL, parse->covertSampleToMS(startSampleIndex), parse->covertSampleToMS(endSampleIndex));
+			csvFile->recordTimestamp(2, parse->covertSampleToMS(startSampleIndex), parse->covertSampleToMS(endSampleIndex));
 		}
 
 		if(ret < 0 ){

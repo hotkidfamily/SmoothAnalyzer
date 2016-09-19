@@ -3,6 +3,7 @@
 #include "stdint.h"
 #include <list>
 #include <fstream>
+
 #include <string>
 #include <map>
 
@@ -11,19 +12,20 @@ struct syncTimestamp{
 		memset(this, 0, sizeof(syncTimestamp));
 	}
 
+	syncTimestamp(uint8_t channelId, double start, double end){
+		this->channelID = channelId;
+		this->start = start;
+		this->end = end;
+	}
+
 	void reset(){
 		start = 0;
 		end = 0;
 	}
 
-	enum CHANNELID{
-		LCHANNEL,
-		RCHANNEL
-	};
-
 	double start;
 	double end;
-	CHANNELID channelID;
+	uint8_t channelID;
 };
 
 class csvOutput
@@ -33,15 +35,18 @@ public:
 	~csvOutput(void);
 	csvOutput(const char* filename);
 
-	void recordTimestamp(syncTimestamp::CHANNELID channelID, double start, double end);
+	void recordTimestamp(uint8_t channelID, double start, double end);
 	void outputResult();
 private:
-	void writeCsvFile(const char* format,  ...);
+	void writeCsvLine(const char* format,  ...);
+	void appendToCsvLine(uint32_t lineIndex, const char*format, ...);
+	void insertCsvLine(uint32_t lineIndex, const char*format, ...);
+
+	void outputTwoCols(std::list<syncTimestamp> &lChannel, std::list<syncTimestamp> &rChannel);
 
 private:
-	std::list<syncTimestamp> m_dataListLChannel;
-	std::list<syncTimestamp> m_dataListRChannel;
-	std::map<uint8_t, std::list<syncTimestamp>> channels;
+	std::map<uint8_t, std::list<syncTimestamp>> channelMap;
 	std::ofstream  csvFile;
+	std::list<std::string> csvContentList;
 	std::string csvFilePath;
 };
