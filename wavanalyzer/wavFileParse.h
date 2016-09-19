@@ -41,6 +41,7 @@ private:
 	WAV_RIFF_HEADER wavHeader;
 	WAV_CHUCK_HEADER chunkHeader;
 	WAV_FMT_HEADER fmtHeader;
+	uint32_t extraParamSize;
 	char* extraParamBuffer;
 	WAV_DATA_HEADER dataHeader;
 

@@ -4,6 +4,7 @@
 
 WAVFileParse::WAVFileParse(uint32_t flag)
 : extraParamBuffer(NULL)
+, extraParamSize(0)
 , debugFlag(flag)
 , totalReadSamplesCount(0)
 {
@@ -11,6 +12,7 @@ WAVFileParse::WAVFileParse(uint32_t flag)
 
 WAVFileParse::WAVFileParse(void)
 : extraParamBuffer(NULL)
+, extraParamSize(0)
 , debugFlag(0)
 , totalReadSamplesCount(0)
 {
@@ -89,7 +91,7 @@ int32_t WAVFileParse::dumpWavFileHeaders()
 	inter_log(Debug, "Bit rate: %u Kbps", fmtHeader.byteRate*8/1000);
 	inter_log(Debug, "Align: %u", fmtHeader.packageSize);
 	inter_log(Debug, "Bits per sample: %u", fmtHeader.bitsPerSample);
-	inter_log(Debug, "Extra params size: %u", fmtHeader.extraParamSize);
+	inter_log(Debug, "Extra params size: %u", extraParamSize);
 	inter_log(Debug, "");
 	inter_log(Debug, "Data maker: %c%c%c%c", expanse4bytes(dataHeader.subchunk2ID));
 	inter_log(Debug, "Data size: %d", dataHeader.subchunk2Size);
@@ -117,6 +119,7 @@ int32_t WAVFileParse::parseWavParameter()
 	int32_t ret = -1;
 	int32_t readSize = 0;
 	char *ptr = (char*)&wavHeader;
+
 	readSize = readWavFile(ptr, sizeof(WAV_RIFF_HEADER));
 	if(readSize != sizeof(WAV_RIFF_HEADER)){
 		inter_log(Error, "Get WAV_RIFF_HEADER %d need %d", readSize, sizeof(WAV_RIFF_HEADER));
@@ -131,28 +134,27 @@ int32_t WAVFileParse::parseWavParameter()
 	}
 
 	ptr = (char*)&fmtHeader;
-	readSize = readWavFile(ptr, chunkHeader.subchunk1Size);
-	if(readSize != chunkHeader.subchunk1Size){
+	readSize = readWavFile(ptr, sizeof(WAV_FMT_HEADER));
+	if(readSize != sizeof(WAV_FMT_HEADER)){
 		inter_log(Error, "Get WAV_FMT_HEADER %d need %d", readSize, sizeof(WAV_FMT_HEADER));
 		goto cleanup;
 	}
 
-	if(chunkHeader.subchunk1Size == 16){
-		fmtHeader.extraParamSize = 0;
-	}
-
-	if(fmtHeader.extraParamSize > 0){
+	extraParamSize = chunkHeader.subchunk1Size - sizeof(WAV_FMT_HEADER);
+	if(extraParamSize > 0){
 		if(extraParamBuffer){
 			delete extraParamBuffer;
 			extraParamBuffer = NULL;
 		}
-		extraParamBuffer = new char[fmtHeader.extraParamSize];
-		readSize = readWavFile(extraParamBuffer, fmtHeader.extraParamSize);
-		if(readSize != fmtHeader.extraParamSize){
-			inter_log(Error, "Get extra params %d need %d", readSize, fmtHeader.extraParamSize);
+		extraParamBuffer = new char[extraParamSize+16];
+		memset(extraParamBuffer, 0, extraParamSize+16);
+		readSize = readWavFile(extraParamBuffer, extraParamSize);
+		if(readSize != extraParamSize){
+			inter_log(Error, "Get extra params %d need %d", readSize, extraParamSize);
 			goto cleanup;
 		}
 	}
+
 	ptr = (char*)&dataHeader;
 	readSize = readWavFile(ptr, sizeof(WAV_DATA_HEADER));
 	if(readSize != sizeof(WAV_DATA_HEADER)){
@@ -160,7 +162,7 @@ int32_t WAVFileParse::parseWavParameter()
 		goto cleanup;
 	}
 
-	if((fmtHeader.audioFormat == 1) && (fmtHeader.extraParamSize != 0)){
+	if((fmtHeader.audioFormat == 1) && (extraParamSize != 0)){
 		inter_log(Error, "WAV file in pcm data should not have extra parameters.");
 		goto cleanup;
 	}else if(fmtHeader.audioFormat != 1){
@@ -181,7 +183,6 @@ cleanup:
 
 int32_t WAVFileParse::closeWavFile()
 {
-
 	if(extraParamBuffer){
 		delete extraParamBuffer;
 		extraParamBuffer = NULL;

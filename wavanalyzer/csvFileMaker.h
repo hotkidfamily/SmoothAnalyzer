@@ -4,6 +4,7 @@
 #include <list>
 #include <fstream>
 #include <string>
+#include <map>
 
 struct syncTimestamp{
 	syncTimestamp(){
@@ -40,6 +41,7 @@ private:
 private:
 	std::list<syncTimestamp> m_dataListLChannel;
 	std::list<syncTimestamp> m_dataListRChannel;
+	std::map<uint8_t, std::list<syncTimestamp>> channels;
 	std::ofstream  csvFile;
 	std::string csvFilePath;
 };

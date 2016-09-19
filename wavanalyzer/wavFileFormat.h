@@ -34,7 +34,6 @@ struct WAV_FMT_HEADER{
 	uint32_t byteRate;				// SampleRate * NumChannels * BitsPerSample/8
 	uint16_t packageSize;			// NumChannels * BitsPerSample/8
 	uint16_t bitsPerSample;			// bits per sample, 8- 8bits, 16- 16 bits etc
-	uint16_t extraParamSize;		// extra param size, if PCM, then doesn't exist
 };
 #pragma pack(pop)
 
