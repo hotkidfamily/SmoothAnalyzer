@@ -162,6 +162,14 @@ int32_t WAVFileParse::parseWavParameter()
 		goto cleanup;
 	}
 
+	if((memcmp(wavHeader.chunkID, "RIFF", 4) != 0)
+		|| (memcmp(wavHeader.format, "WAVE", 4) != 0)
+		|| (memcmp(chunkHeader.subchunk1ID, "fmt ", 4) != 0)
+		|| (memcmp(dataHeader.subchunk2ID, "data", 4) != 0)){
+			inter_log(Error, "Not RIFF/WAVE/fmt/data file.");
+			goto cleanup;
+	}
+
 	if(fmtHeader.audioFormat == 1){
 		uint16_t *extraParam = (uint16_t*)extraParamBuffer;
 		if((extraParamSize > 2)
