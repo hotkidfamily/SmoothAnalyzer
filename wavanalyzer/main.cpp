@@ -11,7 +11,7 @@
 #ifdef _DEBUG
 char* debug_args[] ={
 	"",
-	"."
+	"..\\Debug"
 };
 #endif
 
@@ -24,8 +24,21 @@ static void print_usage(const char *name)
 		"Example2 : " + program_name + " result1.wav result2.wav\n"
 		"\tIt will analyze result1.wav and result2.wav file\n"
 		"\nNote: Can only analyze wav files in current folder, and no recursive search.\n"
-		"If you want to analyze all wav files in current folder, use: " + program_name + " <Path>\n";
+		"If you want to analyze all wav files in current folder, use: " + program_name + " <Path>\n"
+		"Relative path Only support \".\"";
+
 	printf("%s", helpString.c_str());
+}
+
+static int32_t parse_parameters(int32_t argc, char* argv[])
+{
+	int32_t ret = 0;
+	if(argc < 2){
+		print_usage(argv[0]);
+		ret = -1;
+	}
+	
+	return ret;
 }
 
 static void makeRecordFileName(std::string recordFilePath, std::string &statiFile)
@@ -109,56 +122,62 @@ int analyzeFile(std::string file)
 	return 0;
 }
 
+static int GetAbsolutlyPath(const char* path, std::string &rPath)
+{
+	DWORD retVal = 0;
+	std::string cupath = path;
+	char buffer[MAX_PATH] = {'\0'};
+	LPSTR retPath = {NULL};
+	retVal = GetFullPathNameA(path, MAX_PATH, buffer, &retPath);
+	if (retVal == 0) {
+		inter_log(Error ,"Invalid file path %d, code %d\n", path, GetLastError());
+		return -1;
+	}
+
+	rPath.append(buffer);
+	rPath.insert(rPath.size(), "\\");
+	return 0;
+}
+
 int main(int argc, char* argv[])
 {
+	std::string currentPath;
+	fileEnum *fileFinder = NULL;
+
 #ifdef _DEBUG
 	argc = sizeof(debug_args)/sizeof(debug_args[0]);
 	debug_args[0] = argv[0];
 	argv = debug_args;
 #endif
 
-	if(argc < 2){
-		print_usage();
-		return 0;
+	if(parse_parameters(argc, argv) < 0){
+		goto cleanup;
 	}
 
-	std::string currentPath;
-	char buffer[MAX_PATH] = {0,};
-	if(GetCurrentDirectoryA(MAX_PATH, buffer) == 0){
-		inter_log(Fatal, "No support path %s, error code %d", currentPath.c_str(), GetLastError());
-		return 0;
-	}
-	currentPath.clear();
-	currentPath.assign(buffer);
-	currentPath.append("\\");
-	
-	std::string firstFile = argv[1];
-	if (argc == 2 && firstFile == ".")
-	{
-		fileEnum *fileFinder = new fileEnum();
-		fileFinder->enumDirectory(currentPath + "*", ".wav");
-		std::string fileName;
-		
-		while(!fileFinder->getFile(fileName)){
-			fileName.insert(0, currentPath);
-			analyzeFile(fileName);
+	currentPath = argv[1];
+
+	fileFinder = new fileEnum();
+
+	int32_t ret = fileFinder->isDirectory(currentPath);
+	if(ret < 0){
+		inter_log(Fatal, "path %s is invalid.", currentPath.c_str());
+	}else if (ret > 0){
+		std::string absolutlyPath;
+		std::string files;
+		GetAbsolutlyPath(argv[1], absolutlyPath);
+		fileFinder->enumDirectory(absolutlyPath+"*", ".wav");
+		while(!fileFinder->getFile(files)){
+			files.insert(0, absolutlyPath);
+			analyzeFile(files);
 		}
+	}else {
+		analyzeFile(currentPath);
+	}
+
+cleanup:
+	if(fileFinder)
 		delete fileFinder;
-	}
-	else
-	{
-		int fileNum = argc - 1;
-		while(fileNum > 0)
-		{
-			std::string fileName = argv[fileNum];
-			fileName.insert(0, currentPath);
-			if (0 == _access(fileName.c_str(), 0))
-			{
-				analyzeFile(fileName);
-			}
-			fileNum--;
-		}
-	}
+
 	return 0;
 }
 
