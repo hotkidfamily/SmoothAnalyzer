@@ -17,41 +17,39 @@ csvOutput::csvOutput(const char* filename)
 	csvFilePath.assign(filename);
 }
 
-void csvOutput::recordTimestamp(Timestamp::CHANNELID channelID, std::list<int>& start, std::list<int>& end, int baseTime)
+void csvOutput::recordTimestamp(PulseTimestamp::CHANNELID channelID, double start, double end)
 {
-	while(start.size())
-	{
-		Timestamp ts;
-		ts.channelID = channelID;
-		ts.time = baseTime + start.front();
+	PulseTimestamp time;
+	time.channelID = channelID;
+	time.start = start;
+	time.end = end;
 
-		if(channelID == Timestamp::LCHANNEL){
-			m_startTimeListLChannel.push_back(ts);
-		} else {
-			m_startTimeListRChannel.push_back(ts);
+	if(channelID == PulseTimestamp::LCHANNEL){
+		if(m_dataListLChannel.size()){
+			PulseTimestamp &lastTime = m_dataListLChannel.back();
+			if(((time.start - lastTime.end) < 0.500)
+				|| (end - start < 0.003)){ // remove less than 3ms pulse 
+					return;
+			}
 		}
-		start.pop_front();
-	}
-	
-	while(end.size())
-	{
-		Timestamp ts;
-		ts.channelID = channelID;
-		ts.time = baseTime + end.front();
-
-		if(channelID == Timestamp::LCHANNEL){
-			m_endTimeListLChannel.push_back(ts);
-		} else {
-			m_endTimeListRChannel.push_back(ts);
+		m_dataListLChannel.push_back(time);
+	}else{
+		if(m_dataListRChannel.size()){
+			PulseTimestamp &lastTime = m_dataListRChannel.back();
+			if(((time.start - lastTime.end) < 0.500)
+				|| (end - start < 0.003)){ // remove less than 3ms pulse 
+					return;
+			}
 		}
-		end.pop_front();
+		m_dataListRChannel.push_back(time);
 	}
 }
 
-void csvOutput::GenerateLowHighDurationList(std::list<Timestamp>& startTimeList, std::list<Timestamp>& EndTimeList, std::list<double>& lowDurationList, std::list<double>& highDurationList)
+#if 0
+void csvOutput::GenerateLowHighDurationList(std::list<PulseTimestamp>& startTimeList, std::list<PulseTimestamp>& EndTimeList, std::list<double>& lowDurationList, std::list<double>& highDurationList)
 {
-	std::list<Timestamp>::iterator startTimeIterator = startTimeList.begin();	
-	std::list<Timestamp>::iterator endTimeIterator = EndTimeList.begin();
+	std::list<PulseTimestamp>::iterator startTimeIterator = startTimeList.begin();	
+	std::list<PulseTimestamp>::iterator endTimeIterator = EndTimeList.begin();
 	double preEndTime = startTimeIterator->time;
 	while(startTimeIterator != startTimeList.end() && endTimeIterator != EndTimeList.end()){
 		double lowDuration =  startTimeIterator->time - preEndTime;
@@ -195,38 +193,9 @@ void csvOutput::outputResult()
 		csvFile.close();
 	}
 }
+#endif
 
-#if 0
-
-void csvOutput::recordAVSyncTimestamp(syncTimestamp::CHANNELID channelID, double start, double end)
-{
-	syncTimestamp time;
-	time.channelID = channelID;
-	time.start = start;
-	time.end = end;
-
-	if(channelID == syncTimestamp::LCHANNEL){
-		if(m_dataListLChannel.size()){
-			syncTimestamp &lastTime = m_dataListLChannel.back();
-			if(((time.start - lastTime.end) < 0.500)
-				|| (end - start < 0.003)){ // remove less than 3ms pulse 
-					return;
-			}
-		}
-		m_dataListLChannel.push_back(time);
-	}else{
-		if(m_dataListRChannel.size()){
-			syncTimestamp &lastTime = m_dataListRChannel.back();
-			if(((time.start - lastTime.end) < 0.500)
-				|| (end - start < 0.003)){ // remove less than 3ms pulse 
-					return;
-			}
-		}
-		m_dataListRChannel.push_back(time);
-	}
-}
-
-void csvOutput::outputAVSyncResult()
+void csvOutput::outputResult()
 {
 	uint32_t lindex = 0;
 	uint32_t rindex = 0;
@@ -239,8 +208,8 @@ void csvOutput::outputAVSyncResult()
 		if(csvFile.is_open()){
 			while(m_dataListLChannel.size() || m_dataListRChannel.size()){
 				int32_t sync = 0;
-				syncTimestamp lChannelTime;
-				syncTimestamp rChannelTime;
+				PulseTimestamp lChannelTime;
+				PulseTimestamp rChannelTime;
 
 				if(m_dataListLChannel.size() && m_dataListRChannel.size()){
 					lChannelTime = m_dataListLChannel.front();
@@ -284,7 +253,7 @@ void csvOutput::outputAVSyncResult()
 		}
 	}
 }
-#endif
+
 void csvOutput::writeCsvLine(const char* format, ...)
 {    
 	char csvLine[1024] = "";

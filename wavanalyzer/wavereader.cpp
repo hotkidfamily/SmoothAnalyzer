@@ -116,15 +116,25 @@ bool CWaveReader::ReadHeader()
 		fseek(m_pFile, 0, 0);
 
 	return false;   
-}   
+}
+
+double CWaveReader::SampeIndexToMS(unsigned int sampleIndex)
+{
+	return sampleIndex*1.0 / m_WaveFormat.nSamplerate;
+}
 
 int CWaveReader::ReadData(unsigned char* pData, int nLen)   
 {      
-	if(m_pFile)   
-		return fread(pData, 1, nLen, m_pFile);   
+	size_t size = 0;
+	if(m_pFile)
+		size = fread(pData, 1, nLen, m_pFile); 
+	if(size > 0){
+		long pos = ftell(m_pFile);
+		m_Progress = pos*100.0 / m_nDataLen;
+	}
 
-	return -1;   
-}   
+	return size;   
+} 
 
 bool CWaveReader::GetFormat(WaveFormat* pWaveFormat)   
 {   

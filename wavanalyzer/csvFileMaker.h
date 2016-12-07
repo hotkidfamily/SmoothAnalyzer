@@ -23,12 +23,13 @@ struct syncTimestamp{
 };
 #endif
 
-struct Timestamp{
-	Timestamp(){
-		memset(this, 0, sizeof(Timestamp));
+struct PulseTimestamp{
+	PulseTimestamp(){
+		reset();
 	}
 	void reset(){
-		time = 0;
+		start = 0;
+		end = 0;
 	}
 
 	enum CHANNELID{
@@ -36,7 +37,8 @@ struct Timestamp{
 		RCHANNEL
 	};
 
-	double time;
+	double start;
+	double end;
 	CHANNELID channelID;
 };
 
@@ -47,7 +49,7 @@ public:
 	~csvOutput(void);
 	csvOutput(const char* filename);
 
-	void recordTimestamp(Timestamp::CHANNELID channelID, std::list<int>& start, std::list<int>& end, int baseTime);
+	void recordTimestamp(PulseTimestamp::CHANNELID channelID, double start, double end);
 	void outputResult();
 
 #if 0
@@ -57,11 +59,11 @@ public:
 
 private:
 	void writeCsvLine(const char* format,  ...);
-	void GenerateLowHighDurationList(std::list<Timestamp>& startTimeList, std::list<Timestamp>& EndTimeList, std::list<double>& lowDurationList, std::list<double>& highDurationList);
-	double CacluMeanValue(std::list<double>& durationList);
-	double CacluMSE(std::list<double>& lowDurationList, std::list<double>& highDurationList);
-	bool ReadLChannelListInfo(double &startTime, double &endTime, double &lowDuration, double &highDuration);
-	bool ReadRChannelListInfo(double &startTime, double &endTime, double &lowDuration, double &highDuration);
+// 	void GenerateLowHighDurationList(std::list<PulseTimestamp>& startTimeList, std::list<PulseTimestamp>& EndTimeList, std::list<double>& lowDurationList, std::list<double>& highDurationList);
+// 	double CacluMeanValue(std::list<double>& durationList);
+// 	double CacluMSE(std::list<double>& lowDurationList, std::list<double>& highDurationList);
+// 	bool ReadLChannelListInfo(double &startTime, double &endTime, double &lowDuration, double &highDuration);
+// 	bool ReadRChannelListInfo(double &startTime, double &endTime, double &lowDuration, double &highDuration);
 
 private:
 
@@ -70,16 +72,9 @@ private:
 	std::list<syncTimestamp> m_dataListRChannel;
 #endif
 
-	std::list<Timestamp> m_startTimeListLChannel;
-	std::list<Timestamp> m_endTimeListLChannel;
-	std::list<Timestamp> m_startTimeListRChannel;
-	std::list<Timestamp> m_endTimeListRChannel;
-
-	std::list<double> m_lowDurationListLChannel;
-	std::list<double> m_highDurationListLChannel;
-	std::list<double> m_lowDurationListRChannel;
-	std::list<double> m_highDurationListRChannel;
-
+	std::list<PulseTimestamp> m_dataListLChannel;
+	std::list<PulseTimestamp> m_dataListRChannel;
+	
 	std::ofstream  csvFile;
 	std::string csvFilePath;
 };

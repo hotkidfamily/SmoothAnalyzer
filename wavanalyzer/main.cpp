@@ -56,6 +56,7 @@ int analyzeFile(std::string file)
 	std::string lChannelData;
 	std::string rChannelData;
 	std::string statiticsFile;
+	int32_t ret = 0;
 	
 	WAVFileParse *parse = new WAVFileParse(DEBUG_CHANNEL_DATA);
 	if(!parse->openWavFile(file.c_str())){
@@ -68,34 +69,35 @@ int analyzeFile(std::string file)
 	csvOutput *csvFile = new csvOutput(statiticsFile.c_str());
 	waveAnalyzer *lChannelAnalyzer = new waveAnalyzer("lchannel");
 	waveAnalyzer *rChannelAnalyzer = new waveAnalyzer("rchannel");
-	lChannelAnalyzer->setWaveFormat(parse->getWavFormat());
-	rChannelAnalyzer->setWaveFormat(parse->getWavFormat());
+	lChannelAnalyzer->setWavFormat(parse->getWavFormat());
+	rChannelAnalyzer->setWavFormat(parse->getWavFormat());
 	
 	int times = 0;
 	while(1){
-		std::list<int> startTimingL; //ms		
-		std::list<int> endTimingL; //ms
+		uint32_t startSampleIndex = 0;
+		uint32_t endSampleIndex = 0;
 		int readTiming = 500; //ms
 		int baseTiming = readTiming * times;
 		
 		lChannelData.clear();
 		rChannelData.clear();
-		bool ret = parse->getLRChannelDataSeperately(lChannelData, rChannelData, readTiming);
+		ret = parse->getLRChannelData(lChannelData, rChannelData);
 		
 		retType retAnalyzer = RET_OK;
-		retAnalyzer = lChannelAnalyzer->analyze(lChannelData, startTimingL, endTimingL);
-		if(retAnalyzer == RET_FIND_START){
-			csvFile->recordTimestamp(Timestamp::LCHANNEL, startTimingL, endTimingL, baseTiming);
+
+		retAnalyzer = lChannelAnalyzer->analyzer(lChannelData, startSampleIndex, endSampleIndex);
+		if(retAnalyzer == RET_FIND_PULSE){
+			csvFile->recordTimestamp(PulseTimestamp::LCHANNEL, parse->convertIndexToMS(startSampleIndex), parse->convertIndexToMS(endSampleIndex));
 		}
 
-		std::list<int> startTimingR; //ms		
-		std::list<int> endTimingR; //ms
-		retAnalyzer = rChannelAnalyzer->analyze(rChannelData, startTimingR, endTimingR);
-		if(retAnalyzer == RET_FIND_START){
-			csvFile->recordTimestamp(Timestamp::RCHANNEL, startTimingR, endTimingR, baseTiming);
+		startSampleIndex = 0;
+		endSampleIndex = 0;
+		retAnalyzer = rChannelAnalyzer->analyzer(rChannelData, startSampleIndex, endSampleIndex);
+		if(retAnalyzer == RET_FIND_PULSE){
+			csvFile->recordTimestamp(PulseTimestamp::RCHANNEL, parse->convertIndexToMS(startSampleIndex), parse->convertIndexToMS(endSampleIndex));
 		}
-		times++;
-		if(!ret){
+
+		if(ret < 0 ){
 			break;
 		}
 	}

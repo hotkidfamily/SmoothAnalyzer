@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <string.h>
- 
+
 #pragma pack(1)
 typedef struct _WaveFormat 
 { 
@@ -32,11 +32,16 @@ public:
     int  ReadData(unsigned char* pData, int nLen); 
     bool GetFormat(WaveFormat* pWaveFormat); 
     FILE* Handle();
+	double Progress() { return m_Progress; };
+	double SampeIndexToMS(unsigned int sampleIndex);
+
 private:
     bool ReadHeader(); 
+	
 private: 
     FILE* m_pFile; 
     int m_nDataLen; 
+	double m_Progress;
     WaveFormat m_WaveFormat; 
 };  
  
