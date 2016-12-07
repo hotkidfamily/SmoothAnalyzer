@@ -14,6 +14,20 @@ char* debug_args[] ={
 	"."
 };
 #endif
+
+static void print_usage(const char *name)
+{
+	std::string program_name = name;
+	std::string helpString = "\nUsage: Analyze AV sync result recording wav files, " + program_name + " <input file>\n"
+		"\nExample1 : " + program_name + " result.wav\n"
+		"\tIt will analyze result.wav file\n"
+		"Example2 : " + program_name + " result1.wav result2.wav\n"
+		"\tIt will analyze result1.wav and result2.wav file\n"
+		"\nNote: Can only analyze wav files in current folder, and no recursive search.\n"
+		"If you want to analyze all wav files in current folder, use: " + program_name + " <Path>\n";
+	printf("%s", helpString.c_str());
+}
+
 static void makeRecordFileName(std::string recordFilePath, std::string &statiFile)
 {
 	SYSTEMTIME systime;
@@ -102,18 +116,11 @@ int main(int argc, char* argv[])
 	debug_args[0] = argv[0];
 	argv = debug_args;
 #endif
+
 	if(argc < 2){
-		std::string program_name = argv[0];
-		std::string helpString = "\nUsage: Analyze AV sync result recording wav files, " + program_name + " <input file>\n"
-			"\nExample1 : " + program_name + " result.wav\n"
-			"\tIt will analyze result.wav file\n"
-			"Example2 : " + program_name + " result1.wav result2.wav\n"
-			"\tIt will analyze result1.wav and result2.wav file\n"
-			"\nNote: Can only analyze wav files in current folder, and no recursive search.\n"
-			"If you want to analyze all wav files in current folder, use: " + program_name + " <Path>\n";
-		printf("%s", helpString.c_str());
+		print_usage();
 		return 0;
-	}	
+	}
 
 	std::string currentPath;
 	char buffer[MAX_PATH] = {0,};
