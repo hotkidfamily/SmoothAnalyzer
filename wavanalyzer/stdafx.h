@@ -11,6 +11,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <list>
+#include <fstream>
+#include <string>
+
 #include <windows.h>
 
 #include "stdint.h"

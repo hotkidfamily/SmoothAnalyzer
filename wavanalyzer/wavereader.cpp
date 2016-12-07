@@ -3,7 +3,7 @@
 
 // CWaveReader¿‡ µœ÷    
 CWaveReader::CWaveReader()   
-:m_pFile(0)   
+:m_pFile(NULL)
 {   
 	memset(&m_WaveFormat, 0, sizeof(m_WaveFormat));   
 }    
@@ -16,7 +16,7 @@ CWaveReader::~CWaveReader()
 bool CWaveReader::Open(const char* pFileName)
 {   
 	Close();   
-	m_pFile = fopen(pFileName, "rb");   
+	fopen_s(&m_pFile, pFileName, "rb");
 	if( !m_pFile )   
 		return false;   
 
@@ -28,11 +28,10 @@ bool CWaveReader::Open(const char* pFileName)
 
 void CWaveReader::Close()   
 {   
-	if(m_pFile)   
-	{   
+	if(m_pFile) {
 		fclose(m_pFile);   
 		m_pFile = 0;   
-	}   
+	}
 }   
 
 bool CWaveReader::ReadHeader()   
@@ -46,8 +45,7 @@ bool CWaveReader::ReadHeader()
 		char data[5] = { 0 };   
 
 		fread(data, 4, 1, m_pFile);   
-		if(strcmp(data, "RIFF") != 0)   
-		{   
+		if(strcmp(data, "RIFF") != 0) {   
 			Error = 1;   
 			break;   
 		}   
@@ -55,16 +53,14 @@ bool CWaveReader::ReadHeader()
 		fseek(m_pFile, 4, SEEK_CUR);   
 		memset(data, 0, sizeof(data));   
 		fread(data, 4, 1, m_pFile);   
-		if(strcmp(data, "WAVE") != 0)   
-		{   
+		if(strcmp(data, "WAVE") != 0) { 
 			Error = 1;   
 			break;   
 		}   
 
 		memset(data, 0, sizeof(data));   
 		fread(data, 4, 1, m_pFile);   
-		if(strcmp(data, "fmt ") != 0)   
-		{   
+		if(strcmp(data, "fmt ") != 0) {   
 			Error = 1;   
 			break;   
 		}   
@@ -77,47 +73,37 @@ bool CWaveReader::ReadHeader()
 		nFmtSize    +=  data[1] << 8;
 		nFmtSize    +=  data[0];
 
-		if(nFmtSize >= 16)
-		{
+		if(nFmtSize >= 16) {
 			if( fread(&m_WaveFormat, 1, sizeof(m_WaveFormat), m_pFile)    
-				!= sizeof(m_WaveFormat) )   
-			{   
+				!= sizeof(m_WaveFormat) ){   
 				Error = 1;   
 				break;   
 			}
 
-			if(nFmtSize == 18)
-			{
+			if(nFmtSize == 18){
 				memset(data, 0, sizeof(data)); 
 				fread(data, 2, 1, m_pFile);   
 				short  cbSize = data[1] << 8;
 				cbSize += data[0];
 				fseek(m_pFile, cbSize, SEEK_CUR);   
 			}
-		}
-		else 
-		{
+		} else {
 			return false;
 		}
 
 		memset(data, 0, sizeof(data));   
 		bool bFindData = false;
-		do
-		{
+		do {
 			fread(data, 4, 1, m_pFile);   
-			if(strcmp(data, "data") == 0)   
-			{   
+			if(strcmp(data, "data") == 0) {   
 				bFindData = true;
 				break;   
 			} 
 		}while(!feof(m_pFile));
 
-		if(bFindData)
-		{
+		if(bFindData){
 			fread(&m_nDataLen, 4, 1, m_pFile);          
-		}
-		else
-		{
+		} else {
 			Error = 1;   
 		}
 	}while(0);   
@@ -148,5 +134,5 @@ bool CWaveReader::GetFormat(WaveFormat* pWaveFormat)
 
 FILE* CWaveReader::Handle()
 {
-    return m_pFile;
+	return m_pFile;
 }

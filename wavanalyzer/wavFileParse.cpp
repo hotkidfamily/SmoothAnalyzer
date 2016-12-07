@@ -28,8 +28,7 @@ WAVFileParse::~WAVFileParse(void)
 	if(dumpRChannelFile.is_open())
 		dumpRChannelFile.close();
 	
-	if (m_wavReader)
-	{
+	if (m_wavReader){
 		delete m_wavReader;
 		m_wavReader = NULL;
 	}
@@ -38,10 +37,8 @@ WAVFileParse::~WAVFileParse(void)
 bool WAVFileParse::openWavFile(const char* filename)
 {
 	bool result = false;
-	if (m_wavReader->Open(filename))
-	{
-		if(m_wavReader->GetFormat(&m_wavFormat))
-		{
+	if (m_wavReader->Open(filename)){
+		if(m_wavReader->GetFormat(&m_wavFormat)){
 			result = true;
 		}
 	}
@@ -50,8 +47,7 @@ bool WAVFileParse::openWavFile(const char* filename)
 
 bool WAVFileParse::closeWavFile()
 {
-	if(m_wavReader)
-	{
+	if(m_wavReader){
 		m_wavReader->Close();
 	}
 	return true;
@@ -59,8 +55,7 @@ bool WAVFileParse::closeWavFile()
 
 bool WAVFileParse::getLRChannelDataSeperately(std::string &lChannel, std::string &rChannel, int timesMS)
 {
-	if(m_wavFormat.nChannels != 2)
-	{
+	if(m_wavFormat.nChannels != 2){
 		return false;
 	}
 	
@@ -70,14 +65,12 @@ bool WAVFileParse::getLRChannelDataSeperately(std::string &lChannel, std::string
 	char* pBuf = (char*)MSDataBuffer.c_str();
 
 	int readSize = m_wavReader->ReadData((unsigned char*)pBuf, iDataBufferSize);
-	if(readSize <= 0)
-	{
+	if(readSize <= 0){
 		return false;
 	}
 
 	int nBytesPerSample = m_wavFormat.nBitsPerSample / 8;
-	for(int i = 0; i < readSize/2/nBytesPerSample; i++)
-	{
+	for(int i = 0; i < readSize/2/nBytesPerSample; i++){
 		lChannel.append(pBuf, nBytesPerSample);
 		rChannel.append(pBuf + nBytesPerSample, nBytesPerSample);
 		pBuf += nBytesPerSample*2;

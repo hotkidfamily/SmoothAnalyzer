@@ -1,10 +1,7 @@
 #pragma once
 #include "stdafx.h"
-#include "stdint.h"
-#include <list>
-#include <fstream>
-#include <string>
 
+#if 0
 struct syncTimestamp{
 	syncTimestamp(){
 		memset(this, 0, sizeof(syncTimestamp));
@@ -24,6 +21,7 @@ struct syncTimestamp{
 	double end;
 	CHANNELID channelID;
 };
+#endif
 
 struct Timestamp{
 	Timestamp(){
@@ -52,10 +50,13 @@ public:
 	void recordTimestamp(Timestamp::CHANNELID channelID, std::list<int>& start, std::list<int>& end, int baseTime);
 	void outputResult();
 
+#if 0
 	void recordAVSyncTimestamp(syncTimestamp::CHANNELID channelID, double start, double end);
 	void outputAVSyncResult();
+#endif
+
 private:
-	void writeCsvFile(const char* format,  ...);
+	void writeCsvLine(const char* format,  ...);
 	void GenerateLowHighDurationList(std::list<Timestamp>& startTimeList, std::list<Timestamp>& EndTimeList, std::list<double>& lowDurationList, std::list<double>& highDurationList);
 	double CacluMeanValue(std::list<double>& durationList);
 	double CacluMSE(std::list<double>& lowDurationList, std::list<double>& highDurationList);
@@ -63,9 +64,12 @@ private:
 	bool ReadRChannelListInfo(double &startTime, double &endTime, double &lowDuration, double &highDuration);
 
 private:
+
+#if 0
 	std::list<syncTimestamp> m_dataListLChannel;
 	std::list<syncTimestamp> m_dataListRChannel;
-	
+#endif
+
 	std::list<Timestamp> m_startTimeListLChannel;
 	std::list<Timestamp> m_endTimeListLChannel;
 	std::list<Timestamp> m_startTimeListRChannel;

@@ -1,8 +1,6 @@
 #pragma once
-#include <string>
-#include <fstream>
-#include <list>
-#include "stdint.h"
+#include "stdafx.h"
+#include "wavereader.h"
 
 typedef enum tagRetType{
 	RET_OK,
@@ -17,7 +15,8 @@ public:
 	waveAnalyzer(const char *dumpFileName);
 	~waveAnalyzer(void);
 	retType analyze(std::string &channelData, std::list<int> &startTiming, std::list<int> &endTiming);
-	void setWaveSampleRate(int samplerate);
+	void setWaveSampleRate(int32_t sampleRate);
+	void setWaveFormat(WaveFormat format);
 
 private:
 	int absFilter(std::string &channelData);
@@ -36,4 +35,6 @@ private:
 	
 	bool findNewStart;
 	bool findNewEnd;
+
+	WaveFormat mWavFormat;
 };

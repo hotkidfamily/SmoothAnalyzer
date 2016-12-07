@@ -24,8 +24,7 @@ static void print_usage(const char *name)
 		"Example2 : " + program_name + " result1.wav result2.wav\n"
 		"\tIt will analyze result1.wav and result2.wav file\n"
 		"\nNote: Can only analyze wav files in current folder, and no recursive search.\n"
-		"If you want to analyze all wav files in current folder, use: " + program_name + " <Path>\n"
-		"Relative path Only support \".\"";
+		"If you want to analyze all wav files in current folder, use: " + program_name + " <Path>\n";
 
 	printf("%s", helpString.c_str());
 }
@@ -66,12 +65,11 @@ int analyzeFile(std::string file)
 	makeRecordFileName(file, statiticsFile);
 	inter_log(Info, "Analyze file %s", file.c_str());
 	
-	int wavSampleRate = parse->getSampleRate();
 	csvOutput *csvFile = new csvOutput(statiticsFile.c_str());
 	waveAnalyzer *lChannelAnalyzer = new waveAnalyzer("lchannel");
 	waveAnalyzer *rChannelAnalyzer = new waveAnalyzer("rchannel");
-	lChannelAnalyzer->setWaveSampleRate(wavSampleRate);
-	rChannelAnalyzer->setWaveSampleRate(wavSampleRate);
+	lChannelAnalyzer->setWaveFormat(parse->getWavFormat());
+	rChannelAnalyzer->setWaveFormat(parse->getWavFormat());
 	
 	int times = 0;
 	while(1){

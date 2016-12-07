@@ -58,9 +58,7 @@ int waveAnalyzer::updateThreshold(std::string &channelData)
 		maxThreshold = maxValue;
 		minThreshold = minValue;
 		inter_log(Debug, "threshold is %d, min %d, max %d", getThreshold(), minThreshold, maxThreshold);
-	}
-	else
-	{
+	} else {
 		isThresholdValid = false;
 	}
 
@@ -82,14 +80,17 @@ void waveAnalyzer::setWaveSampleRate(int samplerate)
 	m_sampleRate =  samplerate;
 }
 
+void waveAnalyzer::setWaveFormat(WaveFormat format)
+{
+	mWavFormat = format;
+}
+
 retType waveAnalyzer::analyze(std::string &channelData, std::list<int> &startTiming, std::list<int> &endTiming)
 {
 	updateThreshold(channelData);
 
-	if (ifThresholdValid())
-	{
-		if(findPulseStartEnd(channelData, startTiming, endTiming))
-		{
+	if (ifThresholdValid()){
+		if(findPulseStartEnd(channelData, startTiming, endTiming)){
 			return RET_FIND_START;
 		}
 	}
@@ -99,7 +100,7 @@ retType waveAnalyzer::analyze(std::string &channelData, std::list<int> &startTim
 bool waveAnalyzer::findPulseStartEnd(std::string &channelData, std::list<int> &startTiming, std::list<int> &endTiming)
 {
 	bool result = false;
-	int oneMSSamples = (int)round(0.001 * m_sampleRate); // 1ms
+	int oneMSSamples = (int)round(0.001 * mWavFormat.nSamplerate); // 1ms
 	
 	int16_t* pBuf = (int16_t*)channelData.c_str();
 	int iSamples = channelData.size()/sizeof(uint16_t);
@@ -116,38 +117,28 @@ bool waveAnalyzer::findPulseStartEnd(std::string &channelData, std::list<int> &s
 		int negtiveSamples = 0;
 		bool isTone = false;
 
-		for(int i = 0; i < oneMSSamples; i++)
-		{	
+		for(int i = 0; i < oneMSSamples; i++){
 			maxVaule = max(abs(pBuf[i]), maxVaule);
 			
-			if(pBuf[i] > 0)
-			{
+			if(pBuf[i] > 0){
 				postiveSamples++;
-			}
-			else
-			{
+			} else {
 				negtiveSamples++;
 			}
 		}
 
-		if (postiveSamples == 0 || negtiveSamples == 0)
-		{
+		if (postiveSamples == 0 || negtiveSamples == 0){
 			isTone = false;
-		}
-		else
-		{
+		} else {
 			isTone = true;
 		}
 
-		if (maxVaule > threshold && isTone && findNewEnd)
-		{
+		if (maxVaule > threshold && isTone && findNewEnd){
 			startTiming.push_back(timing); // find a start timing
 			findNewStart = true;
 			findNewEnd = false;
 			result = true;
-		}
-		else if ((!isTone || maxVaule < 5000)  && findNewStart)
-		{
+		} else if ((!isTone || maxVaule < 5000)  && findNewStart) {
 			endTiming.push_back(timing); // find a end timing			
 			findNewStart = false;
 			findNewEnd = true;			

@@ -20,15 +20,13 @@ public:
 	bool openWavFile(const char* filename);
 	bool closeWavFile();
 	bool getLRChannelDataSeperately(std::string &lChannel, std::string &rChannel, int timesMS);	
-	int getSampleRate() const {return m_wavFormat.nSamplerate; }
+	WaveFormat &getWavFormat() { return m_wavFormat; };
 	
 private:
-	std::string theWorkingWithFileName;
-
+	uint32_t debugFlag;
 	std::ofstream dumpLChannelFile;
 	std::ofstream dumpRChannelFile;
 
-	uint32_t debugFlag;
 	CWaveReader* m_wavReader;
 	WaveFormat m_wavFormat;
 };
