@@ -211,6 +211,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\wavereader.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\wavFileParse.cpp"
 				>
 			</File>
@@ -241,15 +245,15 @@
 				>
 			</File>
 			<File
-				RelativePath=".\stdint.h"
-				>
-			</File>
-			<File
 				RelativePath=".\targetver.h"
 				>
 			</File>
 			<File
 				RelativePath=".\waveAnalyzer.h"
+				>
+			</File>
+			<File
+				RelativePath=".\wavereader.h"
 				>
 			</File>
 			<File

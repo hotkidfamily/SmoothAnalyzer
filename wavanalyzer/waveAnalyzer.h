@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 #include <fstream>
-
+#include <list>
 #include "stdint.h"
 
 typedef enum tagRetType{
@@ -16,33 +16,24 @@ public:
 	waveAnalyzer(void);
 	waveAnalyzer(const char *dumpFileName);
 	~waveAnalyzer(void);
-
-	retType analyzer(std::string &channelData, uint32_t &start, uint32_t &end);
-	void setBytesPerSample(uint32_t bytesPerSample) { nbBytesPerSample = bytesPerSample; }
-	uint32_t getBytesPerSample(void) const { return nbBytesPerSample; }
-	void setSampleRate(uint32_t sampleRate);
-	uint32_t getSampleRate() const {return nbSampleRate;}
+	retType analyze(std::string &channelData, std::list<int> &startTiming, std::list<int> &endTiming);
+	void setWaveSampleRate(int samplerate);
 
 private:
-	int32_t absFilter(std::string &channelData);
-
-	int32_t splitDataAndFindPulse(std::string &channelData, uint32_t &start, uint32_t &end);
-	void findPulse(const int16_t *buffer, uint32_t nb_samples, uint32_t &start, uint32_t &end, uint32_t count);
-	void replaceValue(const int16_t *buffer, uint32_t nb_samples, bool bInPulse);
-
-	int32_t updateThreshold(std::string &channelData);
-	int32_t getThreshold();
+	int absFilter(std::string &channelData);
+	int updateThreshold(std::string &channelData);
+	int getThreshold();
 	bool ifThresholdValid() const { return isThresholdValid; }
+	bool findPulseStartEnd(std::string &channelData, std::list<int> &startTiming, std::list<int> &endTiming);
+	inline int round(double x);
 
 private:
-	std::ofstream dumpfilter;
-	std::ofstream dump2Value;
-	bool bInPulse;
-	uint32_t pulseSampleIndex;
-	uint32_t totalSampleCount;
-	int16_t minThreshold;
-	int16_t maxThreshold;
+	int minThreshold;
+	int maxThreshold;
 	bool isThresholdValid;
-	uint32_t nbBytesPerSample;
-	uint32_t nbSampleRate;
+
+	int m_sampleRate;
+	
+	bool findNewStart;
+	bool findNewEnd;
 };

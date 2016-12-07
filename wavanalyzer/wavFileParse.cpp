@@ -3,273 +3,91 @@
 #include "wavFileParse.h"
 
 WAVFileParse::WAVFileParse(uint32_t flag)
-: extraParamBuffer(NULL)
-, extraParamSize(0)
-, debugFlag(flag)
-, totalReadSamplesCount(0)
+: debugFlag(flag)
+, m_wavReader(NULL)
 {
-}
-
-WAVFileParse::WAVFileParse(void)
-: extraParamBuffer(NULL)
-, extraParamSize(0)
-, debugFlag(0)
-, totalReadSamplesCount(0)
-{
-}
-
-WAVFileParse::~WAVFileParse(void)
-{
-}
-
-int32_t WAVFileParse::openWavFile(const char* filename)
-{
-	int32_t ret = -1;
-	wavFile.open(filename, std::ios::binary);
-	if(wavFile.is_open()){
-		ret = 0;
-	}
-
-	theWorkingWithFileName.assign(filename, strlen(filename));
-
-	ret = parseWavParameter();
-
 	if(debugFlag & DEBUG_CHANNEL_DATA){
 		dumpLChannelFile.open("c:/lChannelOriginal.pcm", std::ios::binary);
 		dumpRChannelFile.open("c:/rChannelOriginal.pcm", std::ios::binary);
 	}
-
-	totalReadSamplesCount = 0;
-
-	return ret;
+	m_wavReader = new CWaveReader();
 }
 
-const char* WAVFileParse::getWavFileFormat(int32_t format_type)
+WAVFileParse::WAVFileParse(void)
+: debugFlag(0)
+, m_wavReader(NULL)
 {
-	const char *type_str = "unknow";
-	switch(format_type){
-		case WAVE_FORMAT_PCM:
-			type_str = "PCM";
-			break;
-		case WAVE_FORMAT_IEEE_FLOAT:
-			type_str = "IEEE float";
-			break;
-		case WAVE_FORMAT_ALAW:
-			type_str = "A-law";
-			break;
-		case WAVE_FORMAT_MULAW:
-			type_str = "Mu-law";
-			break;
-		case WAVE_FORMAT_EXTENSIBLE:
-			type_str = "extensible";
-			break;
-		default:
-			break;
-	}
-	return type_str;
+	m_wavReader = new CWaveReader();
 }
 
-int32_t WAVFileParse::dumpWavFileHeaders()
+WAVFileParse::~WAVFileParse(void)
 {
-	int32_t durationInSecond = 0;
-	int32_t durationLastMs = 0;
-	uint32_t nb_samples = dataHeader.subchunk2Size*8/fmtHeader.nbChannels/fmtHeader.bitsPerSample;
-	durationInSecond = nb_samples/fmtHeader.sampleRate;
-	durationLastMs = nb_samples%fmtHeader.sampleRate;
+	if(dumpLChannelFile.is_open())
+		dumpLChannelFile.close();
 
-#define expanse4bytes(x) x[0],x[1],x[2],x[3]
-
-	inter_log(Debug, "Riff: %c%c%c%c", expanse4bytes(wavHeader.chunkID));
-	inter_log(Debug, "File size: %d, %d Kb", wavHeader.chunkSize+8, (wavHeader.chunkSize+8)/1024);
-	inter_log(Debug, "Wav marker: %c%c%c%c", expanse4bytes(wavHeader.format));
-	inter_log(Debug, "");
-	inter_log(Debug, "Fmt marker: %c%c%c%c", expanse4bytes(chunkHeader.subchunk1ID));
-	inter_log(Debug, "Fmt header Size: %u", chunkHeader.subchunk1Size);
-	inter_log(Debug, "Format type: %s", getWavFileFormat(fmtHeader.audioFormat));
-	inter_log(Debug, "Channels: %u", fmtHeader.nbChannels);
-	inter_log(Debug, "Sample rate: %u", fmtHeader.sampleRate);
-	inter_log(Debug, "Bit rate: %u Kbps", fmtHeader.byteRate*8/1000);
-	inter_log(Debug, "Align: %u", fmtHeader.packageSize);
-	inter_log(Debug, "Bits per sample: %u", fmtHeader.bitsPerSample);
-	inter_log(Debug, "Extra params size: %u", extraParamSize);
-	inter_log(Debug, "");
-	inter_log(Debug, "Data maker: %c%c%c%c", expanse4bytes(dataHeader.subchunk2ID));
-	inter_log(Debug, "Data size: %d", dataHeader.subchunk2Size);
-	inter_log(Debug, "Duration: %02d:%02d:%02d.%03d", durationInSecond/(60*60), durationInSecond/60, durationInSecond%60, durationLastMs*1000/fmtHeader.sampleRate);
-
-#undef  expanse4bytes
-
-	return 0;
-}
-
-int32_t WAVFileParse::readWavFile(char* buffer, uint32_t data_size)
-{
-	wavFile.read(buffer, data_size);
-	if(wavFile){
-		inter_log(FileSystem, "Read %d bytes.", data_size);
-	}else{
-		inter_log(FileSystem, "Only read %d bytes.", wavFile.gcount());
-	}
+	if(dumpRChannelFile.is_open())
+		dumpRChannelFile.close();
 	
-	return wavFile.gcount();
+	if (m_wavReader)
+	{
+		delete m_wavReader;
+		m_wavReader = NULL;
+	}
 }
 
-int32_t WAVFileParse::parseWavParameter()
+bool WAVFileParse::openWavFile(const char* filename)
 {
-	int32_t ret = -1;
-	int32_t readSize = 0;
-	char *ptr = (char*)&wavHeader;
-
-	readSize = readWavFile(ptr, sizeof(WAV_RIFF_HEADER));
-	if(readSize != sizeof(WAV_RIFF_HEADER)){
-		inter_log(Error, "Get WAV_RIFF_HEADER %d need %d", readSize, sizeof(WAV_RIFF_HEADER));
-		goto cleanup;
-	}
-
-	ptr = (char*)&chunkHeader;
-	readSize = readWavFile(ptr, sizeof(WAV_CHUCK_HEADER));
-	if(readSize != sizeof(WAV_CHUCK_HEADER)){
-		inter_log(Error, "Get WAV_CHUCK_HEADER %d need %d", readSize, sizeof(WAV_CHUCK_HEADER));
-		goto cleanup;
-	}
-
-	ptr = (char*)&fmtHeader;
-	readSize = readWavFile(ptr, sizeof(WAV_FMT_HEADER));
-	if(readSize != sizeof(WAV_FMT_HEADER)){
-		inter_log(Error, "Get WAV_FMT_HEADER %d need %d", readSize, sizeof(WAV_FMT_HEADER));
-		goto cleanup;
-	}
-
-	extraParamSize = chunkHeader.subchunk1Size - sizeof(WAV_FMT_HEADER);
-	if(extraParamSize > 0){
-		if(extraParamBuffer){
-			delete extraParamBuffer;
-			extraParamBuffer = NULL;
-		}
-		extraParamBuffer = new char[extraParamSize+16];
-		memset(extraParamBuffer, 0, extraParamSize+16);
-		readSize = readWavFile(extraParamBuffer, extraParamSize);
-		if(readSize != extraParamSize){
-			inter_log(Error, "Get extra params %d need %d", readSize, extraParamSize);
-			goto cleanup;
+	bool result = false;
+	if (m_wavReader->Open(filename))
+	{
+		if(m_wavReader->GetFormat(&m_wavFormat))
+		{
+			result = true;
 		}
 	}
-
-	ptr = (char*)&dataHeader;
-	readSize = readWavFile(ptr, sizeof(WAV_DATA_HEADER));
-	if(readSize != sizeof(WAV_DATA_HEADER)){
-		inter_log(Error, "Get WAV_DATA_HEADER %d need %d", readSize, sizeof(WAV_DATA_HEADER));
-		goto cleanup;
-	}
-
-	if((memcmp(wavHeader.chunkID, "RIFF", 4) != 0)
-		|| (memcmp(wavHeader.format, "WAVE", 4) != 0)
-		|| (memcmp(chunkHeader.subchunk1ID, "fmt ", 4) != 0)
-		|| (memcmp(dataHeader.subchunk2ID, "data", 4) != 0)){
-			inter_log(Error, "Not RIFF/WAVE/fmt/data file.");
-			goto cleanup;
-	}
-
-	if(fmtHeader.audioFormat == 1){
-		uint16_t *extraParam = (uint16_t*)extraParamBuffer;
-		if((extraParamSize > 2)
-			&& ((extraParamSize == 2) && (*extraParam != 0))){
-			inter_log(Error, "WAV file in pcm data should not have extra parameters.");
-			goto cleanup;
-		}
-	}else if(fmtHeader.audioFormat != 1){
-		inter_log(Error, "WAV in %s format is not been supported.", getWavFileFormat(fmtHeader.audioFormat));
-		goto cleanup;
-	}
-
-	ret = 0;
-
-	dumpWavFileHeaders();
-
-cleanup:
-	if(ret){
-		inter_log(Error, "read file %s", theWorkingWithFileName.c_str());
-	}
-	return ret;
+	return result;
 }
 
-int32_t WAVFileParse::closeWavFile()
+bool WAVFileParse::closeWavFile()
 {
-	if(extraParamBuffer){
-		delete extraParamBuffer;
-		extraParamBuffer = NULL;
+	if(m_wavReader)
+	{
+		m_wavReader->Close();
 	}
-
-	return 0;
+	return true;
 }
 
-int32_t WAVFileParse::separateLRChannel(char *data, uint32_t dataSize, std::string &lChannel, std::string &rChannel)
+bool WAVFileParse::getLRChannelDataSeperately(std::string &lChannel, std::string &rChannel, int timesMS)
 {
-	int16_t *dataPtr = (int16_t*)data;
-	int16_t *lchannelData = NULL;
-	int16_t *rchannelData = NULL;
+	if(m_wavFormat.nChannels != 2)
+	{
+		return false;
+	}
+	
+	int iDataBufferSize = timesMS * m_wavFormat.nSamplerate * m_wavFormat.nChannels * m_wavFormat.nBitsPerSample / 8 / 1000;
+	std::string MSDataBuffer;
+	MSDataBuffer.resize(iDataBufferSize, 0);
+	char* pBuf = (char*)MSDataBuffer.c_str();
 
-	lChannel.resize(dataSize/fmtHeader.nbChannels, 0);
-	rChannel.resize(dataSize/fmtHeader.nbChannels, 0);
-	lchannelData = (int16_t*)lChannel.c_str();
-	rchannelData = (int16_t*)rChannel.c_str();
-
-	for(size_t i = 0; i<rChannel.size()/(fmtHeader.bitsPerSample/8); i++){	
-		*lchannelData = *dataPtr;
-		*rchannelData = *(dataPtr+1);
-		lchannelData ++;
-		rchannelData ++;
-		dataPtr += fmtHeader.packageSize/fmtHeader.nbChannels;
+	int readSize = m_wavReader->ReadData((unsigned char*)pBuf, iDataBufferSize);
+	if(readSize <= 0)
+	{
+		return false;
 	}
 
-	return 0;
-}
-
-// 100ms data one time
-int32_t WAVFileParse::getLRChannelData(std::string &lChannel, std::string &rChannel)
-{
-	int32_t ret = 0;
-	uint32_t nbReadSamples = fmtHeader.sampleRate / 10;
-	uint32_t nbSampleDataSize = nbReadSamples * fmtHeader.packageSize ; // 100ms
-	uint32_t readDataLength = 0;
-	
-	std::string tenMSDataBuffer;
-	tenMSDataBuffer.resize(nbSampleDataSize, 0);
-	char* buffer = (char*)tenMSDataBuffer.c_str();
-	
-	//inter_log(Debug, "10 ms data size %d, %d samples", dataSizeIn10MS, dataSizeIn10MS/fmtHeader.packageSize);
-	
-	readDataLength = readWavFile(buffer, tenMSDataBuffer.size());
-
-	if((totalReadSamplesCount*fmtHeader.packageSize + readDataLength) > dataHeader.subchunk2Size){
-		// should not overflow chunk size
-		readDataLength = dataHeader.subchunk2Size - totalReadSamplesCount*fmtHeader.packageSize;
+	int nBytesPerSample = m_wavFormat.nBitsPerSample / 8;
+	for(int i = 0; i < readSize/2/nBytesPerSample; i++)
+	{
+		lChannel.append(pBuf, nBytesPerSample);
+		rChannel.append(pBuf + nBytesPerSample, nBytesPerSample);
+		pBuf += nBytesPerSample*2;
 	}
-	separateLRChannel(buffer, readDataLength, lChannel, rChannel);
 
 	if(dumpLChannelFile.is_open())
 		dumpLChannelFile.write(lChannel.c_str(), lChannel.size());
 	if(dumpRChannelFile.is_open())
 		dumpRChannelFile.write(rChannel.c_str(), rChannel.size());
-
-	totalReadSamplesCount += readDataLength/fmtHeader.packageSize;
-
-	reportProgress(totalReadSamplesCount);
-	if(readDataLength < nbSampleDataSize){
-		ret = -1;
-	}
-
-	return ret;
+	
+	return true;
 }
 
-double WAVFileParse::covertSampleToMS(uint32_t sampleIndex)
-{
-	return sampleIndex*1.0/fmtHeader.sampleRate;
-}
-
-void WAVFileParse::reportProgress(int32_t nbProcessedSamples)
-{
-	double nbTotalSamples = 0;
-	nbTotalSamples = dataHeader.subchunk2Size*1.0/fmtHeader.nbChannels/(fmtHeader.bitsPerSample/8);
-	printf("\tProcess %0.2f%%...\r", nbProcessedSamples*100.0/nbTotalSamples);
-}
