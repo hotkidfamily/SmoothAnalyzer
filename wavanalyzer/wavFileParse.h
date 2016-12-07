@@ -1,8 +1,6 @@
 #pragma once
 
-#include <fstream>
 #include "csvFileMaker.h"
-#include "wavFileFormat.h"
 #include "wavereader.h"
 
 enum debug_flags{
