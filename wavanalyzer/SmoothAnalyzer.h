@@ -75,6 +75,7 @@ protected:
 	inline int32_t GetPulseType(PULSETYPE ltype, PULSETYPE rtype);
 	void WriteSyncDetail();
 	void GetFrameInfo();
+	void WriteSmoothDetail();
 
 private:
 	std::list<PulseDesc> mPulseList[MAX_CHANNEL];

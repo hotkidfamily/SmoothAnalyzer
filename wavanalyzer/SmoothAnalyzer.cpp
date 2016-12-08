@@ -300,7 +300,7 @@ void PulseAnalyzer::WriteSyncDetail()
 	}
 }
 
-void PulseAnalyzer::OutputResult()
+void PulseAnalyzer::WriteSmoothDetail()
 {
 	double MSE = 0.0f;
 	double fps = 0.0f;
@@ -323,6 +323,12 @@ void PulseAnalyzer::OutputResult()
 				, frameIndex++, frame.duration, frame.frameRate, frame.MSE);
 			mFramePulse.pop_front();
 		}
-		
 	}
+}
+
+void PulseAnalyzer::OutputResult()
+{
+	GetFrameInfo();
+	WriteSyncDetail();
+	WriteSmoothDetail();
 }
