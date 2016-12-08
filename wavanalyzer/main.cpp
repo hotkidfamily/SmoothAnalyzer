@@ -68,8 +68,6 @@ static int analyzeFile(std::string file)
 	while(1){
 		uint32_t startSampleIndex = 0;
 		uint32_t endSampleIndex = 0;
-		int readTiming = 500; //ms
-		int baseTiming = readTiming * times;
 		
 		lChannelData.clear();
 		rChannelData.clear();
