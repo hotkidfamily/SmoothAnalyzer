@@ -187,6 +187,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\SmoothAnalyzer.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.cpp"
 				>
 				<FileConfiguration
@@ -238,6 +242,10 @@
 			</File>
 			<File
 				RelativePath=".\resource.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SmoothAnalyzer.h"
 				>
 			</File>
 			<File

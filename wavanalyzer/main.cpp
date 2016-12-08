@@ -7,6 +7,7 @@
 #include "csvFileMaker.h"
 #include "waveAnalyzer.h"
 #include "fileEnum.h"
+#include "SmoothAnalyzer.h"
 
 #ifdef _DEBUG
 char* debug_args[] ={
@@ -45,19 +46,24 @@ int analyzeFile(std::string file)
 	std::string lChannelData;
 	std::string rChannelData;
 	int32_t ret = 0;
+
+	WAVFileParse *parse = NULL;
+	waveAnalyzer *lPulseAnalyzer = NULL;
+	waveAnalyzer *rPulseAnalyzer = NULL;
+	PulseAnalyzer *smoothAnalyzer = NULL;
 	
-	WAVFileParse *parse = new WAVFileParse(DEBUG_CHANNEL_DATA);
+	parse = new WAVFileParse(DEBUG_CHANNEL_DATA);
 	if(!parse->openWavFile(file.c_str())){
 		delete parse;
 		return -1;
 	}
-	inter_log(Info, "Analyze file %s", file.c_str());
-	
-	csvOutput *csvFile = new csvOutput(file);
-	waveAnalyzer *lChannelAnalyzer = new waveAnalyzer("lchannel");
-	waveAnalyzer *rChannelAnalyzer = new waveAnalyzer("rchannel");
-	lChannelAnalyzer->setWavFormat(parse->getWavFormat());
-	rChannelAnalyzer->setWavFormat(parse->getWavFormat());
+
+	lPulseAnalyzer = new waveAnalyzer("lchannel");
+	rPulseAnalyzer = new waveAnalyzer("rchannel");
+	smoothAnalyzer = new PulseAnalyzer(file);
+
+	lPulseAnalyzer->setWavFormat(parse->getWavFormat());
+	rPulseAnalyzer->setWavFormat(parse->getWavFormat());
 	
 	int times = 0;
 	while(1){
@@ -72,16 +78,16 @@ int analyzeFile(std::string file)
 		
 		retType retAnalyzer = RET_OK;
 
-		retAnalyzer = lChannelAnalyzer->analyzer(lChannelData, startSampleIndex, endSampleIndex);
+		retAnalyzer = lPulseAnalyzer->analyzer(lChannelData, startSampleIndex, endSampleIndex);
 		if(retAnalyzer == RET_FIND_PULSE){
-			csvFile->RecordTimestamp(LCHANNEL, parse->convertIndexToMS(startSampleIndex), parse->convertIndexToMS(endSampleIndex));
+			smoothAnalyzer->RecordTimestamp(LCHANNEL, parse->convertIndexToMS(startSampleIndex), parse->convertIndexToMS(endSampleIndex));
 		}
 
 		startSampleIndex = 0;
 		endSampleIndex = 0;
-		retAnalyzer = rChannelAnalyzer->analyzer(rChannelData, startSampleIndex, endSampleIndex);
+		retAnalyzer = rPulseAnalyzer->analyzer(rChannelData, startSampleIndex, endSampleIndex);
 		if(retAnalyzer == RET_FIND_PULSE){
-			csvFile->RecordTimestamp(RCHANNEL, parse->convertIndexToMS(startSampleIndex), parse->convertIndexToMS(endSampleIndex));
+			smoothAnalyzer->RecordTimestamp(RCHANNEL, parse->convertIndexToMS(startSampleIndex), parse->convertIndexToMS(endSampleIndex));
 		}
 
 		if(ret < 0 ){
@@ -90,20 +96,22 @@ int analyzeFile(std::string file)
 	}
 
 	parse->closeWavFile();
-	csvFile->OutputResult();
+	smoothAnalyzer->OutputResult();
 
 	if(parse){
 		delete parse;
 	}
-	if(csvFile){
-		delete csvFile;
-	}
-	if(lChannelAnalyzer){
-		delete lChannelAnalyzer;
+
+	if(smoothAnalyzer){
+		delete smoothAnalyzer;
 	}
 
-	if(rChannelAnalyzer){
-		delete rChannelAnalyzer;
+	if(lPulseAnalyzer){
+		delete lPulseAnalyzer;
+	}
+
+	if(rPulseAnalyzer){
+		delete rPulseAnalyzer;
 	}
 
 	return 0;
@@ -128,8 +136,9 @@ static int GetAbsolutlyPath(const char* path, std::string &rPath)
 
 int main(int argc, char* argv[])
 {
-	std::string currentPath;
+	std::string absPath;
 	fileEnum *fileFinder = NULL;
+	int32_t ret = 0;
 
 #ifdef _DEBUG
 	argc = sizeof(debug_args)/sizeof(debug_args[0]);
@@ -141,24 +150,28 @@ int main(int argc, char* argv[])
 		goto cleanup;
 	}
 
-	currentPath = argv[1];
+	if(GetAbsolutlyPath(argv[1], absPath) < 0){
+		goto cleanup;
+	}
 
 	fileFinder = new fileEnum();
+	if(!fileFinder){
+		inter_log(Error, "Can not enum file.");
+		goto cleanup;
+	}
 
-	int32_t ret = fileFinder->isDirectory(currentPath);
+	ret = fileFinder->isDirectory(absPath);
 	if(ret < 0){
-		inter_log(Fatal, "path %s is invalid.", currentPath.c_str());
+		inter_log(Fatal, "path %s is invalid.", argv[1]);
 	}else if (ret > 0){
-		std::string absolutlyPath;
-		std::string files;
-		GetAbsolutlyPath(argv[1], absolutlyPath);
-		fileFinder->enumDirectory(absolutlyPath+"*", ".wav");
-		while(!fileFinder->getFile(files)){
-			files.insert(0, absolutlyPath);
-			analyzeFile(files);
+		std::string file;
+		fileFinder->enumDirectory(absPath + "*", ".wav");
+		while(!fileFinder->getFile(file)){
+			file.insert(0, absPath);
+			analyzeFile(file);
 		}
 	}else {
-		analyzeFile(currentPath);
+		analyzeFile(absPath);
 	}
 
 cleanup:
