@@ -14,7 +14,6 @@ const struct tagPulseType{
 
 #define PULSETABLECOUNT (ARRAYSIZE(pulseTable))
 
-
 PulseAnalyzer::PulseAnalyzer(std::string &filename)
 {
 	mSourceFileName = filename;
@@ -85,6 +84,28 @@ double PulseAnalyzer::CacluMSE(std::list<FrameDesc>& durationList)
 	}
 
 	MSE = Sum / durationList.size();
+	return MSE;
+}
+
+
+double PulseAnalyzer::CacluMSEInOneSecond(std::list<FrameDesc>& frameList)
+{
+	double sum = 0.0f;
+	double MSE = 0.0f;
+	int32_t frames = 0;
+	std::list<FrameDesc>::reverse_iterator rit = frameList.rbegin();
+	for( ; rit!=frameList.rend(); rit++){
+		frames++;
+		if((frameList.back().end - rit->start) > 1000){
+			break;
+		}
+	}
+
+	std::list<FrameDesc> frameListSplit;
+	frameListSplit.assign(frameList.rend(), rit);
+
+	MSE = CacluMSE(frameList);
+
 	return MSE;
 }
 
@@ -182,6 +203,7 @@ void PulseAnalyzer::GetFrameInfo()
 	int32_t frameIndex = 0;
 	double referenceTimeBase = 0.0f;
 	double fps = 0.0f;
+	double MSE = 0.0f;
 
 	referenceTimeBase = min(mPulseList[LCHANNEL].front().start, mPulseList[RCHANNEL].front().start);
 	inter_log(Info, "Reference base time is %.3f ms", referenceTimeBase);
@@ -201,7 +223,8 @@ void PulseAnalyzer::GetFrameInfo()
 			curFrameType = GetPulseType(lBak.type, rBak.type);
 			if(!(curFrameType < 0)){
 				fps = CacluFps(mFramePulse);
-				FrameDesc frame(curFrameType, min(lBak.start,lBak.start), max(lBak.end, rBak.end), fps);
+				MSE = CacluMSEInOneSecond(mFramePulse);
+				FrameDesc frame(curFrameType, min(lBak.start,lBak.start), max(lBak.end, rBak.end), fps, MSE);
 				mFramePulse.push_back(frame);
 			}
 
@@ -292,12 +315,12 @@ void PulseAnalyzer::OutputResult()
 		file.WriteCsvLine("MSE, FPS");
 		file.WriteCsvLine("%f, %f", MSE, fps);
 
+		file.WriteCsvLine("");
+		file.WriteCsvLine("Index, Duration, FPS, MSE,");
 		while(!mFramePulse.empty()){
 			FrameDesc frame = mFramePulse.front();
-			file.WriteCsvLine("%d,"
-				"%d, %.3f, %.3f"
-				""
-				, frameIndex++, frame.duration, frame.frameRate);
+			file.WriteCsvLine("%d, %.3f, %.3f, %.3f,"
+				, frameIndex++, frame.duration, frame.frameRate, frame.MSE);
 			mFramePulse.pop_front();
 		}
 		
