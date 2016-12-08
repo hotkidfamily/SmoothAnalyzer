@@ -40,22 +40,10 @@ static int32_t parse_parameters(int32_t argc, char* argv[])
 	return ret;
 }
 
-static void makeRecordFileName(std::string recordFilePath, std::string &statiFile)
-{
-	SYSTEMTIME systime;
-	char buffer[256] = "";
-	GetLocalTime(&systime);
-	sprintf_s(buffer, 256-1, "_%04d%02d%02d%02d%02d%02d.csv", systime.wYear, systime.wMonth, systime.wDay, systime.wHour, systime.wMinute, systime.wSecond);
-
-	statiFile = recordFilePath;
-	statiFile.insert(statiFile.size(), buffer);
-}
-
 int analyzeFile(std::string file)
 {
 	std::string lChannelData;
 	std::string rChannelData;
-	std::string statiticsFile;
 	int32_t ret = 0;
 	
 	WAVFileParse *parse = new WAVFileParse(DEBUG_CHANNEL_DATA);
@@ -63,10 +51,9 @@ int analyzeFile(std::string file)
 		delete parse;
 		return -1;
 	}
-	makeRecordFileName(file, statiticsFile);
 	inter_log(Info, "Analyze file %s", file.c_str());
 	
-	csvOutput *csvFile = new csvOutput(statiticsFile.c_str());
+	csvOutput *csvFile = new csvOutput(file);
 	waveAnalyzer *lChannelAnalyzer = new waveAnalyzer("lchannel");
 	waveAnalyzer *rChannelAnalyzer = new waveAnalyzer("rchannel");
 	lChannelAnalyzer->setWavFormat(parse->getWavFormat());
@@ -87,14 +74,14 @@ int analyzeFile(std::string file)
 
 		retAnalyzer = lChannelAnalyzer->analyzer(lChannelData, startSampleIndex, endSampleIndex);
 		if(retAnalyzer == RET_FIND_PULSE){
-			csvFile->recordTimestamp(PulseTimestamp::LCHANNEL, parse->convertIndexToMS(startSampleIndex), parse->convertIndexToMS(endSampleIndex));
+			csvFile->RecordTimestamp(LCHANNEL, parse->convertIndexToMS(startSampleIndex), parse->convertIndexToMS(endSampleIndex));
 		}
 
 		startSampleIndex = 0;
 		endSampleIndex = 0;
 		retAnalyzer = rChannelAnalyzer->analyzer(rChannelData, startSampleIndex, endSampleIndex);
 		if(retAnalyzer == RET_FIND_PULSE){
-			csvFile->recordTimestamp(PulseTimestamp::RCHANNEL, parse->convertIndexToMS(startSampleIndex), parse->convertIndexToMS(endSampleIndex));
+			csvFile->RecordTimestamp(RCHANNEL, parse->convertIndexToMS(startSampleIndex), parse->convertIndexToMS(endSampleIndex));
 		}
 
 		if(ret < 0 ){
@@ -103,7 +90,7 @@ int analyzeFile(std::string file)
 	}
 
 	parse->closeWavFile();
-	csvFile->outputResult();
+	csvFile->OutputResult();
 
 	if(parse){
 		delete parse;

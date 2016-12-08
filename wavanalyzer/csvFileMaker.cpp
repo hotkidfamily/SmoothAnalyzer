@@ -3,6 +3,17 @@
 #include "log.h"
 #include "csvFileMaker.h"
 
+const struct tagPulseType{
+	PULSETYPE lPulseType;
+	PULSETYPE rPulseType;
+} pulseTable[] = {
+	{ PULSE_HIGH,	PULSE_LOW	},
+	{ PULSE_HIGH,	PULSE_HIGH	},
+	{ PULSE_LOW,	PULSE_HIGH  },
+	{ PULSE_LOW,	PULSE_LOW	},
+};
+
+#define PULSETABLECOUNT (ARRAYSIZE(pulseTable))
 
 csvOutput::csvOutput(void)
 {
@@ -12,37 +23,48 @@ csvOutput::~csvOutput(void)
 {
 }
 
-csvOutput::csvOutput(const char* filename)
+csvOutput::csvOutput(std::string &filename)
 {
-	csvFilePath.assign(filename);
+	mSourceFileName.assign(filename);
 }
 
-void csvOutput::recordTimestamp(PulseTimestamp::CHANNELID channelID, double start, double end)
+void csvOutput::makeRecordFileName()
 {
-	PulseTimestamp time;
-	time.channelID = channelID;
-	time.start = start;
-	time.end = end;
+	SYSTEMTIME systime;
+	char buffer[256] = "";
+	GetLocalTime(&systime);
+	sprintf_s(buffer, 256-1, "_%04d%02d%02d%02d%02d%02d", systime.wYear, systime.wMonth, systime.wDay, systime.wHour, systime.wMinute, systime.wSecond);
+	
+	mResultFileName = mSourceFileName + buffer + ".csv";
+	mRawPulseFileName = mSourceFileName + buffer + ".raw.csv";
+	mRawFramePulseFileName = mSourceFileName + buffer + ".pulse.csv";
+}
 
-	if(channelID == PulseTimestamp::LCHANNEL){
-		if(m_dataListLChannel.size()){
-			PulseTimestamp &lastTime = m_dataListLChannel.back();
-			if(((time.start - lastTime.end) < 0.500)
-				|| (end - start < 0.003)){ // remove less than 3ms pulse 
-					return;
-			}
+void csvOutput::RecordTimestamp(CHANNELID channelID, double start, double end)
+{
+	PulseDesc time(channelID, start, end, PULSE_HIGH);
+
+	if(!mPulseList[channelID].empty()){
+		PulseDesc &lastTime = mPulseList[channelID].back();
+		
+		if(lastTime.type != PULSE_HIGH ) {
+			inter_log(Error, "wtf ?? last pulse is \"%s\", not high pulse.", lastTime.type==PULSE_LOW?"low":"high");
+			return ;
 		}
-		m_dataListLChannel.push_back(time);
-	}else{
-		if(m_dataListRChannel.size()){
-			PulseTimestamp &lastTime = m_dataListRChannel.back();
-			if(((time.start - lastTime.end) < 0.500)
-				|| (end - start < 0.003)){ // remove less than 3ms pulse 
-					return;
-			}
+
+		PulseDesc timeInsert(channelID, lastTime.end, start, PULSE_LOW);
+		mPulseList[channelID].push_back(timeInsert);
+		
+		// filter 
+#if 0
+		if(((time.start - lastTime.end) < 0.500)
+			|| (end - start < 0.003)){ // remove less than 3ms pulse 
+				return;
 		}
-		m_dataListRChannel.push_back(time);
+#endif
 	}
+
+	mPulseList[channelID].push_back(time);	
 }
 
 #if 0
@@ -61,39 +83,6 @@ void csvOutput::GenerateLowHighDurationList(std::list<PulseTimestamp>& startTime
 		startTimeIterator++;
 		endTimeIterator++;
 	}
-}
-
-double csvOutput::CacluMeanValue(std::list<double>& durationList)
-{
-	double sum = 0.0f;
-	double meanValue = 0.0f;
-	std::list<double>::iterator durationIterator;
-	for(durationIterator = durationList.begin(); durationIterator != durationList.end(); durationIterator++){
-		sum += *durationIterator;
-	}
-
-	meanValue = sum / durationList.size();
-
-	return meanValue;
-}
-
-
-double csvOutput::CacluMSE(std::list<double>& lowDurationList, std::list<double>& highDurationList)
-{
-	double meanValue = (CacluMeanValue(lowDurationList) + CacluMeanValue(highDurationList)) / 2;
-	std::list<double>::iterator lowDurationIterator ;
-	double lowSquareSum = 0;
-	for(lowDurationIterator = lowDurationList.begin(); lowDurationIterator != lowDurationList.end(); lowDurationIterator++)
-	{
-		lowSquareSum += sqrt(fabs(*lowDurationIterator - meanValue));
-	}
-	double highSquareSum = 0;
-	for(std::list<double>::iterator highDurationIterator = highDurationList.begin(); highDurationIterator != highDurationList.end(); highDurationIterator++)
-	{
-		highSquareSum += sqrt(fabs(*highDurationIterator - meanValue));
-	}
-	double MSE = (lowSquareSum + highSquareSum) / (lowDurationList.size() + highDurationList.size());
-	return MSE;
 }
 
 bool csvOutput::ReadLChannelListInfo(double &startTime, double &endTime, double &lowDuration, double &highDuration)
@@ -195,66 +184,119 @@ void csvOutput::outputResult()
 }
 #endif
 
-void csvOutput::outputResult()
+double csvOutput::CacluAvgValue(std::list<PulseDesc>& durationList)
 {
-	uint32_t lindex = 0;
-	uint32_t rindex = 0;
+	double sum = 0.0f;
+	double avgValue = 0.0f;
+	std::list<PulseDesc>::iterator durationIt;
+	for(durationIt = durationList.begin(); durationIt != durationList.end(); durationIt++){
+		sum += durationIt->duration;
+	}
 
-	if(m_dataListLChannel.size() || m_dataListRChannel.size()){
-		csvFile.open(csvFilePath.c_str());
-		inter_log(Info, "Create file %s.", csvFilePath.c_str());
-		writeCsvLine("sync, channel 1, index, start, end, duration, interval, channel 2, index, start, end, duration, interval");
+	avgValue = sum / durationList.size();
 
-		if(csvFile.is_open()){
-			while(m_dataListLChannel.size() || m_dataListRChannel.size()){
-				int32_t sync = 0;
-				PulseTimestamp lChannelTime;
-				PulseTimestamp rChannelTime;
+	return avgValue;
+}
 
-				if(m_dataListLChannel.size() && m_dataListRChannel.size()){
-					lChannelTime = m_dataListLChannel.front();
-					rChannelTime = m_dataListRChannel.front();
+double csvOutput::CacluMSE(std::list<PulseDesc>& durationList)
+{
+	double Sum = 0.0f;
+	double MSE = 0.0f;
+	double avgDuration = CacluAvgValue(durationList);
+	std::list<PulseDesc>::iterator durationIt;
+	
+	for(durationIt = durationList.begin(); durationIt != durationList.end(); durationIt++)
+	{
+		Sum += sqrt(fabs(durationIt->duration - avgDuration));
+	}
 
-					if(fabs(lChannelTime.start - rChannelTime.start) < 0.500){
-						m_dataListLChannel.pop_front();
-						m_dataListRChannel.pop_front();
-						sync = (int32_t)((rChannelTime.start - lChannelTime.start)*1000);
-						lindex ++;
-						rindex ++;
-					}else{
-						if(lChannelTime.start < rChannelTime.start){
-							m_dataListLChannel.pop_front();
-							rChannelTime.reset();
-							lindex ++;
-						}else{
-							m_dataListRChannel.pop_front();
-							lChannelTime.reset();
-							rindex ++;
-						}
-					}
-				}else if(m_dataListLChannel.size()){
-					lChannelTime = m_dataListLChannel.front();
-					m_dataListLChannel.pop_front();
-					lindex++;
-				}else {
-					rChannelTime = m_dataListRChannel.front();
-					m_dataListRChannel.pop_front();
-					rindex ++;
-				}
+	MSE = Sum / durationList.size();
+	return MSE;
+}
 
-				writeCsvLine("%d, %d, %u, %0.3f, %0.3f, %f, %d,"
-					"%d, %u, %0.3f, %0.3f, %f, %d",
-					sync,
-					lChannelTime.channelID, lindex, lChannelTime.start, lChannelTime.end, (lChannelTime.end - lChannelTime.start) * 1000, 0, 
-					rChannelTime.channelID, rindex, rChannelTime.start, rChannelTime.end, (rChannelTime.end - rChannelTime.start) * 1000, 0);
+int32_t csvOutput::GetPulseType(PULSETYPE ltype, PULSETYPE rtype)
+{
+	for(int i = 0; i < ARRAYSIZE(pulseTable); i++){
+		if((rtype == pulseTable[i].lPulseType) && (rtype == pulseTable[i].rPulseType)){
+			return i;
+		}
+	}
+	
+	return 0;
+}
+
+BOOL csvOutput::DetectPulseWidth(double &duration)
+{
+	int32_t exceptNextType = 0;
+	int32_t continueTypeCount = 0;
+	int32_t curFrameType = 0;
+	double durationSum = 0.0f; // sum of list suitable duration
+	double durationFrames = 0.0f; // 
+	int32_t durationCount = 0;
+	BOOL bRet = FALSE;
+
+	std::list<PulseDesc>::iterator lit;
+	std::list<PulseDesc>::iterator rit;
+
+	for(lit = mPulseList[LCHANNEL].begin(), rit = mPulseList[RCHANNEL].begin();
+		(lit != mPulseList[LCHANNEL].end()) && (rit!=mPulseList[RCHANNEL].end());
+		lit++, rit++)
+	{
+		curFrameType = GetPulseType(lit->type, rit->type);
+		if(curFrameType == exceptNextType){
+
+			continueTypeCount++;
+			durationFrames += (lit->duration + rit->duration);
+			exceptNextType = (exceptNextType+1)%PULSETABLECOUNT;
+
+			if(continueTypeCount == PULSETABLECOUNT){
+				durationCount += PULSETABLECOUNT*2;
+				durationSum += durationFrames;
+				durationFrames = 0.0f;
 			}
+		}else{
+			continueTypeCount = 0;
+			exceptNextType = curFrameType; // restart calculate
+			durationFrames = 0.0f;
+		}
+	}
 
-			csvFile.close();
+	if(durationCount){
+		duration = durationSum / durationCount;
+		bRet = TRUE;
+		inter_log(Info, "Detect frame duration %.2fms", duration);
+	}
+
+	return bRet;
+}
+
+void csvOutput::GetFrameInfo()
+{
+	double duration;
+	int32_t curFrameType = 0;
+
+	if(!mPulseList[LCHANNEL].empty() || !mPulseList[RCHANNEL].empty()){
+
+		DetectPulseWidth(duration);
+
+		std::list<PulseDesc>::iterator lit;
+		std::list<PulseDesc>::iterator rit;
+
+		for(lit = mPulseList[LCHANNEL].begin(), rit = mPulseList[RCHANNEL].begin();
+			(lit != mPulseList[LCHANNEL].end()) && (rit!=mPulseList[RCHANNEL].end());
+			lit++, rit++)
+		{
+			curFrameType = GetPulseType(lit->type, rit->type);
+
+			WriteCsvLine("%d, %0.3f, %0.3f, %f,"
+				"%d, %0.3f, %0.3f, %f",
+				lit->channelID, lit->start, lit->end, lit->duration * 1000, 0, 
+				rit->channelID, rit->start, rit->end, rit->duration * 1000, 0);
 		}
 	}
 }
 
-void csvOutput::writeCsvLine(const char* format, ...)
+void csvOutput::WriteCsvLine(const char* format, ...)
 {    
 	char csvLine[1024] = "";
 	va_list args;
@@ -263,4 +305,72 @@ void csvOutput::writeCsvLine(const char* format, ...)
 	va_end(args);
 
 	csvFile << csvLine << '\n';
+}
+
+void csvOutput::WriteDetail()
+{
+	uint32_t lindex = 0;
+	uint32_t rindex = 0;
+	
+	WriteCsvLine("sync, channel 1, index, start, end, duration, interval, channel 2, index, start, end, duration, interval");
+
+	while(!mPulseList[LCHANNEL].empty() || !mPulseList[RCHANNEL].empty()){
+		int32_t sync = 0;
+		PulseDesc lPulse;
+		PulseDesc rPulse;
+
+		if(!mPulseList[LCHANNEL].empty() && !mPulseList[RCHANNEL].empty()){
+			lPulse = mPulseList[LCHANNEL].front();
+			rPulse = mPulseList[RCHANNEL].front();
+
+			if(fabs(lPulse.start - rPulse.start) < 0.500){
+				mPulseList[LCHANNEL].pop_front();
+				mPulseList[RCHANNEL].pop_front();
+				sync = (int32_t)((rPulse.start - lPulse.start)*1000);
+				lindex ++;
+				rindex ++;
+			}else{
+				if(lPulse.start < rPulse.start){
+					mPulseList[LCHANNEL].pop_front();
+					rPulse.reset();
+					lindex ++;
+				}else{
+					mPulseList[RCHANNEL].pop_front();
+					lPulse.reset();
+					rindex ++;
+				}
+			}
+		}else if(!mPulseList[LCHANNEL].empty()){
+			lPulse = mPulseList[LCHANNEL].front();
+			mPulseList[LCHANNEL].pop_front();
+			lindex++;
+		}else if(!mPulseList[RCHANNEL].empty()){
+			rPulse = mPulseList[RCHANNEL].front();
+			mPulseList[RCHANNEL].pop_front();
+			rindex ++;
+		}else{
+			// do nothing
+		}
+
+		WriteCsvLine("%d, %d, %u, %0.3f, %0.3f, %f, %d,"
+			"%d, %u, %0.3f, %0.3f, %f, %d",
+			sync,
+			lPulse.channelID, lindex, lPulse.start, lPulse.end, (lPulse.end - lPulse.start) * 1000, 0, 
+			rPulse.channelID, rindex, rPulse.start, rPulse.end, (rPulse.end - rPulse.start) * 1000, 0);
+	}
+}
+
+void csvOutput::OutputResult()
+{
+	csvFile.open(mSourceFileName.c_str());
+	if(!csvFile.is_open()){
+		inter_log(Info, "Can not create file %s.", mSourceFileName.c_str());
+		return ;
+	}
+
+	inter_log(Info, "Create result file %s.", mSourceFileName.c_str());
+
+	WriteDetail();
+
+	csvFile.close();
 }
