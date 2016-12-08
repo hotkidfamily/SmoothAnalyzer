@@ -37,7 +37,7 @@ void PulseAnalyzer::RecordTimestamp(CHANNELID channelID, double start, double en
 		PulseDesc &lastTime = mPulseList[channelID].back();
 
 		if(lastTime.type != PULSE_HIGH ) {
-			inter_log(Error, "wtf ?? last pulse is \"%s\", not high pulse.", lastTime.type==PULSE_LOW?"low":"high");
+			inter_log(Error, "?? last pulse is \"%s\", not high pulse.", lastTime.type==PULSE_LOW?"low":"high");
 			return ;
 		}
 
@@ -61,12 +61,15 @@ double PulseAnalyzer::CacluAvgValue(std::list<FrameDesc>& durationList)
 {
 	double sum = 0.0f;
 	double avgValue = 0.0f;
-	std::list<FrameDesc>::iterator durationIt;
-	for(durationIt = durationList.begin(); durationIt != durationList.end(); durationIt++){
-		sum += durationIt->duration;
-	}
+	std::list<FrameDesc>::iterator it;
 
-	avgValue = sum / durationList.size();
+	if (!durationList.empty()){
+		for (it = durationList.begin(); it != durationList.end(); it++){
+			sum += it->duration;
+		}
+
+		avgValue = sum / durationList.size();
+	}
 
 	return avgValue;
 }
@@ -75,15 +78,18 @@ double PulseAnalyzer::CacluMSE(std::list<FrameDesc>& durationList)
 {
 	double Sum = 0.0f;
 	double MSE = 0.0f;
-	double avgDuration = CacluAvgValue(durationList);
-	std::list<FrameDesc>::iterator durationIt;
+	double avgDuration = 0.0f;
+	std::list<FrameDesc>::iterator it;
 
-	for(durationIt = durationList.begin(); durationIt != durationList.end(); durationIt++)
-	{
-		Sum += sqrt(fabs(durationIt->duration - avgDuration));
+	avgDuration = CacluAvgValue(durationList);
+
+	if (!durationList.empty()){
+		for(it = durationList.begin(); it != durationList.end(); it++){
+			Sum += sqrt(fabs(it->duration - avgDuration));
+		}
+
+		MSE = Sum / durationList.size();
 	}
-
-	MSE = Sum / durationList.size();
 	return MSE;
 }
 
@@ -92,50 +98,60 @@ double PulseAnalyzer::CacluMSEInOneSecond(std::list<FrameDesc>& frameList)
 {
 	double sum = 0.0f;
 	double MSE = 0.0f;
-	int32_t frames = 0;
-	std::list<FrameDesc>::reverse_iterator rit = frameList.rbegin();
-	for( ; rit!=frameList.rend(); rit++){
-		frames++;
-		if((frameList.back().end - rit->start) > 1000){
+	std::list<FrameDesc>::reverse_iterator rit;
+
+	for (rit = frameList.rbegin(); rit != frameList.rend(); rit++){
+		if((frameList.back().end - rit->start)*1000.0 > 1000.0f){
+			std::list<FrameDesc> frameListSplit;
+
+			frameListSplit.assign(frameList.rbegin(), rit);
+			MSE = CacluMSE(frameList);
+
 			break;
 		}
 	}
 
-	std::list<FrameDesc> frameListSplit;
-	frameListSplit.assign(frameList.rend(), rit);
-
-	MSE = CacluMSE(frameList);
-
 	return MSE;
 }
 
-double PulseAnalyzer::CacluAvgFps(std::list<FrameDesc> &durationList)
+double PulseAnalyzer::CacluFps(std::list<FrameDesc> &frameList)
 {
 	double fps = 0.0f;
-	double duraionInMs = (durationList.back().end - durationList.front().start)*1000;
-	fps = durationList.size()*1.0 / duraionInMs;
+	double duraionInMs = 0.0;
+
+	if (!frameList.empty()){
+		duraionInMs = frameList.back().end - frameList.front().start;
+		fps = frameList.size()*1000.0 / duraionInMs;
+	}
+
 	return fps;
 }
 
-double PulseAnalyzer::CacluFps(std::list<FrameDesc> &durationList)
+double PulseAnalyzer::CacluFrameRate(std::list<FrameDesc> &frameList)
 {
 	double fps = 0.0f;
 	int32_t frameCnt = 0;
-	std::list<FrameDesc>::reverse_iterator rit = durationList.rbegin();
-	for( ; rit!=durationList.rend(); rit++){
-		frameCnt++;
-		if((durationList.back().end - rit->start) > 1000){
-			fps = frameCnt * 1000.0 / (durationList.back().end - rit->start);
+	std::list<FrameDesc>::reverse_iterator rit;
+
+	for (rit = frameList.rbegin(); rit != frameList.rend(); rit++){
+		if ((frameList.back().end - rit->start)*1000.0f >= 1000.0f){
+			std::list<FrameDesc> frameListSplit;
+
+			frameListSplit.assign(frameList.rbegin(), rit);
+			fps = CacluFps(frameList);
+
+			break;
 		}
 	}
-	
+
 	return fps;
 }
 
 int32_t PulseAnalyzer::GetPulseType(PULSETYPE ltype, PULSETYPE rtype)
 {
 	for(int i = 0; i < ARRAYSIZE(pulseTable); i++){
-		if((rtype == pulseTable[i].lPulseType) && (rtype == pulseTable[i].rPulseType)){
+		if ( (ltype == pulseTable[i].lPulseType)
+				&& (rtype == pulseTable[i].rPulseType) ){
 			return i;
 		}
 	}
@@ -146,7 +162,7 @@ int32_t PulseAnalyzer::GetPulseType(PULSETYPE ltype, PULSETYPE rtype)
 BOOL PulseAnalyzer::DetectPulseWidth(double &duration)
 {
 	int32_t exceptNextType = 0;
-	int32_t continueTypeCount = 0;
+	int32_t continueCount = 0;
 	int32_t curFrameType = 0;
 	double durationSum = 0.0f; // sum of list suitable duration
 	double durationFrames = 0.0f; // 
@@ -156,7 +172,7 @@ BOOL PulseAnalyzer::DetectPulseWidth(double &duration)
 	std::list<PulseDesc>::iterator lit;
 	std::list<PulseDesc>::iterator rit;
 
-	std::string filePath = mSourceFileName + ".frame.csv";
+	std::string filePath = mSourceFileName + ".pulse.raw.csv";
 	CSVFile file(filePath);
 
 	for(lit = mPulseList[LCHANNEL].begin(), rit = mPulseList[RCHANNEL].begin();
@@ -165,18 +181,17 @@ BOOL PulseAnalyzer::DetectPulseWidth(double &duration)
 	{
 		curFrameType = GetPulseType(lit->type, rit->type);
 		if(curFrameType == exceptNextType){
-
-			continueTypeCount++;
+			continueCount++;
 			durationFrames += (lit->duration + rit->duration);
 			exceptNextType = (exceptNextType+1)%PULSETABLECOUNT;
 
-			if(continueTypeCount == PULSETABLECOUNT){
+			if(continueCount == PULSETABLECOUNT){
 				durationCount += PULSETABLECOUNT*2;
 				durationSum += durationFrames;
 				durationFrames = 0.0f;
 			}
 		}else{
-			continueTypeCount = 0;
+			continueCount = 0;
 			exceptNextType = curFrameType; // restart calculate
 			durationFrames = 0.0f;
 		}
@@ -198,9 +213,8 @@ BOOL PulseAnalyzer::DetectPulseWidth(double &duration)
 
 void PulseAnalyzer::GetFrameInfo()
 {
-	double pulseDuration;
+	double pulseDuration = 0.0f;
 	int32_t curFrameType = 0;
-	int32_t frameIndex = 0;
 	double referenceTimeBase = 0.0f;
 	double fps = 0.0f;
 	double MSE = 0.0f;
@@ -222,13 +236,13 @@ void PulseAnalyzer::GetFrameInfo()
 		{
 			curFrameType = GetPulseType(lBak.type, rBak.type);
 			if(!(curFrameType < 0)){
-				fps = CacluFps(mFramePulse);
+				fps = CacluFrameRate(mFramePulse);
 				MSE = CacluMSEInOneSecond(mFramePulse);
-				FrameDesc frame(curFrameType, min(lBak.start,lBak.start), max(lBak.end, rBak.end), fps, MSE);
+				FrameDesc frame(curFrameType, fmin(lBak.start,lBak.start), fmax(lBak.end, rBak.end), fps, MSE);
 				mFramePulse.push_back(frame);
 			}
 
-			if(abs(lBak.duration - pulseDuration) < 0.005){ // 5ms 
+			if(fabs(lBak.duration - pulseDuration) < 0.005){ // 5ms 
 				lit++;
 				lBak = *lit;
 			}else{
@@ -236,7 +250,7 @@ void PulseAnalyzer::GetFrameInfo()
 				lBak.duration -= pulseDuration;
 			}
 
-			if(abs(rBak.duration - pulseDuration) < 0.005){ // 5ms
+			if(fabs(rBak.duration - pulseDuration) < 0.005){ // 5ms
 				rit++;
 				rBak = *rit;
 			}else{
@@ -252,7 +266,7 @@ void PulseAnalyzer::WriteSyncDetail()
 	uint32_t lindex = 0;
 	uint32_t rindex = 0;
 	int32_t sync = 0;
-	std::string filePath = mSourceFileName + ".detail.csv";
+	std::string filePath = mSourceFileName + ".sync.detail.csv";
 	CSVFile file(filePath);
 
 	file.WriteCsvLine("sync, channel 1, index, start, end, duration, interval, channel 2, index, start, end, duration, interval");
@@ -291,8 +305,9 @@ void PulseAnalyzer::WriteSyncDetail()
 				// do nothing
 			}
 
-			file.WriteCsvLine("%d, %d, %u, %0.3f, %0.3f, %f, %d,"
-				"%d, %u, %0.3f, %0.3f, %f, %d",
+			file.WriteCsvLine("%d, "
+				"%d, %u, %0.3f, %0.3f, %f, %d,"
+				"%d, %u, %0.3f, %0.3f, %f, %d,",
 				sync,
 				lit->channelID, lindex, lit->start, lit->end, lit->duration * 1000, 0, 
 				rit->channelID, rindex, rit->start, rit->end, rit->duration * 1000, 0);
@@ -311,9 +326,9 @@ void PulseAnalyzer::WriteSmoothDetail()
 		CSVFile file(filePath);
 
 		MSE = CacluMSE(mFramePulse);
-		fps = CacluAvgFps(mFramePulse);
-		file.WriteCsvLine("MSE, FPS");
-		file.WriteCsvLine("%f, %f", MSE, fps);
+		fps = CacluFps(mFramePulse);
+		file.WriteCsvLine("MSE, FPS,");
+		file.WriteCsvLine("%.3f, %.3f,", MSE, fps);
 
 		file.WriteCsvLine("");
 		file.WriteCsvLine("Index, Duration, FPS, MSE,");

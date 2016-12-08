@@ -1,15 +1,15 @@
 #include "StdAfx.h"
 #include "fileEnum.h"
 
-fileEnum::fileEnum(void)
+FileEnumer::FileEnumer(void)
 {
 }
 
-fileEnum::~fileEnum(void)
+FileEnumer::~FileEnumer(void)
 {
 }
 
-int32_t fileEnum::getFile(std::string &filename)
+int32_t FileEnumer::GetFile(std::string &filename)
 {
 	int32_t ret = 0;
 	std::string listFile;
@@ -24,7 +24,7 @@ int32_t fileEnum::getFile(std::string &filename)
 	return ret;
 }
 
-int32_t fileEnum::isDirectory(std::string path)
+int32_t FileEnumer::IsDirectory(std::string &path)
 {
 	int32_t bRet = 0;
 	DWORD fileAttr = 0;
@@ -42,7 +42,7 @@ int32_t fileEnum::isDirectory(std::string path)
 	return bRet;
 }
 
-int32_t fileEnum::enumDirectory(std::string path, std::string postPix)
+int32_t FileEnumer::EnumDirectory(std::string path, std::string postPix)
 {
 	std::string filename;
 	try{

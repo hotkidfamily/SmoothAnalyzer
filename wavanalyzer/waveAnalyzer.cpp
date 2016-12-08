@@ -37,25 +37,25 @@ WaveAnalyzer::~WaveAnalyzer(void)
 {
 }
 
-int32_t WaveAnalyzer::absFilter(std::string &channelData)
+int32_t WaveAnalyzer::AbsFilter(std::string &channelData)
 {
 	int16_t *data = NULL;
 	char *filter_data = (char *)channelData.c_str();
 
 	data = (int16_t *)filter_data;
-	for(size_t i=0; i<channelData.size()/getBytesPerSample(); i++){
+	for(size_t i=0; i<channelData.size()/GetBytesPerSample(); i++){
 		*(data+i) = abs(*(data+i));
 	}
 
 	return 0;
 }
 
-int32_t WaveAnalyzer::updateThreshold(std::string &channelData)
+int32_t WaveAnalyzer::UpdateThreshold(std::string &channelData)
 {
 	int32_t sum = 0;
 	int16_t *data = (int16_t *)channelData.c_str();
 
-	for(size_t i=0; i<channelData.size()/getBytesPerSample(); i++){
+	for(size_t i=0; i<channelData.size()/GetBytesPerSample(); i++){
 		minThreshold = min(*data, minThreshold);
 		maxThreshold = max(*data, maxThreshold);
 		data ++;
@@ -63,18 +63,18 @@ int32_t WaveAnalyzer::updateThreshold(std::string &channelData)
 
 	if(totalSampleCount/mWavFormat.nSamplerate > 10){
 		isThresholdValid = true;
-		inter_log(Info, "threshold is %d, min %d, max %d", getThreshold(), minThreshold, maxThreshold);
+		inter_log(Info, "threshold is %d, min %d, max %d", GetThreshold(), minThreshold, maxThreshold);
 	}
 
 	return 0;
 }
 
-int32_t WaveAnalyzer::getThreshold()
+int32_t WaveAnalyzer::GetThreshold()
 {
 	return ((maxThreshold+minThreshold)/4);
 }
 
-void WaveAnalyzer::replaceValue(const int16_t *buffer, uint32_t nb_samples, bool bPulse)
+void WaveAnalyzer::ReplaceValue(const int16_t *buffer, uint32_t nb_samples, bool bPulse)
 {
 	int16_t *data = (int16_t*)buffer;
 	int16_t value = 0;
@@ -89,12 +89,12 @@ void WaveAnalyzer::replaceValue(const int16_t *buffer, uint32_t nb_samples, bool
 	}
 }
 
-void WaveAnalyzer::findPulse(const int16_t *data, uint32_t nb_samples, uint32_t &start, uint32_t &end, uint32_t count)
+void WaveAnalyzer::FindPulse(const int16_t *data, uint32_t nb_samples, uint32_t &start, uint32_t &end, uint32_t count)
 {
 	int32_t sum = 0;
 	uint32_t startSamples = 0;
 	uint32_t endSamples = 0;
-	int32_t threshold = getThreshold();
+	int32_t threshold = GetThreshold();
 	uint32_t endSampleIndex = 0;
 
 	sum = 0;
@@ -133,14 +133,14 @@ void WaveAnalyzer::findPulse(const int16_t *data, uint32_t nb_samples, uint32_t 
 	}
 }
 
-int32_t WaveAnalyzer::splitDataAndFindPulse(std::string &channelData, uint32_t &start, uint32_t &end)
+int32_t WaveAnalyzer::SplitDataAndFindPulse(std::string &channelData, uint32_t &start, uint32_t &end)
 {
 	int16_t *data = (int16_t *)channelData.c_str();
 	size_t processedSamplesCount = 0;
 	uint32_t nbSampleSplitStep = 0;
 	uint32_t nbProcessSamples = 0;
 	
-	size_t nbTotalSamples = channelData.size()/getBytesPerSample();
+	size_t nbTotalSamples = channelData.size()/GetBytesPerSample();
 
 	if(nbTotalSamples > 100){
 		nbSampleSplitStep = nbTotalSamples/100;
@@ -157,12 +157,12 @@ int32_t WaveAnalyzer::splitDataAndFindPulse(std::string &channelData, uint32_t &
 			nbProcessSamples = nbSampleSplitStep;
 		}
 
-		findPulse(data, nbProcessSamples, start, end, processedSamplesCount);
+		FindPulse(data, nbProcessSamples, start, end, processedSamplesCount);
 		if(start && end){
 			return 0;
 		}
 
-		replaceValue(data, nbProcessSamples, bInPulse);
+		ReplaceValue(data, nbProcessSamples, bInPulse);
 
 		data += nbProcessSamples;
 		processedSamplesCount += nbProcessSamples;
@@ -172,23 +172,23 @@ int32_t WaveAnalyzer::splitDataAndFindPulse(std::string &channelData, uint32_t &
 	return 0;
 }
 
-retType WaveAnalyzer::analyzer(std::string &channelData, uint32_t &start, uint32_t &end)
+retType WaveAnalyzer::Analyzer(std::string &channelData, uint32_t &start, uint32_t &end)
 {
-	absFilter(channelData);
+	AbsFilter(channelData);
 
 	if(dumpfilter.is_open())
 		dumpfilter.write(channelData.c_str(), channelData.size());
 
-	if(!ifThresholdValid()){
-		updateThreshold(channelData);
+	if(!IfThresholdValid()){
+		UpdateThreshold(channelData);
 	}else{
-		splitDataAndFindPulse(channelData, start, end);
+		SplitDataAndFindPulse(channelData, start, end);
 	}
 
 	if(dump2Value.is_open())
 		dump2Value.write(channelData.c_str(), channelData.size());
 
-	totalSampleCount += channelData.size()/getBytesPerSample();
+	totalSampleCount += channelData.size()/GetBytesPerSample();
 
 	if(start && end){
 		return RET_FIND_PULSE;

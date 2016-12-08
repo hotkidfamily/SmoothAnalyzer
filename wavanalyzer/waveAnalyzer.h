@@ -17,20 +17,20 @@ public:
 	WaveAnalyzer(const char *dumpFileName);
 	~WaveAnalyzer(void);
 
-	retType analyzer(std::string &channelData, uint32_t &start, uint32_t &end);
-	void setWavFormat(WaveFormat format) { mWavFormat = format; };
+	retType Analyzer(std::string &channelData, uint32_t &start, uint32_t &end);
+	void SetWavFormat(WaveFormat format) { mWavFormat = format; };
 
 private:
-	int32_t absFilter(std::string &channelData);
-	int32_t getBytesPerSample() { return mWavFormat.nBitsPerSample >> 3; };
+	int32_t AbsFilter(std::string &channelData);
+	int32_t GetBytesPerSample() { return mWavFormat.nBitsPerSample >> 3; };
 
-	int32_t splitDataAndFindPulse(std::string &channelData, uint32_t &start, uint32_t &end);
-	void findPulse(const int16_t *buffer, uint32_t nb_samples, uint32_t &start, uint32_t &end, uint32_t count);
-	void replaceValue(const int16_t *buffer, uint32_t nb_samples, bool bInPulse);
+	int32_t SplitDataAndFindPulse(std::string &channelData, uint32_t &start, uint32_t &end);
+	void FindPulse(const int16_t *buffer, uint32_t nb_samples, uint32_t &start, uint32_t &end, uint32_t count);
+	void ReplaceValue(const int16_t *buffer, uint32_t nb_samples, bool bInPulse);
 
-	int32_t updateThreshold(std::string &channelData);
-	int32_t getThreshold();
-	bool ifThresholdValid() const { return isThresholdValid; }
+	int32_t UpdateThreshold(std::string &channelData);
+	int32_t GetThreshold();
+	bool IfThresholdValid() const { return isThresholdValid; }
 
 private:
 	std::ofstream dumpfilter;

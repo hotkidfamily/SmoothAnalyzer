@@ -4,7 +4,6 @@
 #include "stdafx.h"
 #include "log.h"
 #include "wavFileParse.h"
-#include "csvFileMaker.h"
 #include "waveAnalyzer.h"
 #include "fileEnum.h"
 #include "SmoothAnalyzer.h"
@@ -41,7 +40,7 @@ static int32_t parse_parameters(int32_t argc, char* argv[])
 	return ret;
 }
 
-int analyzeFile(std::string file)
+static int analyzeFile(std::string file)
 {
 	std::string lChannelData;
 	std::string rChannelData;
@@ -53,7 +52,7 @@ int analyzeFile(std::string file)
 	PulseAnalyzer *smoothAnalyzer = NULL;
 	
 	parse = new WAVFileParse(DEBUG_CHANNEL_DATA);
-	if(!parse->openWavFile(file.c_str())){
+	if(!parse->OpenWavFile(file.c_str())){
 		delete parse;
 		return -1;
 	}
@@ -62,8 +61,8 @@ int analyzeFile(std::string file)
 	rWaveAnalyzer = new WaveAnalyzer("rchannel");
 	smoothAnalyzer = new PulseAnalyzer(file);
 
-	lWaveAnalyzer->setWavFormat(parse->getWavFormat());
-	rWaveAnalyzer->setWavFormat(parse->getWavFormat());
+	lWaveAnalyzer->SetWavFormat(parse->GetWavFormat());
+	rWaveAnalyzer->SetWavFormat(parse->GetWavFormat());
 	
 	int times = 0;
 	while(1){
@@ -74,20 +73,20 @@ int analyzeFile(std::string file)
 		
 		lChannelData.clear();
 		rChannelData.clear();
-		ret = parse->getLRChannelData(lChannelData, rChannelData);
+		ret = parse->GetLRChannelData(lChannelData, rChannelData);
 		
 		retType retAnalyzer = RET_OK;
 
-		retAnalyzer = lWaveAnalyzer->analyzer(lChannelData, startSampleIndex, endSampleIndex);
+		retAnalyzer = lWaveAnalyzer->Analyzer(lChannelData, startSampleIndex, endSampleIndex);
 		if(retAnalyzer == RET_FIND_PULSE){
-			smoothAnalyzer->RecordTimestamp(LCHANNEL, parse->convertIndexToMS(startSampleIndex), parse->convertIndexToMS(endSampleIndex));
+			smoothAnalyzer->RecordTimestamp(LCHANNEL, parse->ConvertIndexToMS(startSampleIndex), parse->ConvertIndexToMS(endSampleIndex));
 		}
 
 		startSampleIndex = 0;
 		endSampleIndex = 0;
-		retAnalyzer = rWaveAnalyzer->analyzer(rChannelData, startSampleIndex, endSampleIndex);
+		retAnalyzer = rWaveAnalyzer->Analyzer(rChannelData, startSampleIndex, endSampleIndex);
 		if(retAnalyzer == RET_FIND_PULSE){
-			smoothAnalyzer->RecordTimestamp(RCHANNEL, parse->convertIndexToMS(startSampleIndex), parse->convertIndexToMS(endSampleIndex));
+			smoothAnalyzer->RecordTimestamp(RCHANNEL, parse->ConvertIndexToMS(startSampleIndex), parse->ConvertIndexToMS(endSampleIndex));
 		}
 
 		if(ret == EOF){
@@ -95,7 +94,7 @@ int analyzeFile(std::string file)
 		}
 	}
 
-	parse->closeWavFile();
+	parse->CloseWavFile();
 	smoothAnalyzer->OutputResult();
 
 	if(parse){
@@ -137,7 +136,7 @@ static int GetAbsolutlyPath(const char* path, std::string &rPath)
 int main(int argc, char* argv[])
 {
 	std::string absPath;
-	fileEnum *fileFinder = NULL;
+	FileEnumer *fileFinder = NULL;
 	int32_t ret = 0;
 
 #ifdef _DEBUG
@@ -154,19 +153,19 @@ int main(int argc, char* argv[])
 		goto cleanup;
 	}
 
-	fileFinder = new fileEnum();
+	fileFinder = new FileEnumer();
 	if(!fileFinder){
 		inter_log(Error, "Can not enum file.");
 		goto cleanup;
 	}
 
-	ret = fileFinder->isDirectory(absPath);
+	ret = fileFinder->IsDirectory(absPath);
 	if(ret < 0){
 		inter_log(Fatal, "path %s is invalid.", argv[1]);
 	}else if (ret > 0){
 		std::string file;
-		fileFinder->enumDirectory(absPath + "*", ".wav");
-		while(!fileFinder->getFile(file)){
+		fileFinder->EnumDirectory(absPath + "*", ".wav");
+		while(!fileFinder->GetFile(file)){
 			file.insert(0, absPath);
 			analyzeFile(file);
 		}

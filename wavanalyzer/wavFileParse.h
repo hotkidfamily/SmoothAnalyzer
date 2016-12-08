@@ -15,15 +15,15 @@ public:
 	~WAVFileParse(void);
 	WAVFileParse(uint32_t flag);
 
-	bool openWavFile(const char* filename);
-	bool closeWavFile();
-	int32_t getLRChannelData(std::string &lChannel, std::string &rChannel);
-	WaveFormat &getWavFormat() { return m_wavFormat; };
-	double convertIndexToMS(int32_t index);
+	bool OpenWavFile(const char* filename);
+	bool CloseWavFile();
+	int32_t GetLRChannelData(std::string &lChannel, std::string &rChannel);
+	WaveFormat &GetWavFormat() { return m_wavFormat; };
+	double ConvertIndexToMS(int32_t index);
 
 protected:
-	void reportProgress(double progree);
-	int32_t separateLRChannel(char *data, uint32_t dataSize, std::string &lChannel, std::string &rChannel);
+	void ReportProgress(double progree);
+	int32_t SeparateLRChannel(char *data, uint32_t dataSize, std::string &lChannel, std::string &rChannel);
 	
 private:
 	uint32_t debugFlag;

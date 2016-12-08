@@ -69,8 +69,8 @@ protected:
 	double CacluAvgValue(std::list<FrameDesc>& );
 	double CacluMSE(std::list<FrameDesc>& );
 	double CacluMSEInOneSecond(std::list<FrameDesc>& );
-	double CacluAvgFps(std::list<FrameDesc> &);
 	double CacluFps(std::list<FrameDesc> &);
+	double CacluFrameRate(std::list<FrameDesc> &);
 	BOOL DetectPulseWidth(double &);
 	inline int32_t GetPulseType(PULSETYPE ltype, PULSETYPE rtype);
 	void WriteSyncDetail();

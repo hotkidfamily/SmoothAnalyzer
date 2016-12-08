@@ -7,16 +7,16 @@
 
 #include "log.h"
 
-class fileEnum
+class FileEnumer
 {
 public:
-	fileEnum(void);
-	~fileEnum(void);
+	FileEnumer(void);
+	~FileEnumer(void);
 
-	int32_t enumDirectory(std::string path, std::string postFix);
-	int32_t isDirectory(std::string path);
+	int32_t EnumDirectory(std::string path, std::string postFix);
+	int32_t IsDirectory(std::string &path);
 	
-	int32_t getFile(std::string &file);
+	int32_t GetFile(std::string &file);
 
 private:
 	std::list<std::string> m_filesList;

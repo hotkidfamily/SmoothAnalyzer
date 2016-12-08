@@ -1,5 +1,4 @@
 #include "stdafx.h"
-#include <stdarg.h>
 #include "log.h"
 
 #define to_str(x) #x
