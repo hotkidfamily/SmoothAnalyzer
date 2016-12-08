@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "SmoothAnalyzer.h"
 #include "log.h"
-#include "SlidingWindow.h"
 
 const struct tagPulseType{
 	PULSETYPE lPulseType;
@@ -299,6 +298,7 @@ void PulseAnalyzer::OutputResult()
 				"%d, %.3f, %.3f"
 				""
 				, frameIndex++, frame.duration, frame.frameRate);
+			mFramePulse.pop_front();
 		}
 		
 	}
