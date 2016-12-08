@@ -22,7 +22,6 @@ struct Pulse{
 		, duration(e-s)
 	{}
 
-	/* common */
 	double start;
 	double end;
 	double duration;
@@ -39,20 +38,20 @@ struct PulseDesc: public Pulse
 		this->type = type;
 	}
 
-	/* pulse desc */
 	PULSETYPE type;
 	CHANNELID channelID;
 };
 
 struct FrameDesc: public Pulse
 {
-	FrameDesc(int32_t type, double start, double end)
+	FrameDesc(int32_t type, double start, double end, double fps)
 		: Pulse(start, end)
 		, frameType(type)
+		, frameRate(fps)
 	{}
 
-	/* frame desc */
 	int32_t frameType;
+	double frameRate;
 };
 
 class PulseAnalyzer
@@ -67,6 +66,8 @@ public:
 protected:
 	double CacluAvgValue(std::list<FrameDesc>& durationList);
 	double CacluMSE(std::list<FrameDesc>& lowDurationList);
+	double CacluAvgFps(std::list<FrameDesc> &durationList);
+	double CacluFps(std::list<FrameDesc> &durationList);
 	BOOL DetectPulseWidth(double &duration);
 	inline int32_t GetPulseType(PULSETYPE ltype, PULSETYPE rtype);
 	void WriteSyncDetail();

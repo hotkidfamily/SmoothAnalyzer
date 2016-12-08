@@ -4,6 +4,7 @@
 
 CSVFile::~CSVFile(void)
 {
+	flush();
 }
 
 CSVFile::CSVFile(std::string &filename)

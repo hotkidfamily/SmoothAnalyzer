@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "SmoothAnalyzer.h"
 #include "log.h"
+#include "SlidingWindow.h"
 
 const struct tagPulseType{
 	PULSETYPE lPulseType;
@@ -88,6 +89,29 @@ double PulseAnalyzer::CacluMSE(std::list<FrameDesc>& durationList)
 	return MSE;
 }
 
+double PulseAnalyzer::CacluAvgFps(std::list<FrameDesc> &durationList)
+{
+	double fps = 0.0f;
+	double duraionInMs = (durationList.back().end - durationList.front().start)*1000;
+	fps = durationList.size()*1.0 / duraionInMs;
+	return fps;
+}
+
+double PulseAnalyzer::CacluFps(std::list<FrameDesc> &durationList)
+{
+	double fps = 0.0f;
+	int32_t frameCnt = 0;
+	std::list<FrameDesc>::reverse_iterator rit = durationList.rbegin();
+	for( ; rit!=durationList.rend(); rit++){
+		frameCnt++;
+		if((durationList.back().end - rit->start) > 1000){
+			fps = frameCnt * 1000.0 / (durationList.back().end - rit->start);
+		}
+	}
+	
+	return fps;
+}
+
 int32_t PulseAnalyzer::GetPulseType(PULSETYPE ltype, PULSETYPE rtype)
 {
 	for(int i = 0; i < ARRAYSIZE(pulseTable); i++){
@@ -96,7 +120,7 @@ int32_t PulseAnalyzer::GetPulseType(PULSETYPE ltype, PULSETYPE rtype)
 		}
 	}
 
-	return 0;
+	return -1;
 }
 
 BOOL PulseAnalyzer::DetectPulseWidth(double &duration)
@@ -158,6 +182,7 @@ void PulseAnalyzer::GetFrameInfo()
 	int32_t curFrameType = 0;
 	int32_t frameIndex = 0;
 	double referenceTimeBase = 0.0f;
+	double fps = 0.0f;
 
 	referenceTimeBase = min(mPulseList[LCHANNEL].front().start, mPulseList[RCHANNEL].front().start);
 	inter_log(Info, "Reference base time is %.3f ms", referenceTimeBase);
@@ -175,7 +200,11 @@ void PulseAnalyzer::GetFrameInfo()
 			(lit != mPulseList[LCHANNEL].end()) && (rit!=mPulseList[RCHANNEL].end());)
 		{
 			curFrameType = GetPulseType(lBak.type, rBak.type);
-			FrameDesc frame(curFrameType, min(lBak.start,lBak.start), max(lBak.end, rBak.end));
+			if(!(curFrameType < 0)){
+				fps = CacluFps(mFramePulse);
+				FrameDesc frame(curFrameType, min(lBak.start,lBak.start), max(lBak.end, rBak.end), fps);
+				mFramePulse.push_back(frame);
+			}
 
 			if(abs(lBak.duration - pulseDuration) < 0.005){ // 5ms 
 				lit++;
@@ -192,8 +221,6 @@ void PulseAnalyzer::GetFrameInfo()
 				rBak.start += pulseDuration;
 				rBak.duration -= pulseDuration;
 			}
-
-			mFramePulse.push_back(frame);
 		}
 	}
 }
@@ -253,10 +280,26 @@ void PulseAnalyzer::WriteSyncDetail()
 
 void PulseAnalyzer::OutputResult()
 {
+	double MSE = 0.0f;
+	double fps = 0.0f;
 	std::string filePath = mSourceFileName + ".smooth.csv";
-	CSVFile file(filePath);
+	int32_t frameIndex = 0;
 
 	if(!mFramePulse.empty()){
-		CacluMSE(mFramePulse);
+		CSVFile file(filePath);
+
+		MSE = CacluMSE(mFramePulse);
+		fps = CacluAvgFps(mFramePulse);
+		file.WriteCsvLine("MSE, FPS");
+		file.WriteCsvLine("%f, %f", MSE, fps);
+
+		while(!mFramePulse.empty()){
+			FrameDesc frame = mFramePulse.front();
+			file.WriteCsvLine("%d,"
+				"%d, %.3f, %.3f"
+				""
+				, frameIndex++, frame.duration, frame.frameRate);
+		}
+		
 	}
 }
