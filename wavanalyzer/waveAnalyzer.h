@@ -10,12 +10,12 @@ typedef enum tagRetType{
 	RET_FIND_PULSE,
 }retType;
 
-class waveAnalyzer
+class WaveAnalyzer
 {
 public:
-	waveAnalyzer(void);
-	waveAnalyzer(const char *dumpFileName);
-	~waveAnalyzer(void);
+	WaveAnalyzer(void);
+	WaveAnalyzer(const char *dumpFileName);
+	~WaveAnalyzer(void);
 
 	retType analyzer(std::string &channelData, uint32_t &start, uint32_t &end);
 	void setWavFormat(WaveFormat format) { mWavFormat = format; };

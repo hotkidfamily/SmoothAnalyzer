@@ -58,11 +58,11 @@ void PulseAnalyzer::RecordTimestamp(CHANNELID channelID, double start, double en
 }
 
 
-double PulseAnalyzer::CacluAvgValue(std::list<PulseDesc>& durationList)
+double PulseAnalyzer::CacluAvgValue(std::list<FrameDesc>& durationList)
 {
 	double sum = 0.0f;
 	double avgValue = 0.0f;
-	std::list<PulseDesc>::iterator durationIt;
+	std::list<FrameDesc>::iterator durationIt;
 	for(durationIt = durationList.begin(); durationIt != durationList.end(); durationIt++){
 		sum += durationIt->duration;
 	}
@@ -72,12 +72,12 @@ double PulseAnalyzer::CacluAvgValue(std::list<PulseDesc>& durationList)
 	return avgValue;
 }
 
-double PulseAnalyzer::CacluMSE(std::list<PulseDesc>& durationList)
+double PulseAnalyzer::CacluMSE(std::list<FrameDesc>& durationList)
 {
 	double Sum = 0.0f;
 	double MSE = 0.0f;
 	double avgDuration = CacluAvgValue(durationList);
-	std::list<PulseDesc>::iterator durationIt;
+	std::list<FrameDesc>::iterator durationIt;
 
 	for(durationIt = durationList.begin(); durationIt != durationList.end(); durationIt++)
 	{
@@ -168,13 +168,32 @@ void PulseAnalyzer::GetFrameInfo()
 
 		std::list<PulseDesc>::iterator lit;
 		std::list<PulseDesc>::iterator rit;
+		PulseDesc lBak = *mPulseList[LCHANNEL].begin();
+		PulseDesc rBak = *mPulseList[RCHANNEL].begin();
 
 		for(lit = mPulseList[LCHANNEL].begin(), rit = mPulseList[RCHANNEL].begin();
 			(lit != mPulseList[LCHANNEL].end()) && (rit!=mPulseList[RCHANNEL].end());)
 		{
-			curFrameType = GetPulseType(lit->type, rit->type);
-			if(lit->start - rit->start < 0.016)
-			FrameDesc frame(curFrameType, lit->start, lit->end);
+			curFrameType = GetPulseType(lBak.type, rBak.type);
+			FrameDesc frame(curFrameType, min(lBak.start,lBak.start), max(lBak.end, rBak.end));
+
+			if(abs(lBak.duration - pulseDuration) < 0.005){ // 5ms 
+				lit++;
+				lBak = *lit;
+			}else{
+				lBak.start += pulseDuration;
+				lBak.duration -= pulseDuration;
+			}
+
+			if(abs(rBak.duration - pulseDuration) < 0.005){ // 5ms
+				rit++;
+				rBak = *rit;
+			}else{
+				rBak.start += pulseDuration;
+				rBak.duration -= pulseDuration;
+			}
+
+			mFramePulse.push_back(frame);
 		}
 	}
 }
@@ -237,5 +256,7 @@ void PulseAnalyzer::OutputResult()
 	std::string filePath = mSourceFileName + ".smooth.csv";
 	CSVFile file(filePath);
 
-	
+	if(!mFramePulse.empty()){
+		CacluMSE(mFramePulse);
+	}
 }

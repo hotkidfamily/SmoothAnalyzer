@@ -48,8 +48,8 @@ int analyzeFile(std::string file)
 	int32_t ret = 0;
 
 	WAVFileParse *parse = NULL;
-	waveAnalyzer *lPulseAnalyzer = NULL;
-	waveAnalyzer *rPulseAnalyzer = NULL;
+	WaveAnalyzer *lWaveAnalyzer = NULL;
+	WaveAnalyzer *rWaveAnalyzer = NULL;
 	PulseAnalyzer *smoothAnalyzer = NULL;
 	
 	parse = new WAVFileParse(DEBUG_CHANNEL_DATA);
@@ -58,12 +58,12 @@ int analyzeFile(std::string file)
 		return -1;
 	}
 
-	lPulseAnalyzer = new waveAnalyzer("lchannel");
-	rPulseAnalyzer = new waveAnalyzer("rchannel");
+	lWaveAnalyzer = new WaveAnalyzer("lchannel");
+	rWaveAnalyzer = new WaveAnalyzer("rchannel");
 	smoothAnalyzer = new PulseAnalyzer(file);
 
-	lPulseAnalyzer->setWavFormat(parse->getWavFormat());
-	rPulseAnalyzer->setWavFormat(parse->getWavFormat());
+	lWaveAnalyzer->setWavFormat(parse->getWavFormat());
+	rWaveAnalyzer->setWavFormat(parse->getWavFormat());
 	
 	int times = 0;
 	while(1){
@@ -78,19 +78,19 @@ int analyzeFile(std::string file)
 		
 		retType retAnalyzer = RET_OK;
 
-		retAnalyzer = lPulseAnalyzer->analyzer(lChannelData, startSampleIndex, endSampleIndex);
+		retAnalyzer = lWaveAnalyzer->analyzer(lChannelData, startSampleIndex, endSampleIndex);
 		if(retAnalyzer == RET_FIND_PULSE){
 			smoothAnalyzer->RecordTimestamp(LCHANNEL, parse->convertIndexToMS(startSampleIndex), parse->convertIndexToMS(endSampleIndex));
 		}
 
 		startSampleIndex = 0;
 		endSampleIndex = 0;
-		retAnalyzer = rPulseAnalyzer->analyzer(rChannelData, startSampleIndex, endSampleIndex);
+		retAnalyzer = rWaveAnalyzer->analyzer(rChannelData, startSampleIndex, endSampleIndex);
 		if(retAnalyzer == RET_FIND_PULSE){
 			smoothAnalyzer->RecordTimestamp(RCHANNEL, parse->convertIndexToMS(startSampleIndex), parse->convertIndexToMS(endSampleIndex));
 		}
 
-		if(ret < 0 ){
+		if(ret == EOF){
 			break;
 		}
 	}
@@ -106,12 +106,12 @@ int analyzeFile(std::string file)
 		delete smoothAnalyzer;
 	}
 
-	if(lPulseAnalyzer){
-		delete lPulseAnalyzer;
+	if(lWaveAnalyzer){
+		delete lWaveAnalyzer;
 	}
 
-	if(rPulseAnalyzer){
-		delete rPulseAnalyzer;
+	if(rWaveAnalyzer){
+		delete rWaveAnalyzer;
 	}
 
 	return 0;

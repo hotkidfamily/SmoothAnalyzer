@@ -29,7 +29,7 @@ public:
     ~CWaveReader(); 
     bool Open(const char* pFileName);
     void Close(); 
-    int  ReadData(unsigned char* pData, int nLen); 
+    size_t ReadData(unsigned char* pData, int nLen); 
     bool GetFormat(WaveFormat* pWaveFormat); 
     FILE* Handle();
 	double Progress() { return m_Progress; };

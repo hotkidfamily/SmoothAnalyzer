@@ -85,11 +85,11 @@ int32_t WAVFileParse::separateLRChannel(char *data, uint32_t dataSize, std::stri
 	return 0;
 }
 
-// 100ms data one time
+// 10ms data one time
 int32_t WAVFileParse::getLRChannelData(std::string &lChannel, std::string &rChannel)
 {
 	int32_t ret = 0;
-	uint32_t nbReadSamples = m_wavFormat.nSamplerate / 10;
+	uint32_t nbReadSamples = m_wavFormat.nSamplerate / 100;
 	uint32_t nbSampleDataSize = nbReadSamples * m_wavFormat.nblockalign; // 100ms
 	int32_t readDataLength = 0;
 
@@ -101,7 +101,8 @@ int32_t WAVFileParse::getLRChannelData(std::string &lChannel, std::string &rChan
 
 	readDataLength = m_wavReader->ReadData((unsigned char*)buffer, tenMSDataBuffer.size());
 	if(readDataLength <= 0){
-		return false;
+		ret = EOF;
+		goto cleanup;
 	}
 
 	reportProgress(m_wavReader->Progress());
@@ -113,10 +114,11 @@ int32_t WAVFileParse::getLRChannelData(std::string &lChannel, std::string &rChan
 	if(dumpRChannelFile.is_open())
 		dumpRChannelFile.write(rChannel.c_str(), rChannel.size());
 
-	if(readDataLength < nbSampleDataSize){
+	if(readDataLength < nbSampleDataSize){ // ???
 		ret = EOF;
 	}
 
+cleanup:
 	return ret;
 }
 

@@ -65,8 +65,8 @@ public:
 	void OutputResult();
 
 protected:
-	double CacluAvgValue(std::list<PulseDesc>& durationList);
-	double CacluMSE(std::list<PulseDesc>& lowDurationList);
+	double CacluAvgValue(std::list<FrameDesc>& durationList);
+	double CacluMSE(std::list<FrameDesc>& lowDurationList);
 	BOOL DetectPulseWidth(double &duration);
 	inline int32_t GetPulseType(PULSETYPE ltype, PULSETYPE rtype);
 	void WriteSyncDetail();
@@ -74,6 +74,6 @@ protected:
 
 private:
 	std::list<PulseDesc> mPulseList[MAX_CHANNEL];
-	std::list<PulseDesc> mFramePulse;
+	std::list<FrameDesc> mFramePulse;
 	std::string mSourceFileName;
 };

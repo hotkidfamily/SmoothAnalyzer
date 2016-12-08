@@ -123,7 +123,7 @@ double CWaveReader::SampeIndexToMS(unsigned int sampleIndex)
 	return sampleIndex*1.0 / m_WaveFormat.nSamplerate;
 }
 
-int CWaveReader::ReadData(unsigned char* pData, int nLen)   
+size_t CWaveReader::ReadData(unsigned char* pData, int nLen)   
 {      
 	size_t size = 0;
 	if(m_pFile)

@@ -3,7 +3,7 @@
 #include "log.h"
 #include <numeric>
 
-waveAnalyzer::waveAnalyzer(void)
+WaveAnalyzer::WaveAnalyzer(void)
 : bInPulse (false)
 , totalSampleCount (0)
 , pulseSampleIndex (0)
@@ -13,7 +13,7 @@ waveAnalyzer::waveAnalyzer(void)
 {
 }
 
-waveAnalyzer::waveAnalyzer(const char *dumpFileName)
+WaveAnalyzer::WaveAnalyzer(const char *dumpFileName)
 : bInPulse (false)
 , totalSampleCount (0)
 , pulseSampleIndex (0)
@@ -33,11 +33,11 @@ waveAnalyzer::waveAnalyzer(const char *dumpFileName)
 	dump2Value.open(file.c_str(), std::ios::binary);
 }
 
-waveAnalyzer::~waveAnalyzer(void)
+WaveAnalyzer::~WaveAnalyzer(void)
 {
 }
 
-int32_t waveAnalyzer::absFilter(std::string &channelData)
+int32_t WaveAnalyzer::absFilter(std::string &channelData)
 {
 	int16_t *data = NULL;
 	char *filter_data = (char *)channelData.c_str();
@@ -50,7 +50,7 @@ int32_t waveAnalyzer::absFilter(std::string &channelData)
 	return 0;
 }
 
-int32_t waveAnalyzer::updateThreshold(std::string &channelData)
+int32_t WaveAnalyzer::updateThreshold(std::string &channelData)
 {
 	int32_t sum = 0;
 	int16_t *data = (int16_t *)channelData.c_str();
@@ -69,12 +69,12 @@ int32_t waveAnalyzer::updateThreshold(std::string &channelData)
 	return 0;
 }
 
-int32_t waveAnalyzer::getThreshold()
+int32_t WaveAnalyzer::getThreshold()
 {
 	return ((maxThreshold+minThreshold)/4);
 }
 
-void waveAnalyzer::replaceValue(const int16_t *buffer, uint32_t nb_samples, bool bPulse)
+void WaveAnalyzer::replaceValue(const int16_t *buffer, uint32_t nb_samples, bool bPulse)
 {
 	int16_t *data = (int16_t*)buffer;
 	int16_t value = 0;
@@ -89,7 +89,7 @@ void waveAnalyzer::replaceValue(const int16_t *buffer, uint32_t nb_samples, bool
 	}
 }
 
-void waveAnalyzer::findPulse(const int16_t *data, uint32_t nb_samples, uint32_t &start, uint32_t &end, uint32_t count)
+void WaveAnalyzer::findPulse(const int16_t *data, uint32_t nb_samples, uint32_t &start, uint32_t &end, uint32_t count)
 {
 	int32_t sum = 0;
 	uint32_t startSamples = 0;
@@ -133,7 +133,7 @@ void waveAnalyzer::findPulse(const int16_t *data, uint32_t nb_samples, uint32_t 
 	}
 }
 
-int32_t waveAnalyzer::splitDataAndFindPulse(std::string &channelData, uint32_t &start, uint32_t &end)
+int32_t WaveAnalyzer::splitDataAndFindPulse(std::string &channelData, uint32_t &start, uint32_t &end)
 {
 	int16_t *data = (int16_t *)channelData.c_str();
 	size_t processedSamplesCount = 0;
@@ -172,7 +172,7 @@ int32_t waveAnalyzer::splitDataAndFindPulse(std::string &channelData, uint32_t &
 	return 0;
 }
 
-retType waveAnalyzer::analyzer(std::string &channelData, uint32_t &start, uint32_t &end)
+retType WaveAnalyzer::analyzer(std::string &channelData, uint32_t &start, uint32_t &end)
 {
 	absFilter(channelData);
 
