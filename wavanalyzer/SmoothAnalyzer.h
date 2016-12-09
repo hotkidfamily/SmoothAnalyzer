@@ -6,7 +6,7 @@
 enum CHANNELID{
 	LCHANNEL,
 	RCHANNEL,
-	MAX_CHANNEL // support channel count
+	MAX_CHANNEL = 0xFF
 };
 
 enum PULSETYPE{
@@ -29,28 +29,38 @@ struct Pulse{
 
 struct PulseDesc: public Pulse
 {
-	PulseDesc(CHANNELID id, double start, double end, PULSETYPE pulseType)
+	PulseDesc()
+		:Pulse(0.0f, 0.0f)
+		, channelID(MAX_CHANNEL)
+		, type(PULSE_NONE)
+		, index(0)
+	{
+		
+	}
+
+	PulseDesc(CHANNELID id, double start, double end, PULSETYPE pulseType, int32_t idx)
 		: Pulse(start, end)
 		, channelID(id)
 		, type(pulseType)
-	{
-		this->channelID = id;
-		this->type = type;
-	}
+		, index(idx)
+	{}
 
+	int32_t index;
 	PULSETYPE type;
 	CHANNELID channelID;
 };
 
 struct FrameDesc: public Pulse
 {
-	FrameDesc(int32_t type, double start, double end, double fps, double stdmse)
+	FrameDesc(int32_t type, double start, double end, double fps, double stdmse, int32_t idx)
 		: Pulse(start, end)
 		, frameType(type)
 		, frameRate(fps)
 		, MSE(stdmse)
+		, index(idx)
 	{}
 
+	int32_t index;
 	int32_t frameType;
 	double frameRate;
 	double MSE;
@@ -74,6 +84,7 @@ protected:
 	BOOL DetectPulseWidth(double &);
 	inline int32_t GetPulseType(PULSETYPE ltype, PULSETYPE rtype);
 	void WriteSyncDetail();
+	void WriteRawPulseDetail();
 	void GetFrameInfo();
 	void WriteSmoothDetail();
 
@@ -81,4 +92,5 @@ private:
 	std::list<PulseDesc> mPulseList[MAX_CHANNEL];
 	std::list<FrameDesc> mFramePulse;
 	std::string mSourceFileName;
+	int32_t mFrameId[MAX_CHANNEL];
 };
