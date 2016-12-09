@@ -297,33 +297,30 @@ void PulseAnalyzer::WriteRawPulseDetail()
 /* compare short list to long list and write value */ 
 void PulseAnalyzer::WriteSyncDetail()
 {
-	uint32_t longIndex = 0;
-	uint32_t shortIndex = 0;
 	std::list<PulseDesc> shortChannel; // short list
 	std::list<PulseDesc> longChannel; // long list
 	int32_t sync = 0;
 	double firstDiff = 0.0f;
 	double secondDiff = 0.0f;
+	std::list<PulseDesc>::iterator itShort;
+	std::list<PulseDesc>::iterator itLong;
+	std::list<PulseDesc>::iterator itLongNext;
 	std::string filePath = mSourceFileName + ".sync.detail.csv";
 	CSVFile file(filePath);
 
-	file.WriteCsvLine("sync, channel 1, index, start, end, duration, interval, channel 2, index, start, end, duration, interval");
+	if (mPulseList[LCHANNEL].size() >= mPulseList[RCHANNEL].size()){
+		longChannel = mPulseList[LCHANNEL];
+		shortChannel = mPulseList[RCHANNEL];
+	} else{
+		longChannel = mPulseList[RCHANNEL];
+		shortChannel = mPulseList[LCHANNEL];
+	}
 
-	longIndex = mPulseList[LCHANNEL].size() >= mPulseList[RCHANNEL].size()? LCHANNEL : RCHANNEL;
-	shortIndex = longIndex == LCHANNEL?RCHANNEL:LCHANNEL;
-
-	shortChannel = mPulseList[shortIndex];
-	longChannel = mPulseList[longIndex];
-
-	longIndex = shortIndex = 0;
+	itShort = shortChannel.begin();
+	itLong = longChannel.begin();
 	
-	std::list<PulseDesc>::iterator itShort = shortChannel.begin();
-	std::list<PulseDesc>::iterator itLong = longChannel.begin();
-	std::list<PulseDesc>::iterator itSNext = shortChannel.begin();
-	std::list<PulseDesc>::iterator itLongNext = longChannel.begin();
-
-	itSNext++;
-	itLongNext++;
+	file.WriteCsvLine("sync, channel 1, index, start, end, duration, interval, "
+		"channel 2, index, start, end, duration, interval");
 
 	while(1){
 		PulseDesc shortPulse, longPulse;
