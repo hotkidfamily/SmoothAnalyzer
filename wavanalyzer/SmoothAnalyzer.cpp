@@ -265,7 +265,7 @@ void PulseAnalyzer::WriteRawPulseDetail()
 	std::list<PulseDesc>::iterator lit;
 	std::list<PulseDesc>::iterator rit;
 
-	std::string filePath = mSourceFileName + ".pulse.raw.csv";
+	std::string filePath = mSourceFileName + ".raw.pulse.csv";
 	CSVFile file(filePath);
 
 	file.WriteCsvLine(" channel, start, end, duration, channel, start, end, duration, ");
@@ -285,11 +285,24 @@ void PulseAnalyzer::WriteRawPulseDetail()
 			rit++;
 		}
 
-		file.WriteCsvLine(
-			" %d, %d, %.3f, %.3f, %.3f, "
-			" %d, %d, %.3f, %.3f, %.3f, ",
-			lPulse.channelID, lPulse.index, lPulse.start, lPulse.end, lPulse.duration * 1000,
-			rPulse.channelID, rPulse.index, rPulse.start, rPulse.end, rPulse.duration * 1000);
+		if(!lPulse.IsInvalid() && !rPulse.IsInvalid()){
+			file.WriteCsvLine(
+				" %d, %d, %.3f, %.3f, %.3f, "
+				" %d, %d, %.3f, %.3f, %.3f, ",
+				lPulse.channelID, lPulse.index, lPulse.start, lPulse.end, lPulse.duration * 1000,
+				rPulse.channelID, rPulse.index, rPulse.start, rPulse.end, rPulse.duration * 1000);
+		}else if(!lPulse.IsInvalid()){
+			file.WriteCsvLine(
+				" %d, %d, %.3f, %.3f, %.3f, "
+				" ,,,,, ",
+				lPulse.channelID, lPulse.index, lPulse.start, lPulse.end, lPulse.duration * 1000);
+		}else if(!rPulse.IsInvalid()){
+			file.WriteCsvLine(
+				" ,,,,, "
+				" %d, %d, %.3f, %.3f, %.3f, ",
+				rPulse.channelID, rPulse.index, rPulse.start, rPulse.end, rPulse.duration * 1000);
+		}
+		
 	}
 }
 
@@ -327,52 +340,41 @@ void PulseAnalyzer::WriteSyncDetail()
 
 	while(1){
 		PulseDesc shortPulse, longPulse;
+		secondDiff = 0.0f;
+		firstDiff = 0.0f;
+
 		if((itShort != shortChannel.end()) && (itLong != longChannel.end())){
 			// find most suitable pulse
-			secondDiff = 0.0f;
-			firstDiff = 0.0f;
 			sync = 0;
-			firstDiff = itShort->start - itLong->start;
 
 			itLongNext = itLong;
 			itLongNext++;
 
+			firstDiff = itShort->start - itLong->start;
 			if(itLongNext != longChannel.end())
 				secondDiff = itShort->start - itLongNext->start;
 
 			if(firstDiff == 0.0f){
 				longPulse = *itLong;
-				itLong++;
-
 				shortPulse = *itShort;
-				itShort++;
-
 				sync = (int32_t)(firstDiff*1000);
 			} else if(secondDiff == 0.0f){
 				longPulse = *itLong;
-				itLong++;
 			}else if(firstDiff > 0 && secondDiff < 0){
 				if(fabs(firstDiff) <= fabs(secondDiff)){
 					if(fabs(firstDiff) > SYNC_THRESHOLD){
 						longPulse = *itLong;
-						itLong++;
 					}else{
 						longPulse = *itLong;
-						itLong++;
-
 						shortPulse = *itShort;
-						itShort++;
-
 						sync = (int32_t)(firstDiff*1000);
 					}
 				}else{
 					longPulse = *itLong;
-					itLong++;
 				}
 			} else if (firstDiff > 0 && secondDiff > 0){
 				if(firstDiff >= secondDiff){
 					longPulse = *itLong;
-					itLong++;
 				}else{
 					inter_log(Error, "can not happend.");
 				}
@@ -384,52 +386,44 @@ void PulseAnalyzer::WriteSyncDetail()
 				}else{
 					if(fabs(firstDiff) > SYNC_THRESHOLD){
 						shortPulse = *itShort;
-						itShort++;
 					}else{
 						shortPulse = *itShort;
-						itShort++;
-
 						longPulse = *itLong;
-						itLong++;
-
 						sync = (int32_t)(firstDiff*1000);
 					}
 				}
-			}
-			
+			}			
+		}else if(itShort != shortChannel.end()){
+			// only "L" channel
+			shortPulse = *itShort;
+		}else if(itLong != longChannel.end()){
+			// only "R" channel
+			longPulse = *itLong;
+		}else{
+			break;
+		}
+
+		if(!longPulse.IsInvalid() && !shortPulse.IsInvalid()){
 			file.WriteCsvLine("%d, "
 				"%d, %u, %.3f, %.3f, %.3f, %d, "
 				"%d, %u, %.3f, %.3f, %.3f, %d, ",
 				sync,
 				shortPulse.channelID, shortPulse.index, shortPulse.start, shortPulse.end, shortPulse.duration * 1000, 0, 
 				longPulse.channelID, longPulse.index, longPulse.start, longPulse.end, longPulse.duration * 1000, 0);
-			
-		}else if(itShort != shortChannel.end()){
-			// only "L" channel
-			while(itShort != shortChannel.end()){
-				shortPulse = *itShort;
-				file.WriteCsvLine("%d, "
-					"%d, %u, %.3f, %.3f, %.3f, %d, "
-					"%d, %u, %.3f, %.3f, %.3f, %d, ",
-					0,
-					shortPulse.channelID, shortPulse.index, shortPulse.start, shortPulse.end, shortPulse.duration * 1000, 0, 
-					0, 0, 0.0f, 0.0f, 0.0f, 0);
-				itShort++;
-			}
-		}else if(itLong != longChannel.end()){
-			// only "R" channel
-			while(itLong != longChannel.end()){
-				longPulse = *itLong;
-				file.WriteCsvLine("%d, "
-					"%d, %u, %.3f, %.3f, %.3f, %d,"
-					"%d, %u, %.3f, %.3f, %.3f, %d,",
-					0,
-					0, 0, 0.0f, 0.0f, 0.0f, 0, 
-					longPulse.channelID, longPulse.index, longPulse.start, longPulse.end, longPulse.duration * 1000, 0);
-				itLong++;
-			}
-		}else{
-			break;
+			itShort++;
+			itLong++;
+		}else if (!longPulse.IsInvalid()){
+			file.WriteCsvLine(", "
+				" ,  ,  ,  ,  , ,"
+				"%d, %u, %.3f, %.3f, %.3f, %d,",
+				longPulse.channelID, longPulse.index, longPulse.start, longPulse.end, longPulse.duration * 1000, 0);
+			itLong++;
+		}else if(!shortPulse.IsInvalid()){
+			file.WriteCsvLine(", "
+				"%d, %u, %.3f, %.3f, %.3f, %d, "
+				", , , , , , ",
+				shortPulse.channelID, shortPulse.index, shortPulse.start, shortPulse.end, shortPulse.duration * 1000, 0);
+			itShort++;
 		}
 	}
 }

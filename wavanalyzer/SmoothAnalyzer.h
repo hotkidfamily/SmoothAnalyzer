@@ -45,6 +45,11 @@ struct PulseDesc: public Pulse
 		, index(idx)
 	{}
 
+	bool IsInvalid()
+	{
+		return (type == PULSE_NONE) && (channelID == MAX_CHANNEL);
+	}
+
 	int32_t index;
 	PULSETYPE type;
 	CHANNELID channelID;
