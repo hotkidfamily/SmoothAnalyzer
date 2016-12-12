@@ -311,7 +311,6 @@ void PulseAnalyzer::WriteRawPulseDetail()
 void PulseAnalyzer::WriteSyncDetail()
 {
 	uint32_t longIndex = 0;
-	uint32_t shortIndex = 0;
 	std::list<PulseDesc> shortChannel; // short list
 	std::list<PulseDesc> longChannel; // long list
 	int32_t sync = 0;
@@ -323,19 +322,14 @@ void PulseAnalyzer::WriteSyncDetail()
 	file.WriteCsvLine("sync, channel 1, index, start, end, duration, interval, channel 2, index, start, end, duration, interval");
 
 	longIndex = mPulseList[LCHANNEL].size() >= mPulseList[RCHANNEL].size()? LCHANNEL : RCHANNEL;
-	shortIndex = longIndex == LCHANNEL?RCHANNEL:LCHANNEL;
 
-	shortChannel = mPulseList[shortIndex];
+	shortChannel = longIndex==LCHANNEL?mPulseList[RCHANNEL]:mPulseList[LCHANNEL];
 	longChannel = mPulseList[longIndex];
 
-	longIndex = shortIndex = 0;
-	
 	std::list<PulseDesc>::iterator itShort = shortChannel.begin();
 	std::list<PulseDesc>::iterator itLong = longChannel.begin();
-	std::list<PulseDesc>::iterator itSNext = shortChannel.begin();
 	std::list<PulseDesc>::iterator itLongNext = longChannel.begin();
 
-	itSNext++;
 	itLongNext++;
 
 	while(1){
@@ -361,16 +355,10 @@ void PulseAnalyzer::WriteSyncDetail()
 			} else if(secondDiff == 0.0f){
 				longPulse = *itLong;
 			}else if(firstDiff > 0 && secondDiff < 0){
-				if(fabs(firstDiff) <= fabs(secondDiff)){
-					if(fabs(firstDiff) > SYNC_THRESHOLD){
-						longPulse = *itLong;
-					}else{
-						longPulse = *itLong;
-						shortPulse = *itShort;
-						sync = (int32_t)(firstDiff*1000);
-					}
-				}else{
-					longPulse = *itLong;
+				longPulse = *itLong;
+				if((fabs(firstDiff) <= fabs(secondDiff)) && (fabs(firstDiff) < SYNC_THRESHOLD)){
+					shortPulse = *itShort;
+					sync = (int32_t)(firstDiff*1000);
 				}
 			} else if (firstDiff > 0 && secondDiff > 0){
 				if(firstDiff >= secondDiff){
@@ -384,20 +372,16 @@ void PulseAnalyzer::WriteSyncDetail()
 				if(firstDiff < secondDiff){
 					inter_log(Error, "can not happend.");
 				}else{
-					if(fabs(firstDiff) > SYNC_THRESHOLD){
-						shortPulse = *itShort;
-					}else{
-						shortPulse = *itShort;
+					shortPulse = *itShort;
+					if(fabs(firstDiff) <= SYNC_THRESHOLD){
 						longPulse = *itLong;
 						sync = (int32_t)(firstDiff*1000);
 					}
 				}
 			}			
-		}else if(itShort != shortChannel.end()){
-			// only "L" channel
+		}else if(itShort != shortChannel.end()){// only "L" channel
 			shortPulse = *itShort;
-		}else if(itLong != longChannel.end()){
-			// only "R" channel
+		}else if(itLong != longChannel.end()){// only "R" channel
 			longPulse = *itLong;
 		}else{
 			break;
