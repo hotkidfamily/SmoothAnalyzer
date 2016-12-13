@@ -43,45 +43,45 @@ static int32_t parse_parameters(int32_t argc, char* argv[])
 static int32_t analyzeFileByChannel(CHANNELID index, std::string file, PulseAnalyzer* &analyzer)
 {
 	std::string ChannelData;
-	WAVFileParse *wavParser = new WAVFileParse();
-	WaveAnalyzer *channelAnalyzer = NULL;
+	std::string sourceData;
+	DataSeparater *dataSeparater = new DataSeparater(file + "." + chanenlIDNameList[index]);
+	CWaveReader *fileReader = new CWaveReader();
+	WaveAnalyzer *channelAnalyzer = new WaveAnalyzer(index, file);
 	int32_t ret = 0;
-	std::ofstream rawData;
-	std::string dumpfile = file + chanenlIDNameList[index];
-	dumpfile += ".raw.pcm";
-	rawData.open(dumpfile.c_str(), std::ios::binary);
 
-	if(!wavParser->OpenWavFile(file.c_str())){
-		delete wavParser;
+	if (!fileReader->Open(file.c_str())){
 		return -1;
 	}
 
-	channelAnalyzer = new WaveAnalyzer(index, file);
-	channelAnalyzer->SetWavFormat(wavParser->GetWavFormat());
+	channelAnalyzer->SetWavFormat(fileReader->GetFormat());
+	dataSeparater->SetWavFormat(fileReader->GetFormat());
 
 	while(1){
 		uint32_t startSampleIndex = 0;
 		uint32_t endSampleIndex = 0;
 
 		ChannelData.clear();
-		ret = wavParser->GetChannelData(index, ChannelData);
-		rawData.write(ChannelData.c_str(), ChannelData.size());
+		ret = fileReader->ReadData(sourceData);
+
+		dataSeparater->GetChannelData(index, sourceData ,ChannelData);
 
 		retType retAnalyzer = RET_OK;
 
 		retAnalyzer = channelAnalyzer->Analyzer(ChannelData, startSampleIndex, endSampleIndex);
 		if(retAnalyzer == RET_FIND_PULSE){
-			analyzer->RecordTimestamp(index, wavParser->ConvertIndexToMS(startSampleIndex), wavParser->ConvertIndexToMS(endSampleIndex));
+			analyzer->RecordTimestamp(index, fileReader->SampeIndexToMS(startSampleIndex), fileReader->SampeIndexToMS(endSampleIndex));
 		}
 
 		if(ret < 0)
 			break;
 	}
 
-	rawData.close();
+	fileReader->Close();
 
-	wavParser->CloseWavFile();
-	delete wavParser;
+	delete fileReader;
+	delete channelAnalyzer;
+	delete dataSeparater;
+
 	return ret == EOF;
 }
 
@@ -94,6 +94,8 @@ static int analyzeFile(std::string file)
 
 	analyzeFileByChannel(LCHANNEL, file, smoothAnalyzer);
 	analyzeFileByChannel(RCHANNEL, file, smoothAnalyzer);
+
+	inter_log(Info, "\nAnalyzer... ");
 
 	smoothAnalyzer->OutputResult();
 

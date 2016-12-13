@@ -2,6 +2,8 @@
 
 #ifndef _WAVE_H 
 #define _WAVE_H 
+#include "stdafx.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
@@ -33,7 +35,8 @@ public:
     bool Open(const char* pFileName);
     void Close(); 
     size_t ReadData(uint8_t* pData, int nLen); 
-    bool GetFormat(WaveFormat* pWaveFormat); 
+	int32_t CWaveReader::ReadData(std::string &data);
+    WaveFormat &GetFormat(); 
     FILE* Handle();
 	double Progress() { return m_Progress; };
 	double SampeIndexToMS(uint32_t sampleIndex);

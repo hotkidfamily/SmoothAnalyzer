@@ -211,16 +211,13 @@ BOOL PulseAnalyzer::DetectPulseWidth(double &duration)
 	return bRet;
 }
 
-void PulseAnalyzer::GetFrameInfo()
+void PulseAnalyzer::GetFrameInfo(double &pulseDuration)
 {
-	double pulseDuration = 0.0f;
 	int32_t curFrameType = 0;
 	double referenceTimeBase = 0.0f;
 	double fps = 0.0f;
 	double MSE = 0.0f;
 	int32_t index = 0;
-
-	DetectPulseWidth(pulseDuration);
 
 	referenceTimeBase = min(mPulseList[LCHANNEL].front().start, mPulseList[RCHANNEL].front().start);
 	inter_log(Info, "Reference base time is %.3f ms", referenceTimeBase);
@@ -452,8 +449,15 @@ void PulseAnalyzer::WriteSmoothDetail()
 
 void PulseAnalyzer::OutputResult()
 {
-	GetFrameInfo();
+	double pulseWidth = 0.0f;
+	inter_log(Info, "Detect Pulse Width... ");
+	DetectPulseWidth(pulseWidth);
+	inter_log(Info, "Detect Frame Info... ");
+	GetFrameInfo(pulseWidth);
+	inter_log(Info, "Write Raw Data... ");
 	WriteRawPulseDetail();
+	inter_log(Info, "Write Sync Data... ");
 	WriteSyncDetail();
+	inter_log(Info, "Write Smooth Data... ");
 	WriteSmoothDetail();
 }

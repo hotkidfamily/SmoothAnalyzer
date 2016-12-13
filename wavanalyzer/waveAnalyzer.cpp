@@ -1,7 +1,6 @@
 #include "StdAfx.h"
 #include "waveAnalyzer.h"
 #include "log.h"
-#include <numeric>
 
 WaveAnalyzer::WaveAnalyzer(void)
 : bInPulse (false)

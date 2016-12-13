@@ -26,7 +26,7 @@ public:
 	~WaveAnalyzer(void);
 
 	retType Analyzer(std::string &channelData, uint32_t &start, uint32_t &end);
-	void SetWavFormat(WaveFormat format) { mWavFormat = format; };
+	void SetWavFormat(WaveFormat &format) { mWavFormat = format; };
 
 protected:
 	int32_t SplitDataAndFindPulse(std::string &channelData, std::list<pulseIndex>&pulses);

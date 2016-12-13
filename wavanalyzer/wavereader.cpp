@@ -3,7 +3,7 @@
 
 // CWaveReader¿‡ µœ÷    
 CWaveReader::CWaveReader()   
-:m_pFile(NULL)
+: m_pFile(NULL)
 {   
 	memset(&m_WaveFormat, 0, sizeof(m_WaveFormat));   
 }    
@@ -133,13 +133,37 @@ size_t CWaveReader::ReadData(uint8_t* pData, int32_t nLen)
 		m_Progress = pos*100.0 / m_nDataLen;
 	}
 
+	fprintf(stderr, "\t progress %.3f\r", Progress());
+
 	return size;   
 } 
 
-bool CWaveReader::GetFormat(WaveFormat* pWaveFormat)   
+int32_t CWaveReader::ReadData(std::string &data)
+{      
+	int32_t ret = 0;
+	uint32_t nbReadSamples = m_WaveFormat.nSamplerate / 100;
+	uint32_t nbSampleDataSize = nbReadSamples * m_WaveFormat.nblockalign; // 100ms
+	int32_t readDataLength = 0;
+
+	data.resize(nbSampleDataSize, 0);
+	char* buffer = (char*)data.c_str();
+
+	readDataLength = ReadData((unsigned char*)buffer, data.size());
+	if(readDataLength < nbSampleDataSize){ 
+		if(readDataLength<0){
+			ret = -2;
+			goto cleanup;
+		}
+		ret = EOF;
+	}
+
+cleanup:
+	return ret;
+} 
+
+WaveFormat &CWaveReader::GetFormat()
 {   
-	memcpy(pWaveFormat, &m_WaveFormat, sizeof(m_WaveFormat));   
-	return true;
+	return m_WaveFormat;
 }   
 
 FILE* CWaveReader::Handle()

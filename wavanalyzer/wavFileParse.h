@@ -3,24 +3,21 @@
 #include "pulse.h"
 #include "csvFileMaker.h"
 #include "wavereader.h"
+#include "DataFilters.h"
 
-class WAVFileParse
+class DataSeparater
 {
 public:
-	WAVFileParse(void);
-	~WAVFileParse(void);
+	DataSeparater(std::string &name);
+	~DataSeparater(void);
 
-	bool OpenWavFile(const char* filename);
-	bool CloseWavFile();
-	int32_t GetChannelData(int32_t index, std::string &samples);
-	WaveFormat &GetWavFormat() { return m_wavFormat; };
-	double ConvertIndexToMS(int32_t index);
+	int32_t GetChannelData(int32_t index, std::string &source, std::string &samples);
+	bool SetWavFormat(WaveFormat &format){ m_wavFormat = format; return true; };
 
 protected:
-	void ReportProgress(double progree);
 	int32_t SeparateChannelData(int32_t index, std::string &originalData, std::string &channelData);
 	
 private:
-	CWaveReader* m_wavReader;
 	WaveFormat m_wavFormat;
+	iDump *mDataDump;
 };
