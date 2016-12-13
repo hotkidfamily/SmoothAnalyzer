@@ -1,5 +1,6 @@
 #pragma once
 
+#include "pulse.h"
 #include "csvFileMaker.h"
 #include "wavereader.h"
 

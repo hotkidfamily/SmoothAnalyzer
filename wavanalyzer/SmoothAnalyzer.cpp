@@ -6,13 +6,15 @@ const struct tagPulseType{
 	PULSETYPE lPulseType;
 	PULSETYPE rPulseType;
 } pulseTable[] = {
+	{ PULSE_LOW,	PULSE_HIGH  },
 	{ PULSE_HIGH,	PULSE_LOW	},
 	{ PULSE_HIGH,	PULSE_HIGH	},
-	{ PULSE_LOW,	PULSE_HIGH  },
 	{ PULSE_LOW,	PULSE_LOW	},
 };
 
 #define PULSETABLECOUNT (ARRAYSIZE(pulseTable))
+#define MINIST_PULSE_DURATION (16)
+#define SYNC_THRESHOLD (0.015)
 
 PulseAnalyzer::PulseAnalyzer(std::string &filename)
 {
@@ -33,6 +35,10 @@ PulseAnalyzer::~PulseAnalyzer(void)
 
 void PulseAnalyzer::RecordTimestamp(CHANNELID channelID, double start, double end)
 {
+	if(((end - start)*1000) < MINIST_PULSE_DURATION){
+		return ;
+	}
+
 	if(!mPulseList[channelID].empty()){
 		PulseDesc &lastTime = mPulseList[channelID].back();
 
@@ -101,7 +107,7 @@ double PulseAnalyzer::CacluMSEInOneSecond(std::list<FrameDesc>& frameList)
 	std::list<FrameDesc>::reverse_iterator rit;
 
 	for (rit = frameList.rbegin(); rit != frameList.rend(); rit++){
-		if((frameList.back().end - rit->start)*1000.0 > 1000.0f){
+		if((frameList.back().end - rit->start) > 1.0f){
 			std::list<FrameDesc> frameListSplit;
 
 			frameListSplit.assign(frameList.rbegin(), rit);
@@ -121,7 +127,7 @@ double PulseAnalyzer::CacluFps(std::list<FrameDesc> &frameList)
 
 	if (!frameList.empty()){
 		duraionInMs = frameList.back().end - frameList.front().start;
-		fps = frameList.size()*1000.0 / duraionInMs;
+		fps = frameList.size() / duraionInMs;
 	}
 
 	return fps;
@@ -134,7 +140,7 @@ double PulseAnalyzer::CacluFrameRate(std::list<FrameDesc> &frameList)
 	std::list<FrameDesc>::reverse_iterator rit;
 
 	for (rit = frameList.rbegin(); rit != frameList.rend(); rit++){
-		if ((frameList.back().end - rit->start)*1000.0f >= 1000.0f){
+		if ((frameList.back().end - rit->start) >= 1.0f){
 			std::list<FrameDesc> frameListSplit;
 
 			frameListSplit.assign(frameList.rbegin(), rit);
@@ -254,7 +260,12 @@ void PulseAnalyzer::GetFrameInfo()
 				}
 			}else{
 				lit++;
+				if(lit != mPulseList[LCHANNEL].end())
+					lBak = *lit;
+
 				rit++;
+				if(rit != mPulseList[RCHANNEL].end())
+					rBak = *rit;
 			}
 		}
 	}
@@ -268,7 +279,7 @@ void PulseAnalyzer::WriteRawPulseDetail()
 	std::string filePath = mSourceFileName + ".raw.pulse.csv";
 	CSVFile file(filePath);
 
-	file.WriteCsvLine(" channel, start, end, duration, channel, start, end, duration, ");
+	file.WriteCsvLine(" channel, index, start, end, duration, type, channel, index, start, end, duration, type, ");
 
 	for(lit = mPulseList[LCHANNEL].begin(), rit = mPulseList[RCHANNEL].begin();
 		(lit != mPulseList[LCHANNEL].end()) || (rit!=mPulseList[RCHANNEL].end());)
@@ -287,26 +298,25 @@ void PulseAnalyzer::WriteRawPulseDetail()
 
 		if(!lPulse.IsInvalid() && !rPulse.IsInvalid()){
 			file.WriteCsvLine(
-				" %d, %d, %.3f, %.3f, %.3f, "
-				" %d, %d, %.3f, %.3f, %.3f, ",
-				lPulse.channelID, lPulse.index, lPulse.start, lPulse.end, lPulse.duration * 1000,
-				rPulse.channelID, rPulse.index, rPulse.start, rPulse.end, rPulse.duration * 1000);
+				" %c, %d, %.3f, %.3f, %.3f, %d, "
+				" %c, %d, %.3f, %.3f, %.3f, %d, ",
+				lPulse.channelName, lPulse.index, lPulse.start, lPulse.end, lPulse.duration * 1000, lPulse.type, 
+				rPulse.channelName, rPulse.index, rPulse.start, rPulse.end, rPulse.duration * 1000, rPulse.type);
 		}else if(!lPulse.IsInvalid()){
 			file.WriteCsvLine(
-				" %d, %d, %.3f, %.3f, %.3f, "
-				" ,,,,, ",
-				lPulse.channelID, lPulse.index, lPulse.start, lPulse.end, lPulse.duration * 1000);
+				" %c, %d, %.3f, %.3f, %.3f, %d, "
+				" ,,,,,, ",
+				lPulse.channelName, lPulse.index, lPulse.start, lPulse.end, lPulse.duration * 1000, lPulse.type);
 		}else if(!rPulse.IsInvalid()){
 			file.WriteCsvLine(
-				" ,,,,, "
-				" %d, %d, %.3f, %.3f, %.3f, ",
-				rPulse.channelID, rPulse.index, rPulse.start, rPulse.end, rPulse.duration * 1000);
+				" ,,,,,, "
+				" %c, %d, %.3f, %.3f, %.3f, %d, ",
+				rPulse.channelName, rPulse.index, rPulse.start, rPulse.end, rPulse.duration * 1000, rPulse.type);
 		}
 		
 	}
 }
 
-#define SYNC_THRESHOLD (0.015)
 /* compare short list to long list and write value */ 
 void PulseAnalyzer::WriteSyncDetail()
 {
@@ -392,24 +402,24 @@ void PulseAnalyzer::WriteSyncDetail()
 
 		if(!longPulse.IsInvalid() && !shortPulse.IsInvalid()){
 			file.WriteCsvLine("%d, "
-				"%d, %u, %.3f, %.3f, %.3f, %d, "
-				"%d, %u, %.3f, %.3f, %.3f, %d, ",
+				"%c, %u, %.3f, %.3f, %.3f, %d, "
+				"%c, %u, %.3f, %.3f, %.3f, %d, ",
 				sync,
-				shortPulse.channelID, shortPulse.index, shortPulse.start, shortPulse.end, shortPulse.duration * 1000, 0, 
-				longPulse.channelID, longPulse.index, longPulse.start, longPulse.end, longPulse.duration * 1000, 0);
+				shortPulse.channelName, shortPulse.index, shortPulse.start, shortPulse.end, shortPulse.duration * 1000, 0, 
+				longPulse.channelName, longPulse.index, longPulse.start, longPulse.end, longPulse.duration * 1000, 0);
 			itShort++;
 			itLong++;
 		}else if (!longPulse.IsInvalid()){
 			file.WriteCsvLine(", "
-				" ,  ,  ,  ,  , ,"
-				"%d, %u, %.3f, %.3f, %.3f, %d,",
-				longPulse.channelID, longPulse.index, longPulse.start, longPulse.end, longPulse.duration * 1000, 0);
+				" ,  ,  ,  ,  , , "
+				"%c, %u, %.3f, %.3f, %.3f, %d,",
+				longPulse.channelName, longPulse.index, longPulse.start, longPulse.end, longPulse.duration * 1000, 0);
 			itLong++;
 		}else if(!shortPulse.IsInvalid()){
 			file.WriteCsvLine(", "
-				"%d, %u, %.3f, %.3f, %.3f, %d, "
+				"%c, %u, %.3f, %.3f, %.3f, %d, "
 				", , , , , , ",
-				shortPulse.channelID, shortPulse.index, shortPulse.start, shortPulse.end, shortPulse.duration * 1000, 0);
+				shortPulse.channelName, shortPulse.index, shortPulse.start, shortPulse.end, shortPulse.duration * 1000, 0);
 			itShort++;
 		}
 	}

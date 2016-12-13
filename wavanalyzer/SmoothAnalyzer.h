@@ -1,30 +1,13 @@
 #pragma once
 
 #include "stdafx.h"
+#include "pulse.h"
 #include "csvFileMaker.h"
 
 enum CHANNELID{
 	LCHANNEL,
 	RCHANNEL,
 	MAX_CHANNEL = 0xFF
-};
-
-enum PULSETYPE{
-	PULSE_LOW,
-	PULSE_HIGH,
-	PULSE_NONE
-};
-
-struct Pulse{
-	Pulse(double s, double e)
-		: start(s)
-		, end(e)
-		, duration(e-s)
-	{}
-
-	double start;
-	double end;
-	double duration;
 };
 
 struct PulseDesc: public Pulse
@@ -41,6 +24,7 @@ struct PulseDesc: public Pulse
 	PulseDesc(CHANNELID id, double start, double end, PULSETYPE pulseType, int32_t idx)
 		: Pulse(start, end)
 		, channelID(id)
+		, channelName(id==LCHANNEL?'L':'R')
 		, type(pulseType)
 		, index(idx)
 	{}
@@ -53,6 +37,7 @@ struct PulseDesc: public Pulse
 	int32_t index;
 	PULSETYPE type;
 	CHANNELID channelID;
+	char channelName;
 };
 
 struct FrameDesc: public Pulse
