@@ -30,7 +30,7 @@ class ABSFilter
 {
 public:
 	ABSFilter(std::string &filePath);
-	~ABSFilter();
+	~ABSFilter(){};
 
 	virtual int32_t process(std::string &samples, int32_t Bps);
 };
@@ -41,7 +41,7 @@ class UDFilter
 {
 public:
 	UDFilter(std::string &filePath);
-	~UDFilter();
+	~UDFilter(){};
 
 	virtual int32_t process(std::string &samples, int32_t Bps);
 };
@@ -52,7 +52,7 @@ class SmoothFilter
 {
 public:
 	SmoothFilter(std::string &filePath);
-	~SmoothFilter();
+	~SmoothFilter(){};
 
 	virtual int32_t process(std::string &samples, int32_t Bps);
 };

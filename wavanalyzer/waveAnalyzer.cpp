@@ -27,6 +27,8 @@ WaveAnalyzer::WaveAnalyzer(CHANNELID id, std::string &filePath)
 
 WaveAnalyzer::~WaveAnalyzer(void)
 {
+	delete static_cast<UDFilter*>(mFilters[FILTER_UPDOWN]);
+	delete static_cast<SmoothFilter*>(mFilters[FILTER_SMOOTH]);
 }
 
 int32_t WaveAnalyzer::UpdateThreshold(std::string &channelData)
@@ -195,10 +197,8 @@ int32_t WaveAnalyzer::SplitDataAndFindPulse(std::string &channelData, std::list<
 
 retType WaveAnalyzer::Analyzer(std::string &channelData, uint32_t &start, uint32_t &end)
 {
-	mFilters[FILTER_UPDOWN]->process(channelData,GetBytesPerSample());
-	// if in pulse 
-	// else not in pulse
-	mFilters[FILTER_SMOOTH]->process(channelData,GetBytesPerSample());
+	mFilters[FILTER_UPDOWN]->process(channelData, GetBytesPerSample());
+	mFilters[FILTER_SMOOTH]->process(channelData, GetBytesPerSample());
 
 	if(!IfThresholdValid()){
 		UpdateThreshold(channelData);
