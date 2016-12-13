@@ -4,10 +4,21 @@
 #define SMOOTH_STEP (22)
 #define BYTESPERSAMPLE (2)
 
-SmoothFilter::SmoothFilter(std::string &filePath)
+iDump::iDump(std::string &filePath)
 {
-	std::string file = filePath + ".smooth.pcm";
-	dumpfile.open(file.c_str(), std::ios::binary);
+	dumpfile.open(filePath.c_str(), std::ios::binary);
+}
+
+int32_t iDump::DumpData(std::string &data)
+{
+	dumpfile.write(data.c_str(), data.size());
+
+	return 0;
+}
+
+SmoothFilter::SmoothFilter(std::string &filePath)
+	: iDump(filePath + ".smooth.pcm")
+{
 }
 
 int32_t SmoothFilter::process(std::string &channelData, int32_t Bps)
@@ -29,15 +40,14 @@ int32_t SmoothFilter::process(std::string &channelData, int32_t Bps)
 		}
 	}
 
-	dumpfile.write(channelData.c_str(), channelData.size());
+	DumpData(channelData);
 
 	return 0;
 }
 
 UDFilter::UDFilter(std::string &filePath)
+	:iDump(filePath + ".RemoveNegative.pcm")
 {
-	std::string file = filePath + ".RemoveNegative.pcm";
-	dumpfile.open(file.c_str(), std::ios::binary);
 }
 
 int32_t UDFilter::process(std::string &channelData, int32_t Bps)
@@ -55,16 +65,15 @@ int32_t UDFilter::process(std::string &channelData, int32_t Bps)
 		}
 	}
 
-	dumpfile.write(channelData.c_str(), channelData.size());
+	DumpData(channelData);
 
 	return 0;
 }
 
 
 ABSFilter::ABSFilter(std::string &filePath)
+		:iDump(filePath + ".abs.pcm")
 {
-	std::string file = filePath + ".RemoveNegative.pcm";
-	dumpfile.open(file.c_str(), std::ios::binary);
 }
 
 int32_t ABSFilter::process(std::string &channelData, int32_t Bps)
@@ -77,7 +86,7 @@ int32_t ABSFilter::process(std::string &channelData, int32_t Bps)
 		*(data+i) = abs(*(data+i));
 	}
 
-	dumpfile.write(channelData.c_str(), channelData.size());
+	DumpData(channelData);
 
 	return 0;
 }

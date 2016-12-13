@@ -17,6 +17,9 @@ public:
 };
 
 class iDump{
+public:
+	iDump(std::string &filepath);
+	int32_t DumpData(std::string &data);
 protected:
 	std::ofstream dumpfile;
 };
