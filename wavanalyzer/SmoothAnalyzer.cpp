@@ -6,10 +6,10 @@ const struct tagPulseType{
 	PULSETYPE lPulseType;
 	PULSETYPE rPulseType;
 } pulseTable[] = {
-	{ PULSE_LOW,	PULSE_HIGH  },
 	{ PULSE_HIGH,	PULSE_LOW	},
-	{ PULSE_HIGH,	PULSE_HIGH	},
+	{ PULSE_LOW,	PULSE_HIGH  },
 	{ PULSE_LOW,	PULSE_LOW	},
+	{ PULSE_HIGH,	PULSE_HIGH	},
 };
 
 #define PULSETABLECOUNT (ARRAYSIZE(pulseTable))
@@ -171,37 +171,60 @@ BOOL PulseAnalyzer::DetectPulseWidth(double &duration)
 	int32_t continueCount = 0;
 	int32_t curFrameType = 0;
 	double durationSum = 0.0f; // sum of list suitable duration
-	double durationFrames = 0.0f; // 
+	double frameDuration = 0.0f; // 
 	int32_t durationCount = 0;
 	BOOL bRet = FALSE;
 
-	std::list<PulseDesc>::iterator lit;
-	std::list<PulseDesc>::iterator rit;
+	std::list<PulseDesc>::iterator itLong;
+	std::list<PulseDesc>::iterator itShort;
+	std::list<PulseDesc> shortChannel; // short list
+	std::list<PulseDesc> longChannel; // long list
 
-	for(lit = mPulseList[LCHANNEL].begin(), rit = mPulseList[RCHANNEL].begin();
-		(lit != mPulseList[LCHANNEL].end()) && (rit!=mPulseList[RCHANNEL].end());
-		lit++, rit++)
+	int32_t step = 1;
+
+	if (mPulseList[LCHANNEL].size() >= mPulseList[RCHANNEL].size()){
+		longChannel = mPulseList[LCHANNEL];
+		shortChannel = mPulseList[RCHANNEL];
+	} else{
+		longChannel = mPulseList[RCHANNEL];
+		shortChannel = mPulseList[LCHANNEL];
+	}
+
+	itLong = longChannel.begin();
+	itShort = shortChannel.begin();
+
+	for(; (itLong != longChannel.end()) && (itShort != shortChannel.end()); )
 	{
-		curFrameType = GetPulseType(lit->type, rit->type);
+		curFrameType = GetPulseType(itShort->type, itLong->type);
+		inter_log(Info, "get frame type %d", curFrameType);
 		if(curFrameType == exceptNextType){
 			continueCount++;
-			durationFrames += (lit->duration + rit->duration);
+			frameDuration += itLong->duration;
 			exceptNextType = (exceptNextType+1)%PULSETABLECOUNT;
 
 			if(continueCount == PULSETABLECOUNT){
-				durationCount += PULSETABLECOUNT*2;
-				durationSum += durationFrames;
-				durationFrames = 0.0f;
+				durationCount += PULSETABLECOUNT;
+				durationSum += frameDuration;
+				frameDuration = 0.0f;
+				continueCount = 0;
 			}
 		}else{
 			continueCount = 0;
-			exceptNextType = curFrameType; // restart calculate
-			durationFrames = 0.0f;
+			exceptNextType = (curFrameType+1)%PULSETABLECOUNT; // restart calculate
+			frameDuration = 0.0f;
 		}
+
+		itLong++;
+		
+		if(!(step % 2)){
+			step = 0;
+			itShort++;
+		}
+		step++;
 	}
 
 	if(durationCount){
-		duration = durationSum / durationCount;
+		duration = durationSum*1000 / durationCount;
 		bRet = TRUE;
 		inter_log(Info, "Detect frame duration %.3f ms", duration);
 	}else{
@@ -339,8 +362,8 @@ void PulseAnalyzer::WriteSyncDetail()
 	itShort = shortChannel.begin();
 	itLong = longChannel.begin();
 	
-	file.WriteCsvLine("sync, channel 1, index, start, end, duration, interval, "
-		"channel 2, index, start, end, duration, interval");
+	file.WriteCsvLine("sync, channel 1, index, start, end, duration, type, interval, "
+		"channel 2, index, start, end, duration, type, interval, ");
 
 	while(1){
 		PulseDesc shortPulse, longPulse;
@@ -399,24 +422,24 @@ void PulseAnalyzer::WriteSyncDetail()
 
 		if(!longPulse.IsInvalid() && !shortPulse.IsInvalid()){
 			file.WriteCsvLine("%d, "
-				"%c, %u, %.3f, %.3f, %.3f, %d, "
-				"%c, %u, %.3f, %.3f, %.3f, %d, ",
+				"%c, %u, %.3f, %.3f, %.3f, %d, %d, "
+				"%c, %u, %.3f, %.3f, %.3f, %d, %d, ",
 				sync,
-				shortPulse.channelName, shortPulse.index, shortPulse.start, shortPulse.end, shortPulse.duration * 1000, 0, 
-				longPulse.channelName, longPulse.index, longPulse.start, longPulse.end, longPulse.duration * 1000, 0);
+				shortPulse.channelName, shortPulse.index, shortPulse.start, shortPulse.end, shortPulse.duration * 1000, shortPulse.type, 0, 
+				longPulse.channelName, longPulse.index, longPulse.start, longPulse.end, longPulse.duration * 1000, longPulse.type, 0);
 			itShort++;
 			itLong++;
 		}else if (!longPulse.IsInvalid()){
 			file.WriteCsvLine(", "
 				" ,  ,  ,  ,  , , "
-				"%c, %u, %.3f, %.3f, %.3f, %d,",
-				longPulse.channelName, longPulse.index, longPulse.start, longPulse.end, longPulse.duration * 1000, 0);
+				"%c, %u, %.3f, %.3f, %.3f, %d, %d,",
+				longPulse.channelName, longPulse.index, longPulse.start, longPulse.end, longPulse.duration * 1000, longPulse.type, 0);
 			itLong++;
 		}else if(!shortPulse.IsInvalid()){
 			file.WriteCsvLine(", "
-				"%c, %u, %.3f, %.3f, %.3f, %d, "
+				"%c, %u, %.3f, %.3f, %.3f, %d, %d,"
 				", , , , , , ",
-				shortPulse.channelName, shortPulse.index, shortPulse.start, shortPulse.end, shortPulse.duration * 1000, 0);
+				shortPulse.channelName, shortPulse.index, shortPulse.start, shortPulse.end, shortPulse.duration * 1000, shortPulse.type, 0);
 			itShort++;
 		}
 	}

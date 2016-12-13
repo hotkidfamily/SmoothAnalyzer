@@ -118,7 +118,7 @@ bool CWaveReader::ReadHeader()
 	return false;   
 }
 
-double CWaveReader::SampeIndexToMS(uint32_t sampleIndex)
+double CWaveReader::SampeIndexToSecond(uint32_t sampleIndex)
 {
 	return sampleIndex*1.0 / m_WaveFormat.nSamplerate;
 }
@@ -141,7 +141,7 @@ size_t CWaveReader::ReadData(uint8_t* pData, int32_t nLen)
 int32_t CWaveReader::ReadData(std::string &data)
 {      
 	int32_t ret = 0;
-	uint32_t nbReadSamples = m_WaveFormat.nSamplerate / 100;
+	uint32_t nbReadSamples = m_WaveFormat.nSamplerate / 1;
 	uint32_t nbSampleDataSize = nbReadSamples * m_WaveFormat.nblockalign; // 100ms
 	int32_t readDataLength = 0;
 

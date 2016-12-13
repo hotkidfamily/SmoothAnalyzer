@@ -39,7 +39,7 @@ public:
     WaveFormat &GetFormat(); 
     FILE* Handle();
 	double Progress() { return m_Progress; };
-	double SampeIndexToMS(uint32_t sampleIndex);
+	double SampeIndexToSecond(uint32_t sampleIndex);
 
 private:
     bool ReadHeader(); 

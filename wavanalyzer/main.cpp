@@ -57,6 +57,7 @@ static int32_t analyzeFileByChannel(CHANNELID index, std::string file, PulseAnal
 	dataSeparater->SetWavFormat(fileReader->GetFormat());
 
 	while(1){
+		std::list<SamplePos> SampleAreaList;
 		uint32_t startSampleIndex = 0;
 		uint32_t endSampleIndex = 0;
 
@@ -67,9 +68,13 @@ static int32_t analyzeFileByChannel(CHANNELID index, std::string file, PulseAnal
 
 		retType retAnalyzer = RET_OK;
 
-		retAnalyzer = channelAnalyzer->Analyzer(ChannelData, startSampleIndex, endSampleIndex);
+		retAnalyzer = channelAnalyzer->Analyzer(ChannelData, SampleAreaList);
 		if(retAnalyzer == RET_FIND_PULSE){
-			analyzer->RecordTimestamp(index, fileReader->SampeIndexToMS(startSampleIndex), fileReader->SampeIndexToMS(endSampleIndex));
+			while(!SampleAreaList.empty()){
+				SamplePos &sampleArea = SampleAreaList.front();
+				analyzer->RecordTimestamp(index, fileReader->SampeIndexToSecond(sampleArea.startIndex), fileReader->SampeIndexToSecond(sampleArea.endIndex));
+				SampleAreaList.pop_front();
+			}
 		}
 
 		if(ret < 0)
