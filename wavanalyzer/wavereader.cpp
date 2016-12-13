@@ -39,7 +39,7 @@ bool CWaveReader::ReadHeader()
 	if(!m_pFile)   
 		return false;   
 
-	int Error = 0;   
+	int32_t Error = 0;   
 	do   
 	{   
 		char data[5] = { 0 };   
@@ -68,7 +68,7 @@ bool CWaveReader::ReadHeader()
 		memset(data, 0, sizeof(data)); 
 		fread(data, 4, 1, m_pFile);   
 
-		int nFmtSize =  data[3] << 24;
+		int32_t nFmtSize =  data[3] << 24;
 		nFmtSize	+=  data[2] << 16;
 		nFmtSize    +=  data[1] << 8;
 		nFmtSize    +=  data[0];
@@ -111,19 +111,19 @@ bool CWaveReader::ReadHeader()
 
 	ftell(m_pFile);
 	if(0 == Error)   
-		return true;   
+		return true;
 	else
 		fseek(m_pFile, 0, 0);
 
 	return false;   
 }
 
-double CWaveReader::SampeIndexToMS(unsigned int sampleIndex)
+double CWaveReader::SampeIndexToMS(uint32_t sampleIndex)
 {
 	return sampleIndex*1.0 / m_WaveFormat.nSamplerate;
 }
 
-size_t CWaveReader::ReadData(unsigned char* pData, int nLen)   
+size_t CWaveReader::ReadData(uint8_t* pData, int32_t nLen)   
 {      
 	size_t size = 0;
 	if(m_pFile)
