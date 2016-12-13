@@ -2,21 +2,54 @@
 #include "stdafx.h"
 
 enum FILTERS_INDEX{
-	FITLER_ABS,
+	FILTER_ABS,
 	FILTER_SMOOTH,
 	FILTER_UPDOWN,
+	FILTER_COUNT,
 };
 
-class DataFilters
+class IFilter{
+protected:
+	~IFilter(){};
+
+public:
+	virtual int32_t process(std::string &samples, int32_t bytesPerSample) = 0;
+};
+
+class iDump{
+protected:
+	std::ofstream dumpfile;
+};
+
+class ABSFilter
+	: public IFilter
+	, public iDump
 {
 public:
-	DataFilters(void);
-	~DataFilters(void);
+	ABSFilter(std::string &filePath);
+	~ABSFilter();
 
-	int32_t filter(FILTERS_INDEX, std::string &samples, int32_t bytesPerSample);
+	virtual int32_t process(std::string &samples, int32_t Bps);
+};
 
-protected:
-	int32_t AbsFilter(std::string &, int32_t Bps);
-	int32_t Updown2Filter(std::string &, int32_t Bps);
-	int32_t SmoothFilter(std::string &, int32_t Bps);
+class UDFilter
+	: public IFilter
+	, public iDump
+{
+public:
+	UDFilter(std::string &filePath);
+	~UDFilter();
+
+	virtual int32_t process(std::string &samples, int32_t Bps);
+};
+
+class SmoothFilter
+	: public IFilter
+	, public iDump
+{
+public:
+	SmoothFilter(std::string &filePath);
+	~SmoothFilter();
+
+	virtual int32_t process(std::string &samples, int32_t Bps);
 };

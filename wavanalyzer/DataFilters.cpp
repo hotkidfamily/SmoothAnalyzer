@@ -1,19 +1,16 @@
 #include "StdAfx.h"
 #include "DataFilters.h"
 
-DataFilters::DataFilters(void)
-{
-}
-
-DataFilters::~DataFilters(void)
-{
-}
-
-
 #define SMOOTH_STEP (22)
 #define BYTESPERSAMPLE (2)
 
-int32_t DataFilters::SmoothFilter(std::string &channelData, int32_t Bps)
+SmoothFilter::SmoothFilter(std::string &filePath)
+{
+	std::string file = filePath + ".smooth.pcm";
+	dumpfile.open(file.c_str(), std::ios::binary);
+}
+
+int32_t SmoothFilter::process(std::string &channelData, int32_t Bps)
 {
 	int16_t *data = NULL;
 	char *filter_data = (char*)channelData.c_str();
@@ -32,10 +29,18 @@ int32_t DataFilters::SmoothFilter(std::string &channelData, int32_t Bps)
 		}
 	}
 
+	dumpfile.write(channelData.c_str(), channelData.size());
+
 	return 0;
 }
 
-int32_t DataFilters::Updown2Filter(std::string &channelData, int32_t Bps)
+UDFilter::UDFilter(std::string &filePath)
+{
+	std::string file = filePath + ".RemoveNegative.pcm";
+	dumpfile.open(file.c_str(), std::ios::binary);
+}
+
+int32_t UDFilter::process(std::string &channelData, int32_t Bps)
 {
 	int16_t *data = NULL;
 	char *filter_data = (char*)channelData.c_str();
@@ -49,10 +54,20 @@ int32_t DataFilters::Updown2Filter(std::string &channelData, int32_t Bps)
 			data[i] = 30000;
 		}
 	}
+
+	dumpfile.write(channelData.c_str(), channelData.size());
+
 	return 0;
 }
 
-int32_t DataFilters::AbsFilter(std::string &channelData, int32_t Bps)
+
+ABSFilter::ABSFilter(std::string &filePath)
+{
+	std::string file = filePath + ".RemoveNegative.pcm";
+	dumpfile.open(file.c_str(), std::ios::binary);
+}
+
+int32_t ABSFilter::process(std::string &channelData, int32_t Bps)
 {
 	int16_t *data = NULL;
 	char *filter_data = (char *)channelData.c_str();
@@ -62,24 +77,7 @@ int32_t DataFilters::AbsFilter(std::string &channelData, int32_t Bps)
 		*(data+i) = abs(*(data+i));
 	}
 
-	return 0;
-}
+	dumpfile.write(channelData.c_str(), channelData.size());
 
-int32_t DataFilters::filter(FILTERS_INDEX index, std::string &samples, int32_t bytesPerSample)
-{
-	int32_t ret = -1;
-	switch(index){
-		case FITLER_ABS:
-			ret = AbsFilter(samples, bytesPerSample);
-			break;
-		case FILTER_SMOOTH:
-			ret = SmoothFilter(samples, bytesPerSample);
-			break;
-		case FILTER_UPDOWN:
-			ret = Updown2Filter(samples, bytesPerSample);
-			break;
-		default:
-			break;
-	}
-	return ret;
+	return 0;
 }
