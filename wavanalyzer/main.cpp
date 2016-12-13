@@ -11,7 +11,7 @@
 #ifdef _DEBUG
 char* debug_args[] ={
 	"",
-	"..\\Debug"
+	"e:\\smooth\\sony_entertainment.wav"
 };
 #endif
 
@@ -147,9 +147,7 @@ int main(int argc, char* argv[])
 		goto cleanup;
 	}
 
-	if(GetAbsolutlyPath(argv[1], absPath) < 0){
-		goto cleanup;
-	}
+	absPath = argv[1];
 
 	fileFinder = new FileEnumer();
 	if(!fileFinder){
@@ -162,6 +160,9 @@ int main(int argc, char* argv[])
 		inter_log(Fatal, "path %s is invalid.", argv[1]);
 	}else if (ret > 0){
 		std::string file;
+		if(GetAbsolutlyPath(argv[1], absPath) < 0){
+			goto cleanup;
+		}
 		fileFinder->EnumDirectory(absPath + "*", ".wav");
 		while(!fileFinder->GetFile(file)){
 			file.insert(0, absPath);
