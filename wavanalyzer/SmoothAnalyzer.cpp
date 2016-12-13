@@ -196,7 +196,6 @@ BOOL PulseAnalyzer::DetectPulseWidth(double &duration)
 	for(; (itLong != longChannel.end()) && (itShort != shortChannel.end()); )
 	{
 		curFrameType = GetPulseType(itShort->type, itLong->type);
-		inter_log(Info, "get frame type %d", curFrameType);
 		if(curFrameType == exceptNextType){
 			continueCount++;
 			frameDuration += itLong->duration;
@@ -224,7 +223,7 @@ BOOL PulseAnalyzer::DetectPulseWidth(double &duration)
 	}
 
 	if(durationCount){
-		duration = durationSum*1000 / durationCount;
+		duration = durationSum / durationCount;
 		bRet = TRUE;
 		inter_log(Info, "Detect frame duration %.3f ms", duration);
 	}else{
@@ -237,10 +236,58 @@ BOOL PulseAnalyzer::DetectPulseWidth(double &duration)
 void PulseAnalyzer::GetFrameInfo(double &pulseDuration)
 {
 	int32_t curFrameType = 0;
+	double fps = 0.0f;
+	double MSE = 0.0f;
+	int32_t index = 0;
+
+	std::list<PulseDesc>::iterator itLong;
+	std::list<PulseDesc>::iterator itShort;
+	std::list<PulseDesc> shortChannel; // short list
+	std::list<PulseDesc> longChannel; // long list
+
+	int32_t step = 1;
+
+	if (mPulseList[LCHANNEL].size() >= mPulseList[RCHANNEL].size()){
+		longChannel = mPulseList[LCHANNEL];
+		shortChannel = mPulseList[RCHANNEL];
+	} else{
+		longChannel = mPulseList[RCHANNEL];
+		shortChannel = mPulseList[LCHANNEL];
+	}
+
+	itLong = longChannel.begin();
+	itShort = shortChannel.begin();
+
+	for(; (itLong != longChannel.end()) && (itShort != shortChannel.end()); )
+	{
+		curFrameType = GetPulseType(itShort->type, itLong->type);
+		{
+			fps = CacluFrameRate(mFramePulse);
+			MSE = CacluMSEInOneSecond(mFramePulse);
+			FrameDesc frame(curFrameType, itLong->start, itLong->end, fps, MSE, index++);
+			mFramePulse.push_back(frame);
+			fps = MSE = 0.0f;
+		}
+		
+		itLong++;
+
+		if(!(step % 2)){
+			step = 0;
+			itShort++;
+		}
+		step++;
+	}
+}
+/*
+void PulseAnalyzer::GetFrameInfo(double &pulseDuration)
+{
+	int32_t curFrameType = 0;
 	double referenceTimeBase = 0.0f;
 	double fps = 0.0f;
 	double MSE = 0.0f;
 	int32_t index = 0;
+	int32_t lstep = 1;
+	int32_t rstep = 1;
 
 	referenceTimeBase = min(mPulseList[LCHANNEL].front().start, mPulseList[RCHANNEL].front().start);
 	inter_log(Info, "Reference base time is %.3f ms", referenceTimeBase);
@@ -262,18 +309,20 @@ void PulseAnalyzer::GetFrameInfo(double &pulseDuration)
 				mFramePulse.push_back(frame);
 			}
 
-			if(pulseDuration > 10.0f){
-				if(fabs(lBak.duration - pulseDuration) < 0.005){ // 5ms 
+			if(pulseDuration > 0.0f){
+				if((fabs(lBak.duration - pulseDuration) < 0.005) || (lBak.duration < 0.0f)){ // 5ms 
 					lit++;
-					lBak = *lit;
+					if(lit != mPulseList[LCHANNEL].end())
+						lBak = *lit;
 				}else{
 					lBak.start += pulseDuration;
 					lBak.duration -= pulseDuration;
 				}
 
-				if(fabs(rBak.duration - pulseDuration) < 0.005){ // 5ms
+				if((fabs(rBak.duration - pulseDuration) < 0.005) || (rBak.duration < 0.0f)){ // 5ms
 					rit++;
-					rBak = *rit;
+					if(rit != mPulseList[RCHANNEL].end())
+						rBak = *rit;
 				}else{
 					rBak.start += pulseDuration;
 					rBak.duration -= pulseDuration;
@@ -290,7 +339,7 @@ void PulseAnalyzer::GetFrameInfo(double &pulseDuration)
 		}
 	}
 }
-
+*/
 void PulseAnalyzer::WriteRawPulseDetail()
 {
 	std::list<PulseDesc>::iterator lit;
