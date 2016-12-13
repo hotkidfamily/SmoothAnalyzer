@@ -249,6 +249,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\pulse.h"
+				>
+			</File>
+			<File
 				RelativePath=".\resource.h"
 				>
 			</File>

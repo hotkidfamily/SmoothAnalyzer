@@ -4,12 +4,6 @@
 #include "pulse.h"
 #include "csvFileMaker.h"
 
-enum CHANNELID{
-	LCHANNEL,
-	RCHANNEL,
-	MAX_CHANNEL = 0xFF
-};
-
 struct PulseDesc: public Pulse
 {
 	PulseDesc()

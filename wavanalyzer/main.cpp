@@ -40,75 +40,65 @@ static int32_t parse_parameters(int32_t argc, char* argv[])
 	return ret;
 }
 
-static int analyzeFile(std::string file)
+static int32_t analyzeFileByChannel(CHANNELID index, std::string file, PulseAnalyzer* &analyzer)
 {
-	std::string lChannelData;
-	std::string rChannelData;
+	std::string ChannelData;
+	WAVFileParse *wavParser = new WAVFileParse();
+	WaveAnalyzer *channelAnalyzer = NULL;
 	int32_t ret = 0;
+	std::ofstream rawData;
+	std::string dumpfile = file + chanenlIDNameList[index];
+	dumpfile += ".raw.pcm";
+	rawData.open(dumpfile.c_str(), std::ios::binary);
 
-	WAVFileParse *parse = NULL;
-	WaveAnalyzer *lWaveAnalyzer = NULL;
-	WaveAnalyzer *rWaveAnalyzer = NULL;
-	PulseAnalyzer *smoothAnalyzer = NULL;
-	
-	parse = new WAVFileParse();
-	if(!parse->OpenWavFile(file.c_str())){
-		delete parse;
+	if(!wavParser->OpenWavFile(file.c_str())){
+		delete wavParser;
 		return -1;
 	}
 
-	lWaveAnalyzer = new WaveAnalyzer("lchannel");
-	rWaveAnalyzer = new WaveAnalyzer("rchannel");
-	smoothAnalyzer = new PulseAnalyzer(file);
+	channelAnalyzer = new WaveAnalyzer(index, file);
+	channelAnalyzer->SetWavFormat(wavParser->GetWavFormat());
 
-	lWaveAnalyzer->SetWavFormat(parse->GetWavFormat());
-	rWaveAnalyzer->SetWavFormat(parse->GetWavFormat());
-	
-	int times = 0;
 	while(1){
 		uint32_t startSampleIndex = 0;
 		uint32_t endSampleIndex = 0;
-		
-		lChannelData.clear();
-		rChannelData.clear();
-		ret = parse->GetLRChannelData(lChannelData, rChannelData);
-		
+
+		ChannelData.clear();
+		ret = wavParser->GetChannelData(index, ChannelData);
+		rawData.write(ChannelData.c_str(), ChannelData.size());
+
 		retType retAnalyzer = RET_OK;
 
-		retAnalyzer = lWaveAnalyzer->Analyzer(lChannelData, startSampleIndex, endSampleIndex);
+		retAnalyzer = channelAnalyzer->Analyzer(ChannelData, startSampleIndex, endSampleIndex);
 		if(retAnalyzer == RET_FIND_PULSE){
-			smoothAnalyzer->RecordTimestamp(LCHANNEL, parse->ConvertIndexToMS(startSampleIndex), parse->ConvertIndexToMS(endSampleIndex));
+			analyzer->RecordTimestamp(index, wavParser->ConvertIndexToMS(startSampleIndex), wavParser->ConvertIndexToMS(endSampleIndex));
 		}
 
-		startSampleIndex = 0;
-		endSampleIndex = 0;
-		retAnalyzer = rWaveAnalyzer->Analyzer(rChannelData, startSampleIndex, endSampleIndex);
-		if(retAnalyzer == RET_FIND_PULSE){
-			smoothAnalyzer->RecordTimestamp(RCHANNEL, parse->ConvertIndexToMS(startSampleIndex), parse->ConvertIndexToMS(endSampleIndex));
-		}
-
-		if(ret == EOF){
+		if(ret < 0)
 			break;
-		}
 	}
 
-	parse->CloseWavFile();
+	rawData.close();
+
+	wavParser->CloseWavFile();
+	delete wavParser;
+	return ret == EOF;
+}
+
+static int analyzeFile(std::string file)
+{
+	std::string ChannelData;
+	int32_t ret = 0;
+	PulseAnalyzer *smoothAnalyzer = NULL;
+	smoothAnalyzer = new PulseAnalyzer(file);
+
+	analyzeFileByChannel(LCHANNEL, file, smoothAnalyzer);
+	analyzeFileByChannel(RCHANNEL, file, smoothAnalyzer);
+
 	smoothAnalyzer->OutputResult();
-
-	if(parse){
-		delete parse;
-	}
 
 	if(smoothAnalyzer){
 		delete smoothAnalyzer;
-	}
-
-	if(lWaveAnalyzer){
-		delete lWaveAnalyzer;
-	}
-
-	if(rWaveAnalyzer){
-		delete rWaveAnalyzer;
 	}
 
 	return 0;

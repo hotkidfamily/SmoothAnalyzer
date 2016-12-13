@@ -17,3 +17,18 @@ struct Pulse{
 	double end;
 	double duration;
 };
+
+enum CHANNELID{
+	LCHANNEL,
+	RCHANNEL,
+	MAX_CHANNEL = 0xFF
+};
+
+#define to_str(x) #x
+
+static const char* chanenlIDNameList [] = {
+	to_str(LCHANNEL),
+	to_str(RCHANNEL),
+};
+
+#undef to_str

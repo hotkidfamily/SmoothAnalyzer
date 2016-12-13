@@ -13,7 +13,7 @@ WaveAnalyzer::WaveAnalyzer(void)
 {
 }
 
-WaveAnalyzer::WaveAnalyzer(const char *dumpFileName)
+WaveAnalyzer::WaveAnalyzer(CHANNELID id, std::string &filePath)
 : bInPulse (false)
 , totalSampleCount (0)
 , pulseSampleIndex (0)
@@ -21,16 +21,8 @@ WaveAnalyzer::WaveAnalyzer(const char *dumpFileName)
 , maxThreshold(0)
 , isThresholdValid(false)
 {
-	std::string file = dumpFileName;
-	file.insert(0, "d:/");
-	file.insert(file.size(), "abs.pcm");
-	dumpfilter.open(file.c_str(), std::ios::binary);
-
-	file.clear();
-	file = dumpFileName;
-	file.insert(0, "d:/");
-	file.insert(file.size(), "RemoveNegativeValue.pcm");
-	dump2Value.open(file.c_str(), std::ios::binary);
+	mFilters[FILTER_UPDOWN]	 = new UDFilter(filePath + "." + chanenlIDNameList[id]);
+	mFilters[FILTER_SMOOTH] = new SmoothFilter(filePath + "." + chanenlIDNameList[id]);
 }
 
 WaveAnalyzer::~WaveAnalyzer(void)
@@ -203,23 +195,16 @@ int32_t WaveAnalyzer::SplitDataAndFindPulse(std::string &channelData, std::list<
 
 retType WaveAnalyzer::Analyzer(std::string &channelData, uint32_t &start, uint32_t &end)
 {
-	mDataFilters.filter(FILTER_UPDOWN,channelData,GetBytesPerSample());
-
-	if(dumpfilter.is_open())
-		dumpfilter.write(channelData.c_str(), channelData.size());
-
+	mFilters[FILTER_UPDOWN]->process(channelData,GetBytesPerSample());
 	// if in pulse 
 	// else not in pulse
-	mDataFilters.filter(FILTER_SMOOTH,channelData,GetBytesPerSample());
+	mFilters[FILTER_SMOOTH]->process(channelData,GetBytesPerSample());
 
 	if(!IfThresholdValid()){
 		UpdateThreshold(channelData);
 	}else{
 		SplitDataAndFindPulse(channelData, start, end);
 	}
-
-	if(dump2Value.is_open())
-		dump2Value.write(channelData.c_str(), channelData.size());
 
 	totalSampleCount += channelData.size()/GetBytesPerSample();
 

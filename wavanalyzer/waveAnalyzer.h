@@ -3,6 +3,7 @@
 #include "wavereader.h"
 #include "DataFilters.h"
 #include "stdint.h"
+#include "pulse.h"
 
 typedef enum tagRetType{
 	RET_OK,
@@ -21,7 +22,7 @@ class WaveAnalyzer
 {
 public:
 	WaveAnalyzer(void);
-	WaveAnalyzer(const char *dumpFileName);
+	WaveAnalyzer(CHANNELID id, std::string &filepath);
 	~WaveAnalyzer(void);
 
 	retType Analyzer(std::string &channelData, uint32_t &start, uint32_t &end);
@@ -40,9 +41,6 @@ protected:
 	inline int32_t GetBytesPerSample() { return mWavFormat.nBitsPerSample >> 3; };
 
 private:
-	std::ofstream dumpfilter;
-	std::ofstream dump2Value;
-
 	bool bInPulse;
 	uint32_t pulseSampleIndex;
 	uint32_t totalSampleCount;
@@ -53,5 +51,5 @@ private:
 
 	WaveFormat mWavFormat;
 
-	DataFilters mDataFilters;
+	IFilter *mFilters[FILTER_COUNT];
 };
