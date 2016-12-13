@@ -118,7 +118,8 @@ static int GetAbsolutlyPath(const char* path, std::string &rPath)
 		return -1;
 	}
 
-	rPath.append(buffer);
+	rPath.clear();
+	rPath = buffer;
 	rPath.insert(rPath.size(), "\\");
 	return 0;
 }

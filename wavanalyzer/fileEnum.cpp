@@ -49,7 +49,7 @@ int32_t FileEnumer::EnumDirectory(std::string path, std::string postPix)
 		WIN32_FIND_DATAA fd = {0};
 		HANDLE hFindFile = FindFirstFileA(path.c_str(), &fd);
 		if(hFindFile == INVALID_HANDLE_VALUE){
-			inter_log(Error, "Error open path %s", path.c_str());
+			inter_log(Error, "Open path %s", path.c_str());
 			FindClose(hFindFile);
 			return 0;
 		}
