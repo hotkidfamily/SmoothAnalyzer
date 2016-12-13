@@ -237,6 +237,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DataDumpper.h"
+				>
+			</File>
+			<File
 				RelativePath=".\DataFilters.h"
 				>
 			</File>
