@@ -1,5 +1,6 @@
 #pragma once
 #include "stdafx.h"
+#include "DataDumpper.h"
 
 enum FILTERS_INDEX{
 	FILTER_ABS,
@@ -14,14 +15,6 @@ protected:
 
 public:
 	virtual int32_t process(std::string &samples, int32_t bytesPerSample) = 0;
-};
-
-class iDump{
-public:
-	iDump(std::string &filepath);
-	int32_t DumpData(std::string &data);
-protected:
-	std::ofstream dumpfile;
 };
 
 class ABSFilter

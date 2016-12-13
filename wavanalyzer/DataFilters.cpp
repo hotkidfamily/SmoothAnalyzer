@@ -2,19 +2,6 @@
 #include "DataFilters.h"
 
 #define SMOOTH_STEP (22)
-#define BYTESPERSAMPLE (2)
-
-iDump::iDump(std::string &filePath)
-{
-	dumpfile.open(filePath.c_str(), std::ios::binary);
-}
-
-int32_t iDump::DumpData(std::string &data)
-{
-	dumpfile.write(data.c_str(), data.size());
-
-	return 0;
-}
 
 SmoothFilter::SmoothFilter(std::string &filePath)
 	: iDump(filePath + ".smooth.pcm")
