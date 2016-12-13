@@ -430,7 +430,6 @@ void PulseAnalyzer::WriteSmoothDetail()
 	double MSE = 0.0f;
 	double fps = 0.0f;
 	std::string filePath = mSourceFileName + ".smooth.csv";
-	int32_t frameIndex = 0;
 
 	if(!mFramePulse.empty()){
 		CSVFile file(filePath);
@@ -444,8 +443,8 @@ void PulseAnalyzer::WriteSmoothDetail()
 		file.WriteCsvLine("Index, Duration, FPS, MSE,");
 		while(!mFramePulse.empty()){
 			FrameDesc frame = mFramePulse.front();
-			file.WriteCsvLine("%d, %.3f, %.3f, %.3f,"
-				, frameIndex++, frame.duration, frame.frameRate, frame.MSE);
+			file.WriteCsvLine("%d, %.3f, %.3f, %.3f, %d,"
+				, frame.index, frame.duration, frame.frameRate, frame.MSE, frame.frameType);
 			mFramePulse.pop_front();
 		}
 	}

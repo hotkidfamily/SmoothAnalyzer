@@ -3,6 +3,8 @@
 #include "log.h"
 #include <numeric>
 
+#define POINT_STEP (22)
+
 WaveAnalyzer::WaveAnalyzer(void)
 : bInPulse (false)
 , totalSampleCount (0)
@@ -22,19 +24,58 @@ WaveAnalyzer::WaveAnalyzer(const char *dumpFileName)
 , isThresholdValid(false)
 {
 	std::string file = dumpFileName;
-	file.insert(0, "c:/");
+	file.insert(0, "d:/");
 	file.insert(file.size(), "abs.pcm");
 	dumpfilter.open(file.c_str(), std::ios::binary);
 
 	file.clear();
 	file = dumpFileName;
-	file.insert(0, "c:/");
-	file.insert(file.size(), "2value.pcm");
+	file.insert(0, "d:/");
+	file.insert(file.size(), "RemoveNegativeValue.pcm");
 	dump2Value.open(file.c_str(), std::ios::binary);
 }
 
 WaveAnalyzer::~WaveAnalyzer(void)
 {
+}
+
+int32_t WaveAnalyzer::SmoothFilter(std::string &channelData)
+{
+	int16_t *data = NULL;
+	char *filter_data = (char*)channelData.c_str();
+	int32_t maxPoint = 0;
+	int32_t sum = 0;
+	int32_t i = 0;
+
+	data = (int16_t*)filter_data;
+	maxPoint = channelData.size()/GetBytesPerSample() - POINT_STEP;
+
+	for(i=0; i < maxPoint; i++){
+		if(data[i] == 0){
+			if(data[i + POINT_STEP] != 0){
+				data[i] = 30000;
+			}
+		}
+	}
+
+	return 0;
+}
+
+int32_t WaveAnalyzer::Updown2Filter(std::string &channelData)
+{
+	int16_t *data = NULL;
+	char *filter_data = (char*)channelData.c_str();
+
+	data = (int16_t*)filter_data;
+
+	for(size_t i=0; i<channelData.size()/GetBytesPerSample(); i++){
+		if(data[i] < 0){
+			data[i] = 0;
+		}else{
+			data[i] = 30000;
+		}
+	}
+	return 0;
 }
 
 int32_t WaveAnalyzer::AbsFilter(std::string &channelData)
@@ -103,7 +144,7 @@ void WaveAnalyzer::FindPulse(const int16_t *data, uint32_t nb_samples, uint32_t 
 	}
 	sum /= nb_samples;
 
-	inter_log(Pulse, "sum = %d, threshold %d", sum, threshold);
+	//inter_log(Pulse, "sum = %d, threshold %d", sum, threshold);
 
 	if(sum > threshold){
 		for(uint32_t i = 0; i<nb_samples; i++){
@@ -139,15 +180,15 @@ int32_t WaveAnalyzer::SplitDataAndFindPulse(std::string &channelData, uint32_t &
 	size_t processedSamplesCount = 0;
 	uint32_t nbSampleSplitStep = 0;
 	uint32_t nbProcessSamples = 0;
-	
+
 	size_t nbTotalSamples = channelData.size()/GetBytesPerSample();
 
 	if(nbTotalSamples > 100){
-		nbSampleSplitStep = nbTotalSamples/100;
+		nbSampleSplitStep = nbTotalSamples/10;
 	}else{
 		nbSampleSplitStep = nbTotalSamples;
 	}
-	
+
 	inter_log(Pulse, "analyzer size is %d", nbSampleSplitStep);
 
 	do{
@@ -168,13 +209,59 @@ int32_t WaveAnalyzer::SplitDataAndFindPulse(std::string &channelData, uint32_t &
 		processedSamplesCount += nbProcessSamples;
 
 	}while(processedSamplesCount < nbTotalSamples);
-		
+
+	return 0;
+}
+
+int32_t WaveAnalyzer::SplitDataAndFindPulse(std::string &channelData, std::list<pulseIndex> &pulses)
+{
+	int16_t *data = (int16_t *)channelData.c_str();
+	size_t processedSamplesCount = 0;
+	uint32_t nbSampleSplitStep = 0;
+	uint32_t nbProcessSamples = 0;
+	uint32_t start = 0, end = 0;
+
+	size_t nbTotalSamples = channelData.size()/GetBytesPerSample();
+
+	if(nbTotalSamples > 100){
+		nbSampleSplitStep = nbTotalSamples/10;
+	}else{
+		nbSampleSplitStep = nbTotalSamples;
+	}
+
+	inter_log(Pulse, "analyzer size is %d", nbSampleSplitStep);
+
+	do{
+		if(nbSampleSplitStep + processedSamplesCount > nbTotalSamples){
+			nbProcessSamples = nbTotalSamples - processedSamplesCount;
+		}else{
+			nbProcessSamples = nbSampleSplitStep;
+		}
+
+		FindPulse(data, nbProcessSamples, start, end, processedSamplesCount);
+		if(start && end){
+			pulseIndex index(start, end);
+			pulses.push_back(index);
+			//return 0;
+		}
+
+		ReplaceValue(data, nbProcessSamples, bInPulse);
+
+		data += nbProcessSamples;
+		processedSamplesCount += nbProcessSamples;
+
+	}while(processedSamplesCount < nbTotalSamples);
+
 	return 0;
 }
 
 retType WaveAnalyzer::Analyzer(std::string &channelData, uint32_t &start, uint32_t &end)
 {
-	AbsFilter(channelData);
+	Updown2Filter(channelData);
+
+	// if in pulse 
+	// else not in pulse
+	SmoothFilter(channelData);
 
 	if(dumpfilter.is_open())
 		dumpfilter.write(channelData.c_str(), channelData.size());
