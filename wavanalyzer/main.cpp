@@ -51,7 +51,7 @@ static int analyzeFile(std::string file)
 	WaveAnalyzer *rWaveAnalyzer = NULL;
 	PulseAnalyzer *smoothAnalyzer = NULL;
 	
-	parse = new WAVFileParse(DEBUG_CHANNEL_DATA);
+	parse = new WAVFileParse();
 	if(!parse->OpenWavFile(file.c_str())){
 		delete parse;
 		return -1;

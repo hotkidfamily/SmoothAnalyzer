@@ -175,6 +175,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DataFilters.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\fileEnum.cpp"
 				>
 			</File>
@@ -230,6 +234,10 @@
 			>
 			<File
 				RelativePath=".\csvFileMaker.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DataFilters.h"
 				>
 			</File>
 			<File

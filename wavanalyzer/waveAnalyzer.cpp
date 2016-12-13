@@ -3,8 +3,6 @@
 #include "log.h"
 #include <numeric>
 
-#define POINT_STEP (22)
-
 WaveAnalyzer::WaveAnalyzer(void)
 : bInPulse (false)
 , totalSampleCount (0)
@@ -37,58 +35,6 @@ WaveAnalyzer::WaveAnalyzer(const char *dumpFileName)
 
 WaveAnalyzer::~WaveAnalyzer(void)
 {
-}
-
-int32_t WaveAnalyzer::SmoothFilter(std::string &channelData)
-{
-	int16_t *data = NULL;
-	char *filter_data = (char*)channelData.c_str();
-	int32_t maxPoint = 0;
-	int32_t sum = 0;
-	int32_t i = 0;
-
-	data = (int16_t*)filter_data;
-	maxPoint = channelData.size()/GetBytesPerSample() - POINT_STEP;
-
-	for(i=0; i < maxPoint; i++){
-		if(data[i] == 0){
-			if(data[i + POINT_STEP] != 0){
-				data[i] = 30000;
-			}
-		}
-	}
-
-	return 0;
-}
-
-int32_t WaveAnalyzer::Updown2Filter(std::string &channelData)
-{
-	int16_t *data = NULL;
-	char *filter_data = (char*)channelData.c_str();
-
-	data = (int16_t*)filter_data;
-
-	for(size_t i=0; i<channelData.size()/GetBytesPerSample(); i++){
-		if(data[i] < 0){
-			data[i] = 0;
-		}else{
-			data[i] = 30000;
-		}
-	}
-	return 0;
-}
-
-int32_t WaveAnalyzer::AbsFilter(std::string &channelData)
-{
-	int16_t *data = NULL;
-	char *filter_data = (char *)channelData.c_str();
-
-	data = (int16_t *)filter_data;
-	for(size_t i=0; i<channelData.size()/GetBytesPerSample(); i++){
-		*(data+i) = abs(*(data+i));
-	}
-
-	return 0;
 }
 
 int32_t WaveAnalyzer::UpdateThreshold(std::string &channelData)
@@ -257,14 +203,14 @@ int32_t WaveAnalyzer::SplitDataAndFindPulse(std::string &channelData, std::list<
 
 retType WaveAnalyzer::Analyzer(std::string &channelData, uint32_t &start, uint32_t &end)
 {
-	Updown2Filter(channelData);
-
-	// if in pulse 
-	// else not in pulse
-	SmoothFilter(channelData);
+	mDataFilters.filter(FILTER_UPDOWN,channelData,GetBytesPerSample());
 
 	if(dumpfilter.is_open())
 		dumpfilter.write(channelData.c_str(), channelData.size());
+
+	// if in pulse 
+	// else not in pulse
+	mDataFilters.filter(FILTER_SMOOTH,channelData,GetBytesPerSample());
 
 	if(!IfThresholdValid()){
 		UpdateThreshold(channelData);

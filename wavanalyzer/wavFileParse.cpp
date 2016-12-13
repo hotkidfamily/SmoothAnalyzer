@@ -7,8 +7,8 @@ WAVFileParse::WAVFileParse(uint32_t flag)
 , m_wavReader(NULL)
 {
 	if(debugFlag & DEBUG_CHANNEL_DATA){
-		dumpLChannelFile.open("c:/lChannelOriginal.pcm", std::ios::binary);
-		dumpRChannelFile.open("c:/rChannelOriginal.pcm", std::ios::binary);
+		dumpLChannelFile.open("d:/lChannelOriginal.pcm", std::ios::binary);
+		dumpRChannelFile.open("d:/rChannelOriginal.pcm", std::ios::binary);
 	}
 	m_wavReader = new CWaveReader();
 }
@@ -100,9 +100,11 @@ int32_t WAVFileParse::GetLRChannelData(std::string &lChannel, std::string &rChan
 	//inter_log(Debug, "10 ms data size %d, %d samples", dataSizeIn10MS, dataSizeIn10MS/fmtHeader.packageSize);
 
 	readDataLength = m_wavReader->ReadData((unsigned char*)buffer, tenMSDataBuffer.size());
-	if(readDataLength <= 0){
+	if(readDataLength < nbSampleDataSize){ 
+		if(readDataLength<0){
+			goto cleanup;
+		}
 		ret = EOF;
-		goto cleanup;
 	}
 
 	ReportProgress(m_wavReader->Progress());
@@ -113,10 +115,6 @@ int32_t WAVFileParse::GetLRChannelData(std::string &lChannel, std::string &rChan
 		dumpLChannelFile.write(lChannel.c_str(), lChannel.size());
 	if(dumpRChannelFile.is_open())
 		dumpRChannelFile.write(rChannel.c_str(), rChannel.size());
-
-	if(readDataLength < nbSampleDataSize){ // ???
-		ret = EOF;
-	}
 
 cleanup:
 	return ret;

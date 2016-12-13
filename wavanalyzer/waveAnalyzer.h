@@ -1,6 +1,7 @@
 #pragma once
 #include "stdafx.h"
 #include "wavereader.h"
+#include "DataFilters.h"
 #include "stdint.h"
 
 typedef enum tagRetType{
@@ -26,11 +27,7 @@ public:
 	retType Analyzer(std::string &channelData, uint32_t &start, uint32_t &end);
 	void SetWavFormat(WaveFormat format) { mWavFormat = format; };
 
-private:
-	int32_t AbsFilter(std::string &channelData);
-	int32_t Updown2Filter(std::string &channelData);
-	int32_t SmoothFilter(std::string &channelData);
-
+protected:
 	int32_t SplitDataAndFindPulse(std::string &channelData, std::list<pulseIndex>&pulses);
 	int32_t SplitDataAndFindPulse(std::string &channelData, uint32_t &start, uint32_t &end);
 	void FindPulse(const int16_t *buffer, uint32_t nb_samples, uint32_t &start, uint32_t &end, uint32_t count);
@@ -55,4 +52,6 @@ private:
 	bool isThresholdValid;
 
 	WaveFormat mWavFormat;
+
+	DataFilters mDataFilters;
 };
