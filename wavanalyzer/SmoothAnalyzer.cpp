@@ -83,7 +83,7 @@ double PulseAnalyzer::CacluAvgValue(std::list<FrameDesc>& durationList)
 double PulseAnalyzer::CacluMSE(std::list<FrameDesc>& durationList)
 {
 	double Sum = 0.0f;
-	double MSE = 0.0f;
+	double SD = 0.0f;
 	double avgDuration = 0.0f;
 	std::list<FrameDesc>::iterator it;
 
@@ -91,12 +91,12 @@ double PulseAnalyzer::CacluMSE(std::list<FrameDesc>& durationList)
 
 	if (!durationList.empty()){
 		for(it = durationList.begin(); it != durationList.end(); it++){
-			Sum += sqrt(fabs(it->duration - avgDuration));
+			Sum += pow(fabs(it->duration - avgDuration), 2);
 		}
 
-		MSE = Sum / durationList.size();
+		SD = 100.0 * sqrt(Sum / durationList.size()) / avgDuration;
 	}
-	return MSE;
+	return SD;
 }
 
 
@@ -107,7 +107,7 @@ double PulseAnalyzer::CacluMSEInOneSecond(std::list<FrameDesc>& frameList)
 	std::list<FrameDesc>::reverse_iterator rit;
 
 	for (rit = frameList.rbegin(); rit != frameList.rend(); rit++){
-		if((frameList.back().end - rit->start) > 1.0f){
+		if((frameList.back().end - rit->start)){
 			std::list<FrameDesc> frameListSplit;
 
 			frameListSplit.assign(frameList.rbegin(), rit);
@@ -140,7 +140,7 @@ double PulseAnalyzer::CacluFrameRate(std::list<FrameDesc> &frameList)
 	std::list<FrameDesc>::reverse_iterator rit;
 
 	for (rit = frameList.rbegin(); rit != frameList.rend(); rit++){
-		if ((frameList.back().end - rit->start) >= 1.0f){
+		if ((frameList.back().end - rit->start)){
 			std::list<FrameDesc> frameListSplit;
 
 			frameListSplit.assign(frameList.rbegin(), rit);
@@ -369,18 +369,18 @@ void PulseAnalyzer::WriteRawPulseDetail()
 			file.WriteCsvLine(
 				" %c, %d, %.3f, %.3f, %.3f, %d, "
 				" %c, %d, %.3f, %.3f, %.3f, %d, ",
-				lPulse.channelName, lPulse.index, lPulse.start, lPulse.end, lPulse.duration * 1000, lPulse.type, 
-				rPulse.channelName, rPulse.index, rPulse.start, rPulse.end, rPulse.duration * 1000, rPulse.type);
+				lPulse.channelName, lPulse.index, lPulse.start, lPulse.end, lPulse.duration, lPulse.type, 
+				rPulse.channelName, rPulse.index, rPulse.start, rPulse.end, rPulse.duration, rPulse.type);
 		}else if(!lPulse.IsInvalid()){
 			file.WriteCsvLine(
 				" %c, %d, %.3f, %.3f, %.3f, %d, "
 				" ,,,,,, ",
-				lPulse.channelName, lPulse.index, lPulse.start, lPulse.end, lPulse.duration * 1000, lPulse.type);
+				lPulse.channelName, lPulse.index, lPulse.start, lPulse.end, lPulse.duration, lPulse.type);
 		}else if(!rPulse.IsInvalid()){
 			file.WriteCsvLine(
 				" ,,,,,, "
 				" %c, %d, %.3f, %.3f, %.3f, %d, ",
-				rPulse.channelName, rPulse.index, rPulse.start, rPulse.end, rPulse.duration * 1000, rPulse.type);
+				rPulse.channelName, rPulse.index, rPulse.start, rPulse.end, rPulse.duration, rPulse.type);
 		}
 		
 	}
@@ -474,21 +474,21 @@ void PulseAnalyzer::WriteSyncDetail()
 				"%c, %u, %.3f, %.3f, %.3f, %d, %d, "
 				"%c, %u, %.3f, %.3f, %.3f, %d, %d, ",
 				sync,
-				shortPulse.channelName, shortPulse.index, shortPulse.start, shortPulse.end, shortPulse.duration * 1000, shortPulse.type, 0, 
-				longPulse.channelName, longPulse.index, longPulse.start, longPulse.end, longPulse.duration * 1000, longPulse.type, 0);
+				shortPulse.channelName, shortPulse.index, shortPulse.start, shortPulse.end, shortPulse.duration, shortPulse.type, 0, 
+				longPulse.channelName, longPulse.index, longPulse.start, longPulse.end, longPulse.duration, longPulse.type, 0);
 			itShort++;
 			itLong++;
 		}else if (!longPulse.IsInvalid()){
 			file.WriteCsvLine(", "
 				" ,  ,  ,  ,  , , "
 				"%c, %u, %.3f, %.3f, %.3f, %d, %d,",
-				longPulse.channelName, longPulse.index, longPulse.start, longPulse.end, longPulse.duration * 1000, longPulse.type, 0);
+				longPulse.channelName, longPulse.index, longPulse.start, longPulse.end, longPulse.duration, longPulse.type, 0);
 			itLong++;
 		}else if(!shortPulse.IsInvalid()){
 			file.WriteCsvLine(", "
 				"%c, %u, %.3f, %.3f, %.3f, %d, %d,"
 				", , , , , , ",
-				shortPulse.channelName, shortPulse.index, shortPulse.start, shortPulse.end, shortPulse.duration * 1000, shortPulse.type, 0);
+				shortPulse.channelName, shortPulse.index, shortPulse.start, shortPulse.end, shortPulse.duration, shortPulse.type, 0);
 			itShort++;
 		}
 	}
@@ -509,10 +509,10 @@ void PulseAnalyzer::WriteSmoothDetail()
 		file.WriteCsvLine("%.3f, %.3f,", MSE, fps);
 
 		file.WriteCsvLine("");
-		file.WriteCsvLine("Index, Duration, FPS, MSE,");
+		file.WriteCsvLine("Index, Duration(ms), FPS, SD, type");
 		while(!mFramePulse.empty()){
 			FrameDesc frame = mFramePulse.front();
-			file.WriteCsvLine("%d, %.3f, %.3f, %.3f, %d,"
+			file.WriteCsvLine("%d, %.3f, %.3f, %.3f, %d, "
 				, frame.index, frame.duration, frame.frameRate, frame.MSE, frame.frameType);
 			mFramePulse.pop_front();
 		}

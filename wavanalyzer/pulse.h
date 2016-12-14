@@ -10,7 +10,7 @@ struct Pulse{
 	Pulse(double s, double e)
 		: start(s)
 		, end(e)
-		, duration(e-s)
+		, duration((e-s)*1000)
 	{}
 
 	double start;
