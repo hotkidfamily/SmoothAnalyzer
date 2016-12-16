@@ -145,11 +145,13 @@ retType WaveAnalyzer::Analyzer(std::string &channelData, std::list<SamplePos> &p
 	mFilters[FILTER_UPDOWN]->process(channelData, GetBytesPerSample());
 	mFilters[FILTER_SMOOTH]->process(channelData, GetBytesPerSample());
 
-	if(!IfThresholdValid()){
-		UpdateThreshold(channelData);
-	}else{
-		SplitDataAndFindPulse(channelData, pulses);
-	}
+// 	if(!IfThresholdValid()){
+// 		UpdateThreshold(channelData);
+// 	}else{
+// 		SplitDataAndFindPulse(channelData, pulses);
+// 	}
+
+	SplitDataAndFindPulse(channelData, pulses);
 
 	totalSampleCount += channelData.size()/GetBytesPerSample();
 

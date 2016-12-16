@@ -45,7 +45,7 @@ int32_t UDFilter::process(std::string &channelData, int32_t Bps)
 	data = (int16_t*)filter_data;
 
 	for(size_t i=0; i<channelData.size()/Bps; i++){
-		if(data[i] < 0){
+		if(data[i] < 10000){
 			data[i] = 0;
 		}else{
 			data[i] = 30000;

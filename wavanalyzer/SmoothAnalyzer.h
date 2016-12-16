@@ -72,6 +72,8 @@ protected:
 	void GetFrameInfo(double &);
 	void WriteSmoothDetail();
 
+	void ReportProgress(int32_t progress, int32_t total);
+
 private:
 	std::list<PulseDesc> mPulseList[MAX_CHANNEL];
 	std::list<FrameDesc> mFramePulse;
