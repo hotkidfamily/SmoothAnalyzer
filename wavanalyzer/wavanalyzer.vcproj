@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="wavanalyzer"
+	Name="SmoothAnalyzer"
 	ProjectGUID="{95DE675E-4E65-4B2E-BB9B-45EC665B6558}"
 	RootNamespace="wavanalyzer"
 	Keyword="Win32Proj"

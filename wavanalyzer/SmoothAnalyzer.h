@@ -36,18 +36,22 @@ struct PulseDesc: public Pulse
 
 struct FrameDesc: public Pulse
 {
-	FrameDesc(int32_t type, double start, double end, double fps, double stdmse, int32_t idx)
+	FrameDesc(int32_t type, double start, double end, double fps, double avg, double stdevp, int32_t idx)
 		: Pulse(start, end)
 		, frameType(type)
 		, frameRate(fps)
-		, MSE(stdmse)
+		, STDEVP(stdevp)
+		, AVG(avg)
+		, offset(duration - avg)
 		, index(idx)
 	{}
 
 	int32_t index;
 	int32_t frameType;
 	double frameRate;
-	double MSE;
+	double STDEVP;
+	double AVG;
+	double offset;
 };
 
 class PulseAnalyzer
@@ -61,8 +65,8 @@ public:
 
 protected:
 	double CacluAvgValue(std::list<FrameDesc>& );
-	double CacluMSE(std::list<FrameDesc>& );
-	double CacluMSEInOneSecond(std::list<FrameDesc>& );
+	double CacluSTDEVP(std::list<FrameDesc>&, double&);
+	double CacluSTDEVPInOneSecond(std::list<FrameDesc>&, double &);
 	double CacluFps(std::list<FrameDesc> &);
 	double CacluFrameRate(std::list<FrameDesc> &);
 	BOOL DetectPulseWidth(double &);
