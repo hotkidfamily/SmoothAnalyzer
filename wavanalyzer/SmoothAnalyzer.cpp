@@ -239,7 +239,64 @@ BOOL PulseAnalyzer::DetectPulseWidth(double &duration)
 	return bRet;
 }
 
-void PulseAnalyzer::GetFrameInfo(double &pulseDuration)
+void PulseAnalyzer::GetFrameInfoByStartTime(double &pulseDuration)
+{
+	int32_t curFrameType = 0;
+	double fps = 0.0f;
+	double stdevp = 0.0f;
+	int32_t index = 0;
+
+	std::list<PulseDesc>::iterator itLong;
+	std::list<PulseDesc>::iterator itShort;
+	std::list<PulseDesc> shortChannel; // short list
+	std::list<PulseDesc> longChannel; // long list
+
+	int32_t step = 1;
+
+	if (mPulseList[LCHANNEL].size() >= mPulseList[RCHANNEL].size()){
+		longChannel = mPulseList[LCHANNEL];
+		shortChannel = mPulseList[RCHANNEL];
+	} else{
+		longChannel = mPulseList[RCHANNEL];
+		shortChannel = mPulseList[LCHANNEL];
+	}
+
+	itLong = longChannel.begin();
+	itShort = shortChannel.begin();
+
+	for(; (itLong != longChannel.end()) && (itShort != shortChannel.end()); )
+	{
+		curFrameType = GetPulseType(itShort->type, itLong->type);
+		{
+			fps = CacluFrameRate(mFramePulse);
+			double avg = 0.0f;
+			stdevp = CacluSTDEVPInOneSecond(mFramePulse, avg);
+			
+			if(!mFramePulse.empty()){
+				double pre_start = mFramePulse.back().end;
+				FrameDesc frame(curFrameType, pre_start, itLong->start, fps, avg, stdevp, index++);
+				mFramePulse.push_back(frame);
+			}else{
+				FrameDesc frame(curFrameType, 0, itLong->start, fps, avg, stdevp, index++);
+				mFramePulse.push_back(frame);
+			}
+
+			fps = stdevp = 0.0f;
+		}
+
+		ReportProgress(itLong->index, longChannel.size());
+
+		itLong++;
+
+		if(!(step % 2)){
+			step = 0;
+			itShort++;
+		}
+		step++;
+	}
+}
+
+void PulseAnalyzer::GetFrameInfoByDuration(double &pulseDuration)
 {
 	int32_t curFrameType = 0;
 	double fps = 0.0f;
@@ -543,7 +600,7 @@ void PulseAnalyzer::OutputResult()
 	inter_log(Info, "Detect Pulse Width... ");
 	DetectPulseWidth(pulseWidth);
 	inter_log(Info, "Detect Frame Info... ");
-	GetFrameInfo(pulseWidth);
+	GetFrameInfoByStartTime(pulseWidth);
 	inter_log(Info, "Write Raw Data... ");
 	WriteRawPulseDetail();
 	inter_log(Info, "Write Sync Data... ");

@@ -73,7 +73,8 @@ protected:
 	inline int32_t GetPulseType(PULSETYPE ltype, PULSETYPE rtype);
 	void WriteSyncDetail();
 	void WriteRawPulseDetail();
-	void GetFrameInfo(double &);
+	void GetFrameInfoByDuration(double &);
+	void GetFrameInfoByStartTime(double &);
 	void WriteSmoothDetail();
 
 	void ReportProgress(int32_t progress, int32_t total);

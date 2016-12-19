@@ -11,7 +11,7 @@
 #ifdef _DEBUG
 char* debug_args[] ={
 	"",
-	"e:\\smooth\\xiaomi4-sony-entertainment.wav"
+	"e:\\smooth\\ios-sony-entertainment.wav"
 };
 #endif
 
