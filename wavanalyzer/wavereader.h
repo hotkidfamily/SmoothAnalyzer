@@ -14,11 +14,11 @@
 #pragma pack(1)
 typedef struct _WaveFormat 
 { 
-    uint16_t nFormatag;       // 格式类别，0x01为PCM形式的声音数据 
+    uint16_t nFormaTag;       // 格式类别，0x01为PCM形式的声音数据 
     uint16_t nChannels;       // 声道数  
-    uint32_t nSamplerate;     // 采样率  
+    uint32_t nSampleRate;     // 采样率  
     uint32_t nAvgBytesRate;   // 码率  
-    uint16_t nblockalign; 
+    uint16_t nBlockAlign; 
     uint16_t nBitsPerSample;  // 采样深度      
 } WaveFormat; 
 #pragma pack() 

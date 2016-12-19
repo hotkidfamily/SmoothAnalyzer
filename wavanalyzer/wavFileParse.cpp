@@ -20,7 +20,7 @@ int32_t DataSeparater::SeparateChannelData(int32_t index, std::string &originalD
 	for(size_t i = 0; i<channelData.size()/(m_wavFormat.nBitsPerSample/8); i++){	
 		*lchannelData = *(dataPtr+index);
 		lchannelData ++;
-		dataPtr += m_wavFormat.nblockalign/2/*2 == sizeof(int16_t)*/;
+		dataPtr += m_wavFormat.nBlockAlign/2/*2 == sizeof(int16_t)*/;
 	}
 
 	mDataDump->DumpData(channelData);

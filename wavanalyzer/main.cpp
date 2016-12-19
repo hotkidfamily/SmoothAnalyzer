@@ -11,7 +11,7 @@
 #ifdef _DEBUG
 char* debug_args[] ={
 	"",
-	"e:\\smooth\\xiaomi4_sony_entertainment.wav"
+	"e:\\smooth\\xiaomi4-sony-entertainment.wav"
 };
 #endif
 
@@ -57,7 +57,7 @@ static int32_t analyzeFileByChannel(CHANNELID index, std::string file, PulseAnal
 	dataSeparater->SetWavFormat(fileReader->GetFormat());
 
 	while(1){
-		std::list<SamplePos> SampleAreaList;
+		std::list<SamplePos> SamplePosList;
 		uint32_t startSampleIndex = 0;
 		uint32_t endSampleIndex = 0;
 
@@ -68,12 +68,12 @@ static int32_t analyzeFileByChannel(CHANNELID index, std::string file, PulseAnal
 
 		retType retAnalyzer = RET_OK;
 
-		retAnalyzer = channelAnalyzer->Analyzer(ChannelData, SampleAreaList);
+		retAnalyzer = channelAnalyzer->Analyzer(ChannelData, SamplePosList);
 		if(retAnalyzer == RET_FIND_PULSE){
-			while(!SampleAreaList.empty()){
-				SamplePos &sampleArea = SampleAreaList.front();
-				analyzer->RecordTimestamp(index, fileReader->SampeIndexToSecond(sampleArea.startIndex), fileReader->SampeIndexToSecond(sampleArea.endIndex));
-				SampleAreaList.pop_front();
+			while(!SamplePosList.empty()){
+				SamplePos &samplePos = SamplePosList.front();
+				analyzer->RecordTimestamp(index, fileReader->SampeIndexToSecond(samplePos.startIndex), fileReader->SampeIndexToSecond(samplePos.endIndex));
+				SamplePosList.pop_front();
 			}
 		}
 
@@ -96,6 +96,8 @@ static int analyzeFile(std::string file)
 	int32_t ret = 0;
 	PulseAnalyzer *smoothAnalyzer = NULL;
 	smoothAnalyzer = new PulseAnalyzer(file);
+
+	inter_log(Info, "File %s", file.c_str());
 
 	analyzeFileByChannel(LCHANNEL, file, smoothAnalyzer);
 	analyzeFileByChannel(RCHANNEL, file, smoothAnalyzer);

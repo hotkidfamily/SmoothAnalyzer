@@ -10,13 +10,11 @@ SmoothFilter::SmoothFilter(std::string &filePath)
 
 int32_t SmoothFilter::process(std::string &channelData, int32_t Bps)
 {
-	int16_t *data = NULL;
-	char *filter_data = (char*)channelData.c_str();
+	int16_t *data = (int16_t*)channelData.c_str();
 	int32_t maxPoint = 0;
 	int32_t sum = 0;
 	int32_t i = 0;
 
-	data = (int16_t*)filter_data;
 	maxPoint = channelData.size()/Bps - SMOOTH_STEP;
 
 	for(i=0; i < maxPoint; i++){
@@ -39,10 +37,7 @@ UDFilter::UDFilter(std::string &filePath)
 
 int32_t UDFilter::process(std::string &channelData, int32_t Bps)
 {
-	int16_t *data = NULL;
-	char *filter_data = (char*)channelData.c_str();
-
-	data = (int16_t*)filter_data;
+	int16_t *data = (int16_t*)channelData.c_str();
 
 	for(size_t i=0; i<channelData.size()/Bps; i++){
 		if(data[i] < 10000){
@@ -65,10 +60,8 @@ ABSFilter::ABSFilter(std::string &filePath)
 
 int32_t ABSFilter::process(std::string &channelData, int32_t Bps)
 {
-	int16_t *data = NULL;
-	char *filter_data = (char *)channelData.c_str();
+	int16_t *data = (int16_t*)channelData.c_str();
 
-	data = (int16_t *)filter_data;
 	for(size_t i=0; i<channelData.size()/Bps; i++){
 		*(data+i) = abs(*(data+i));
 	}

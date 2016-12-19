@@ -22,6 +22,5 @@
 
 #include "stdint.h"
 
-
-
-// TODO: reference additional headers your program requires here
+#define ANALYZER_DURATION (1000)
+#define SPLIT_PERCENT (ANALYZER_DURATION/10)

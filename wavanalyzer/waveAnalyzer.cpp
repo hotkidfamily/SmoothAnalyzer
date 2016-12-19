@@ -41,7 +41,7 @@ int32_t WaveAnalyzer::UpdateThreshold(std::string &channelData)
 		data ++;
 	}
 
-	if(totalSampleCount/mWavFormat.nSamplerate > 10){
+	if(totalSampleCount/mWavFormat.nSampleRate > 10){
 		isThresholdValid = true;
 		inter_log(Info, "threshold is %d, min %d, max %d", GetThreshold(), minThreshold, maxThreshold);
 	}
@@ -68,7 +68,7 @@ void WaveAnalyzer::FindPulse(const int16_t *data, uint32_t nb_samples, uint32_t 
 	}
 	sum /= nb_samples;
 
-	//inter_log(Pulse, "sum = %d, threshold %d", sum, threshold);
+	inter_log(Pulse, "sum = %d, threshold %d", sum, threshold);
 
 	if(sum > threshold){
 		for(uint32_t i = 0; i<nb_samples; i++){
@@ -108,8 +108,8 @@ int32_t WaveAnalyzer::SplitDataAndFindPulse(std::string &channelData, std::list<
 
 	size_t nbTotalSamples = channelData.size()/GetBytesPerSample();
 
-	if(nbTotalSamples > 100){
-		nbSampleSplitStep = nbTotalSamples/100;
+	if(nbTotalSamples > SPLIT_PERCENT){
+		nbSampleSplitStep = SPLIT_PERCENT; // 10 percent
 	}else{
 		nbSampleSplitStep = nbTotalSamples;
 	}
