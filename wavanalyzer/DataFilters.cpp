@@ -12,16 +12,25 @@ int32_t SmoothFilter::process(std::string &channelData, int32_t Bps)
 {
 	int16_t *data = (int16_t*)channelData.c_str();
 	int32_t maxPoint = 0;
-	int32_t sum = 0;
-	int32_t i = 0;
+	bool bInPulse = false;
+
+	const uint8_t dataFilter[SMOOTH_STEP] = {0};
 
 	maxPoint = channelData.size()/Bps - SMOOTH_STEP;
 
-	for(i=0; i < maxPoint; i++){
+	for(int32_t i=0; i < maxPoint; i++){
 		if(data[i] == 0){
-			if(data[i + SMOOTH_STEP] != 0){
+			if(memcmp(dataFilter, &data[i], SMOOTH_STEP)){
 				data[i] = 30000;
 			}
+		}else{
+			bInPulse = false;
+		}
+	}
+
+	if(bInPulse){
+		for(int32_t i=maxPoint; i<channelData.size()/Bps; i++){
+			data[i] = 30000;
 		}
 	}
 

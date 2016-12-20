@@ -14,7 +14,7 @@ const struct tagPulseType{
 
 #define PULSETABLECOUNT (ARRAYSIZE(pulseTable))
 #define MINIST_PULSE_DURATION (16)
-#define SYNC_THRESHOLD (0.015)
+#define SYNC_THRESHOLD (0.016)
 
 PulseAnalyzer::PulseAnalyzer(std::string &filename)
 {
@@ -577,11 +577,11 @@ void PulseAnalyzer::WriteSmoothDetail()
 		double avg = CacluAvgValue(mFramePulse);
 		stdevp = CacluSTDEVP(mFramePulse, avg);
 		fps = CacluFps(mFramePulse);
-		file.WriteCsvLine("STDEVP, FPS, Avg,");
-		file.WriteCsvLine("%.3f, %.3f, %.3f,", stdevp, fps, avg);
+		file.WriteCsvLine("STDEVP, FPS, Avg, Frames, Duration, ");
+		file.WriteCsvLine("%.3f, %.3f, %.3f, %d, %.3f,", stdevp, fps, avg, mFramePulse.size(), mFramePulse.back().end - mFramePulse.front().start);
 
-		file.WriteCsvLine("");
-		file.WriteCsvLine("Index, Start, End, Duration(ms), Average, Delta, STDEVP, FPS, Type,");
+		file.WriteCsvLine("All data in millisecond,");
+		file.WriteCsvLine("Index, Start, End, Duration, Average, Delta, STDEVP, FPS, Type,");
 		while(!mFramePulse.empty()){
 			FrameDesc frame = mFramePulse.front();
 			file.WriteCsvLine("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %d, "
