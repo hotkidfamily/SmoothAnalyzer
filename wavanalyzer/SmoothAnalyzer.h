@@ -65,10 +65,11 @@ public:
 
 protected:
 	double CalcAvgValue(std::list<FrameDesc>& );
+	double CalcAvgValueInOneSecond(std::list<FrameDesc> &);
 	double CalcSTDEVP(std::list<FrameDesc>&, const double&);
 	double CalcSTDEVPInOneSecond(std::list<FrameDesc>&, const double &);
 	double CalcFps(std::list<FrameDesc> &);
-	double CalcFrameRate(std::list<FrameDesc> &);
+	double CalcFpsInOneSecond(std::list<FrameDesc> &);
 	BOOL DetectPulseWidth(double &);
 	inline int32_t GetPulseType(PULSETYPE ltype, PULSETYPE rtype);
 	void WriteSyncDetail();

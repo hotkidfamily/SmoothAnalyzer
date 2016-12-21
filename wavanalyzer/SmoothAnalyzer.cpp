@@ -54,6 +54,26 @@ double PulseAnalyzer::CalcAvgValue(std::list<FrameDesc>& durationList)
 	return avgValue;
 }
 
+double PulseAnalyzer::CalcAvgValueInOneSecond(std::list<FrameDesc> &frameList)
+{
+	double avg = 0.0f;
+	std::list<FrameDesc>::reverse_iterator rit;
+
+	for (rit = frameList.rbegin(); rit != frameList.rend(); rit++){
+		if((frameList.back().end - rit->start) > 1.0){
+			std::list<FrameDesc> frameListSplit;
+
+			rit++;
+			frameListSplit.assign(rit.base(), frameList.end());
+			avg = CalcAvgValue(frameList);
+
+			break;
+		}
+	}
+
+	return avg;
+}
+
 double PulseAnalyzer::CalcSTDEVP(std::list<FrameDesc>& durationList, const double &avg)
 {
 	double Sum = 0.0f;
@@ -106,7 +126,7 @@ double PulseAnalyzer::CalcFps(std::list<FrameDesc> &frameList)
 	return fps;
 }
 
-double PulseAnalyzer::CalcFrameRate(std::list<FrameDesc> &frameList)
+double PulseAnalyzer::CalcFpsInOneSecond(std::list<FrameDesc> &frameList)
 {
 	double fps = 0.0f;
 	int32_t frameCnt = 0;
@@ -327,9 +347,9 @@ void PulseAnalyzer::GetFrameInfoByStartTime(double &pulseDuration)
 	{
 		curFrameType = GetPulseType(itShort->type, itLong->type);
 		{
-			fps = CalcFrameRate(mFramePulse);
+			fps = CalcFpsInOneSecond(mFramePulse);
 			double avg = 0.0f;
-			avg = CalcAvgValue(mFramePulse);
+			avg = CalcAvgValueInOneSecond(mFramePulse);
 			stdevp = CalcSTDEVPInOneSecond(mFramePulse, avg);
 			
 			if(!mFramePulse.empty()){
@@ -378,8 +398,11 @@ void PulseAnalyzer::GetFrameInfoByChannel(double &duration)
 	{
 		//curFrameType = GetPulseType(itShort->type, itLong->type);
 		{
-			fps = CalcFrameRate(mFramePulse);
-			avg = CalcAvgValue(mFramePulse);
+			if(index == 114){
+				inter_log(Info, "teste");
+			}
+			fps = CalcFpsInOneSecond(mFramePulse);
+			avg = CalcAvgValueInOneSecond(mFramePulse);
 			stdevp = CalcSTDEVPInOneSecond(mFramePulse, avg);
 
 			if(!mFramePulse.empty()){
@@ -429,7 +452,7 @@ void PulseAnalyzer::GetFrameInfoByDuration(double &pulseDuration)
 	{
 		curFrameType = GetPulseType(itShort->type, itLong->type);
 		{
-			fps = CalcFrameRate(mFramePulse);
+			fps = CalcFpsInOneSecond(mFramePulse);
 			double avg = 0.0f;
 			stdevp = CalcSTDEVPInOneSecond(mFramePulse, avg);
 			FrameDesc frame(curFrameType, itLong->start, itLong->end, fps, avg, stdevp, index++);
