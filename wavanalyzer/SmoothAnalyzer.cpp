@@ -37,7 +37,7 @@ void PulseAnalyzer::ReportProgress(int32_t progress, int32_t total)
 		fprintf(stderr, "\t progress %.3f\r", progress*100.0 / total);
 }
 
-double PulseAnalyzer::CacluAvgValue(std::list<FrameDesc>& durationList)
+double PulseAnalyzer::CalcAvgValue(std::list<FrameDesc>& durationList)
 {
 	double sum = 0.0f;
 	double avgValue = 0.0f;
@@ -54,7 +54,7 @@ double PulseAnalyzer::CacluAvgValue(std::list<FrameDesc>& durationList)
 	return avgValue;
 }
 
-double PulseAnalyzer::CacluSTDEVP(std::list<FrameDesc>& durationList, double &avg)
+double PulseAnalyzer::CalcSTDEVP(std::list<FrameDesc>& durationList, const double &avg)
 {
 	double Sum = 0.0f;
 	double SD = 0.0f;
@@ -71,7 +71,8 @@ double PulseAnalyzer::CacluSTDEVP(std::list<FrameDesc>& durationList, double &av
 }
 
 
-double PulseAnalyzer::CacluSTDEVPInOneSecond(std::list<FrameDesc>& frameList, double &avg)
+// bugs:: 
+double PulseAnalyzer::CalcSTDEVPInOneSecond(std::list<FrameDesc>& frameList, const double &avg)
 {
 	double sum = 0.0f;
 	double stdevp = 0.0f;
@@ -81,9 +82,9 @@ double PulseAnalyzer::CacluSTDEVPInOneSecond(std::list<FrameDesc>& frameList, do
 		if((frameList.back().end - rit->start) > 1.0){
 			std::list<FrameDesc> frameListSplit;
 
-			frameListSplit.assign(frameList.rbegin(), rit);
-			avg = CacluAvgValue(frameList);
-			stdevp = CacluSTDEVP(frameList, avg);
+			rit++;
+			frameListSplit.assign(rit.base(), frameList.end());
+			stdevp = CalcSTDEVP(frameList, avg);
 
 			break;
 		}
@@ -92,7 +93,7 @@ double PulseAnalyzer::CacluSTDEVPInOneSecond(std::list<FrameDesc>& frameList, do
 	return stdevp;
 }
 
-double PulseAnalyzer::CacluFps(std::list<FrameDesc> &frameList)
+double PulseAnalyzer::CalcFps(std::list<FrameDesc> &frameList)
 {
 	double fps = 0.0f;
 	double duraionInSecond = 0.0;
@@ -105,7 +106,7 @@ double PulseAnalyzer::CacluFps(std::list<FrameDesc> &frameList)
 	return fps;
 }
 
-double PulseAnalyzer::CacluFrameRate(std::list<FrameDesc> &frameList)
+double PulseAnalyzer::CalcFrameRate(std::list<FrameDesc> &frameList)
 {
 	double fps = 0.0f;
 	int32_t frameCnt = 0;
@@ -118,7 +119,7 @@ double PulseAnalyzer::CacluFrameRate(std::list<FrameDesc> &frameList)
 			rit++;
 			frameListSplit.assign(rit.base(), frameList.end());
 
-			fps = CacluFps(frameListSplit);
+			fps = CalcFps(frameListSplit);
 
 			break;
 		}
@@ -326,9 +327,10 @@ void PulseAnalyzer::GetFrameInfoByStartTime(double &pulseDuration)
 	{
 		curFrameType = GetPulseType(itShort->type, itLong->type);
 		{
-			fps = CacluFrameRate(mFramePulse);
+			fps = CalcFrameRate(mFramePulse);
 			double avg = 0.0f;
-			stdevp = CacluSTDEVPInOneSecond(mFramePulse, avg);
+			avg = CalcAvgValue(mFramePulse);
+			stdevp = CalcSTDEVPInOneSecond(mFramePulse, avg);
 			
 			if(!mFramePulse.empty()){
 				double pre_start = mFramePulse.back().end;
@@ -359,6 +361,7 @@ void PulseAnalyzer::GetFrameInfoByChannel(double &duration)
 	int32_t curFrameType = 0;
 	double fps = 0.0f;
 	double stdevp = 0.0f;
+	double avg = 0.0f;
 	int32_t index = 0;
 	std::list<PulseDesc>::iterator itLong;
 	std::list<PulseDesc> longChannel;
@@ -375,9 +378,9 @@ void PulseAnalyzer::GetFrameInfoByChannel(double &duration)
 	{
 		//curFrameType = GetPulseType(itShort->type, itLong->type);
 		{
-			fps = CacluFrameRate(mFramePulse);
-			double avg = 0.0f;
-			stdevp = CacluSTDEVPInOneSecond(mFramePulse, avg);
+			fps = CalcFrameRate(mFramePulse);
+			avg = CalcAvgValue(mFramePulse);
+			stdevp = CalcSTDEVPInOneSecond(mFramePulse, avg);
 
 			if(!mFramePulse.empty()){
 				double pre_start = mFramePulse.back().end;
@@ -426,9 +429,9 @@ void PulseAnalyzer::GetFrameInfoByDuration(double &pulseDuration)
 	{
 		curFrameType = GetPulseType(itShort->type, itLong->type);
 		{
-			fps = CacluFrameRate(mFramePulse);
+			fps = CalcFrameRate(mFramePulse);
 			double avg = 0.0f;
-			stdevp = CacluSTDEVPInOneSecond(mFramePulse, avg);
+			stdevp = CalcSTDEVPInOneSecond(mFramePulse, avg);
 			FrameDesc frame(curFrameType, itLong->start, itLong->end, fps, avg, stdevp, index++);
 			mFramePulse.push_back(frame);
 			fps = stdevp = 0.0f;
@@ -675,9 +678,9 @@ void PulseAnalyzer::WriteSmoothDetail()
 	if(!mFramePulse.empty()){
 		CSVFile file(filePath);
 
-		double avg = CacluAvgValue(mFramePulse);
-		stdevp = CacluSTDEVP(mFramePulse, avg);
-		fps = CacluFps(mFramePulse);
+		double avg = CalcAvgValue(mFramePulse);
+		stdevp = CalcSTDEVP(mFramePulse, avg);
+		fps = CalcFps(mFramePulse);
 		file.WriteCsvLine("STDEVP, FPS, Avg, Frames, Duration, ");
 		file.WriteCsvLine("%.3f, %.3f, %.3f, %d, %.3f,", stdevp, fps, avg, mFramePulse.size(), (mFramePulse.back().end - mFramePulse.front().start)*1000);
 
