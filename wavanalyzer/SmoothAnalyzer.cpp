@@ -54,25 +54,7 @@ double PulseAnalyzer::CalcAvgValue(std::list<FrameDesc>& durationList)
 	return avgValue;
 }
 
-double PulseAnalyzer::CalcAvgValueInOneSecond(std::list<FrameDesc> &frameList)
-{
-	double avg = 0.0f;
-	std::list<FrameDesc>::reverse_iterator rit;
 
-	for (rit = frameList.rbegin(); rit != frameList.rend(); rit++){
-		if((frameList.back().end - rit->start) > 1.0){
-			std::list<FrameDesc> frameListSplit;
-
-			rit++;
-			frameListSplit.assign(rit.base(), frameList.end());
-			avg = CalcAvgValue(frameList);
-
-			break;
-		}
-	}
-
-	return avg;
-}
 
 double PulseAnalyzer::CalcSTDEVP(std::list<FrameDesc>& durationList, const double &avg)
 {
@@ -91,27 +73,6 @@ double PulseAnalyzer::CalcSTDEVP(std::list<FrameDesc>& durationList, const doubl
 }
 
 
-// bugs:: 
-double PulseAnalyzer::CalcSTDEVPInOneSecond(std::list<FrameDesc>& frameList, const double &avg)
-{
-	double sum = 0.0f;
-	double stdevp = 0.0f;
-	std::list<FrameDesc>::reverse_iterator rit;
-
-	for (rit = frameList.rbegin(); rit != frameList.rend(); rit++){
-		if((frameList.back().end - rit->start) > 1.0){
-			std::list<FrameDesc> frameListSplit;
-
-			rit++;
-			frameListSplit.assign(rit.base(), frameList.end());
-			stdevp = CalcSTDEVP(frameList, avg);
-
-			break;
-		}
-	}
-
-	return stdevp;
-}
 
 double PulseAnalyzer::CalcFps(std::list<FrameDesc> &frameList)
 {
@@ -126,27 +87,26 @@ double PulseAnalyzer::CalcFps(std::list<FrameDesc> &frameList)
 	return fps;
 }
 
-double PulseAnalyzer::CalcFpsInOneSecond(std::list<FrameDesc> &frameList)
+bool PulseAnalyzer::CalcAvgStdAndFps(std::list<FrameDesc> &frameList, double& avg, double& stdevp, double&fps)
 {
-	double fps = 0.0f;
-	int32_t frameCnt = 0;
 	std::list<FrameDesc>::reverse_iterator rit;
+	avg = stdevp = fps = 0.0f;
 
-	for (rit = frameList.rbegin(); rit != frameList.rend(); rit++){
-		if ((frameList.back().end - rit->start) >= 1.0){
+	for (rit = frameList.rbegin(); rit != frameList.rend(); rit++) {
+		if ((frameList.back().end - rit->start) > 1.0) {
 			std::list<FrameDesc> frameListSplit;
 
 			rit++;
 			frameListSplit.assign(rit.base(), frameList.end());
-
+			avg = CalcAvgValue(frameListSplit);
+			stdevp = CalcSTDEVP(frameListSplit, avg);
 			fps = CalcFps(frameListSplit);
 
 			break;
 		}
-		frameCnt ++;
 	}
 
-	return fps;
+	return true;
 }
 
 int32_t PulseAnalyzer::GetPulseType(PULSETYPE ltype, PULSETYPE rtype)
@@ -192,11 +152,14 @@ void PulseAnalyzer::RecordPulse(CHANNELID channelID, double start, double end)
 
 void PulseAnalyzer::PulseFilter()
 {
-	if (mPulseList[LCHANNEL].size() >= mPulseList[RCHANNEL].size()){
-		PulseLowFilter(mPulseList[LCHANNEL]);
-	}else{
-		PulseLowFilter(mPulseList[RCHANNEL]);
-	}
+// 	if (mPulseList[LCHANNEL].size() >= mPulseList[RCHANNEL].size()){
+// 		PulseLowFilter(mPulseList[LCHANNEL]);
+// 	}else{
+// 		PulseLowFilter(mPulseList[RCHANNEL]);
+// 	}
+
+	PulseLowFilter(mPulseList[LCHANNEL]);
+	PulseLowFilter(mPulseList[RCHANNEL]);
 }
 
 void PulseAnalyzer::PulseLowFilter(std::list<PulseDesc> &channelPulse)
@@ -323,6 +286,7 @@ void PulseAnalyzer::GetFrameInfoByStartTime(double &pulseDuration)
 	int32_t curFrameType = 0;
 	double fps = 0.0f;
 	double stdevp = 0.0f;
+	double avg = 0.0f;
 	int32_t index = 0;
 
 	std::list<PulseDesc>::iterator itLong;
@@ -347,10 +311,7 @@ void PulseAnalyzer::GetFrameInfoByStartTime(double &pulseDuration)
 	{
 		curFrameType = GetPulseType(itShort->type, itLong->type);
 		{
-			fps = CalcFpsInOneSecond(mFramePulse);
-			double avg = 0.0f;
-			avg = CalcAvgValueInOneSecond(mFramePulse);
-			stdevp = CalcSTDEVPInOneSecond(mFramePulse, avg);
+			CalcAvgStdAndFps(mFramePulse, avg, stdevp, fps);
 			
 			if(!mFramePulse.empty()){
 				double pre_start = mFramePulse.back().end;
@@ -398,12 +359,7 @@ void PulseAnalyzer::GetFrameInfoByChannel(double &duration)
 	{
 		//curFrameType = GetPulseType(itShort->type, itLong->type);
 		{
-			if(index == 114){
-				inter_log(Info, "teste");
-			}
-			fps = CalcFpsInOneSecond(mFramePulse);
-			avg = CalcAvgValueInOneSecond(mFramePulse);
-			stdevp = CalcSTDEVPInOneSecond(mFramePulse, avg);
+			CalcAvgStdAndFps(mFramePulse, avg, stdevp, fps);
 
 			if(!mFramePulse.empty()){
 				double pre_start = mFramePulse.back().end;
@@ -428,6 +384,7 @@ void PulseAnalyzer::GetFrameInfoByDuration(double &pulseDuration)
 	int32_t curFrameType = 0;
 	double fps = 0.0f;
 	double stdevp = 0.0f;
+	double avg = 0.0f;
 	int32_t index = 0;
 
 	std::list<PulseDesc>::iterator itLong;
@@ -452,9 +409,7 @@ void PulseAnalyzer::GetFrameInfoByDuration(double &pulseDuration)
 	{
 		curFrameType = GetPulseType(itShort->type, itLong->type);
 		{
-			fps = CalcFpsInOneSecond(mFramePulse);
-			double avg = 0.0f;
-			stdevp = CalcSTDEVPInOneSecond(mFramePulse, avg);
+			CalcAvgStdAndFps(mFramePulse, avg, stdevp, fps);
 			FrameDesc frame(curFrameType, itLong->start, itLong->end, fps, avg, stdevp, index++);
 			mFramePulse.push_back(frame);
 			fps = stdevp = 0.0f;
@@ -471,6 +426,8 @@ void PulseAnalyzer::GetFrameInfoByDuration(double &pulseDuration)
 		step++;
 	}
 }
+
+
 /*
 void PulseAnalyzer::GetFrameInfo(double &pulseDuration)
 {
@@ -533,6 +490,8 @@ void PulseAnalyzer::GetFrameInfo(double &pulseDuration)
 	}
 }
 */
+
+
 void PulseAnalyzer::WriteRawPulseDetail()
 {
 	std::list<PulseDesc>::iterator lit;

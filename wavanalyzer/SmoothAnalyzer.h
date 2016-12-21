@@ -65,18 +65,21 @@ public:
 
 protected:
 	double CalcAvgValue(std::list<FrameDesc>& );
-	double CalcAvgValueInOneSecond(std::list<FrameDesc> &);
 	double CalcSTDEVP(std::list<FrameDesc>&, const double&);
-	double CalcSTDEVPInOneSecond(std::list<FrameDesc>&, const double &);
 	double CalcFps(std::list<FrameDesc> &);
-	double CalcFpsInOneSecond(std::list<FrameDesc> &);
+
+	bool CalcAvgStdAndFps(std::list<FrameDesc> &frameList, double&, double&, double&);
+
 	BOOL DetectPulseWidth(double &);
 	inline int32_t GetPulseType(PULSETYPE ltype, PULSETYPE rtype);
+
 	void WriteSyncDetail();
 	void WriteRawPulseDetail();
+
 	void GetFrameInfoByDuration(double &);
 	void GetFrameInfoByStartTime(double &);
 	void GetFrameInfoByChannel(double &);
+
 	void WriteSmoothDetail();
 
 	void PulseLowFilter(std::list<PulseDesc> &);
