@@ -22,5 +22,13 @@
 
 #include "stdint.h"
 
+// all data in millisecond
+
 #define ANALYZER_DURATION (1000)
 #define SPLIT_PERCENT (ANALYZER_DURATION/10)
+
+#define MINIST_PULSE_DURATION (16)
+#define SYNC_THRESHOLD (MINIST_PULSE_DURATION)
+
+#define BASE_SCREEN_DURATION (MINIST_PULSE_DURATION)
+#define PULSE_LEVEL(x) ((x+BASE_SCREEN_DURATION/2)/BASE_SCREEN_DURATION) // filter all duration < duration/2

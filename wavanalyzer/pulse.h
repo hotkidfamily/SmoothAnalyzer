@@ -11,11 +11,18 @@ struct Pulse{
 		: start(s)
 		, end(e)
 		, duration((e-s)*1000)
-	{}
+	{
+		level = PULSE_LEVEL(duration);
+	}
+
+	bool IsPulseInvalid(){
+		return (level != 0);
+	}
 
 	double start;
 	double end;
 	double duration;
+	int32_t level;
 };
 
 enum CHANNELID{

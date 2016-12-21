@@ -60,7 +60,7 @@ public:
 	PulseAnalyzer(std::string &filename);
 	~PulseAnalyzer(void);
 
-	void RecordTimestamp(CHANNELID channelID, double start, double end);
+	void RecordPulse(CHANNELID channelID, double start, double end);
 	void OutputResult();
 
 protected:
@@ -75,13 +75,18 @@ protected:
 	void WriteRawPulseDetail();
 	void GetFrameInfoByDuration(double &);
 	void GetFrameInfoByStartTime(double &);
+	void GetFrameInfoByChannel(double &);
 	void WriteSmoothDetail();
+
+	void PulseLowFilter(std::list<PulseDesc> &);
+	void PulseFilter();
 
 	void ReportProgress(int32_t progress, int32_t total);
 
 private:
 	std::list<PulseDesc> mPulseList[MAX_CHANNEL];
 	std::list<FrameDesc> mFramePulse;
+	std::list<FrameDesc> mDropFramePulse;
 	std::string mSourceFileName;
 	int32_t mFrameId[MAX_CHANNEL];
 };

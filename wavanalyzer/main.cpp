@@ -11,7 +11,7 @@
 #ifdef _DEBUG
 char* debug_args[] ={
 	"",
-	"e:\\smooth\\ios-sony-entertainment.wav"
+	"e:\\smooth\\smooth_2_for_test_d.pt.wav"
 };
 #endif
 
@@ -72,7 +72,7 @@ static int32_t analyzeFileByChannel(CHANNELID index, std::string file, PulseAnal
 		if(retAnalyzer == RET_FIND_PULSE){
 			while(!SamplePosList.empty()){
 				SamplePos &samplePos = SamplePosList.front();
-				analyzer->RecordTimestamp(index, fileReader->SampeIndexToSecond(samplePos.startIndex), fileReader->SampeIndexToSecond(samplePos.endIndex));
+				analyzer->RecordPulse(index, fileReader->SampeIndexToSecond(samplePos.startIndex), fileReader->SampeIndexToSecond(samplePos.endIndex));
 				SamplePosList.pop_front();
 			}
 		}
