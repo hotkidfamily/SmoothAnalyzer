@@ -95,11 +95,11 @@ double PulseAnalyzer::CacluSTDEVPInOneSecond(std::list<FrameDesc>& frameList, do
 double PulseAnalyzer::CacluFps(std::list<FrameDesc> &frameList)
 {
 	double fps = 0.0f;
-	double duraionInMs = 0.0;
+	double duraionInSecond = 0.0;
 
 	if (!frameList.empty()){
-		duraionInMs = frameList.back().end - frameList.front().start;
-		fps = frameList.size() / duraionInMs;
+		duraionInSecond = frameList.back().end - frameList.front().start;
+		fps = frameList.size() / duraionInSecond;
 	}
 
 	return fps;
@@ -115,11 +115,14 @@ double PulseAnalyzer::CacluFrameRate(std::list<FrameDesc> &frameList)
 		if ((frameList.back().end - rit->start) >= 1.0){
 			std::list<FrameDesc> frameListSplit;
 
-			frameListSplit.assign(frameList.rbegin(), rit);
-			fps = CacluFps(frameList);
+			rit++;
+			frameListSplit.assign(rit.base(), frameList.end());
+
+			fps = CacluFps(frameListSplit);
 
 			break;
 		}
+		frameCnt ++;
 	}
 
 	return fps;
@@ -711,4 +714,5 @@ void PulseAnalyzer::OutputResult()
 	WriteSyncDetail();
 	inter_log(Info, "Write Smooth Data... ");
 	WriteSmoothDetail();
+	inter_log(Info, "end.");
 }
