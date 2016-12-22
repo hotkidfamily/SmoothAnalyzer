@@ -19,6 +19,10 @@ struct Pulse{
 		return (level != 0);
 	}
 
+	bool IsLevelInvalid(){
+		return ((level <= 0) || (level>SYSTEM_RESOLUTION));
+	}
+
 	double start;
 	double end;
 	double duration;
