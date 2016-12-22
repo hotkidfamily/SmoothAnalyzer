@@ -590,7 +590,6 @@ void PulseAnalyzer::ProcessSyncDetail(double pulseWidth)
 			if(itShortNext != shortChannel.end())
 				secondSLdiff = (itShortNext->start - itLong->start)*1000;
 			
-
 			if(firstDiff == 0.0f){
 				longPulse = *itLong;
 				shortPulse = *itShort;
@@ -630,10 +629,6 @@ void PulseAnalyzer::ProcessSyncDetail(double pulseWidth)
 			}			
 		}else{ // drop all reset samples.
 			break;
-		}
-
-		if(shortPulse.index == 162){
-			inter_log(Info, "debug");
 		}
 
 		if(!longPulse.IsInvalid()){
