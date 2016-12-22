@@ -78,10 +78,11 @@ protected:
 
 	void WriteRawPulseDetail();
 
-	void GetFrameInfoByDuration(const double &);
-	void GetFrameInfoByStartTime(const double &);
 	void GetFrameInfoByChannel(const double &);
 
+	void JudgetDropFrame();
+	void HistogramInfo(const double &);
+	void AnalyzerSmoooth(const double &);
 	void WriteSmoothDetail();
 
 	void PulseLowFilter(std::list<PulseDesc> &);
@@ -92,7 +93,8 @@ protected:
 private:
 	std::list<PulseDesc> mPulseList[MAX_CHANNEL];
 	std::list<FrameDesc> mFramePulse;
-	std::list<FrameDesc> mDropFramePulse;
+	std::list<FrameDesc> mFrameResult;
+	uint32_t mFrameHistograms[SYSTEM_RESOLUTION+2];
 	std::string mSourceFileName;
 	int32_t mFrameId[MAX_CHANNEL];
 };

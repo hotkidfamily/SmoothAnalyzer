@@ -24,6 +24,8 @@ PulseAnalyzer::PulseAnalyzer(std::string &filename)
 
 	mSourceFileName += buffer;
 
+	ZeroMemory(mFrameHistograms, sizeof(mFrameHistograms));
+
 	ZeroMemory(mFrameId, sizeof(mFrameId));
 }
 
@@ -276,62 +278,6 @@ BOOL PulseAnalyzer::DetectPulseWidth(double &duration)
 	return bRet;
 }
 
-void PulseAnalyzer::GetFrameInfoByStartTime(const double &pulseDuration)
-{
-	int32_t curFrameType = 0;
-	double fps = 0.0f;
-	double stdevp = 0.0f;
-	double avg = 0.0f;
-	int32_t index = 0;
-
-	std::list<PulseDesc>::iterator itLong;
-	std::list<PulseDesc>::iterator itShort;
-	std::list<PulseDesc> shortChannel; // short list
-	std::list<PulseDesc> longChannel; // long list
-
-	int32_t step = 1;
-
-	if (mPulseList[LCHANNEL].size() >= mPulseList[RCHANNEL].size()){
-		longChannel = mPulseList[LCHANNEL];
-		shortChannel = mPulseList[RCHANNEL];
-	} else{
-		longChannel = mPulseList[RCHANNEL];
-		shortChannel = mPulseList[LCHANNEL];
-	}
-
-	itLong = longChannel.begin();
-	itShort = shortChannel.begin();
-
-	for(; (itLong != longChannel.end()) && (itShort != shortChannel.end()); )
-	{
-		curFrameType = GetPulseType(itShort->type, itLong->type);
-		{
-			CalcAvgStdAndFps(mFramePulse, avg, stdevp, fps);
-			
-			if(!mFramePulse.empty()){
-				double pre_start = mFramePulse.back().end;
-				FrameDesc frame(curFrameType, pre_start, itLong->start, fps, avg, stdevp, index++);
-				mFramePulse.push_back(frame);
-			}else{
-				FrameDesc frame(curFrameType, 0, itLong->start, fps, avg, stdevp, index++);
-				mFramePulse.push_back(frame);
-			}
-
-			fps = stdevp = 0.0f;
-		}
-
-		ReportProgress(itLong->index, longChannel.size());
-
-		itLong++;
-
-		if(!(step % 2)){
-			step = 0;
-			itShort++;
-		}
-		step++;
-	}
-}
-
 void PulseAnalyzer::GetFrameInfoByChannel(const double &duration)
 {
 	int32_t curFrameType = 0;
@@ -339,152 +285,38 @@ void PulseAnalyzer::GetFrameInfoByChannel(const double &duration)
 	double stdevp = 0.0f;
 	double avg = 0.0f;
 	int32_t index = 0;
-	std::list<PulseDesc>::iterator itLong;
-	std::list<PulseDesc> longChannel;
+	std::list<PulseDesc>::iterator rChannelIT;
+	std::list<PulseDesc>::iterator lChannelIT;
+	std::list<PulseDesc> &lChannel = mPulseList[LCHANNEL];
+	std::list<PulseDesc> &rChannel = mPulseList[RCHANNEL];
 
-	if (mPulseList[LCHANNEL].size() >= mPulseList[RCHANNEL].size()){
-		longChannel = mPulseList[LCHANNEL];
-	}else{
-		longChannel = mPulseList[RCHANNEL];
-	}
+	lChannelIT = lChannel.begin();
+	rChannelIT = rChannel.begin();
 
-	itLong = longChannel.begin();
-
-	for(; itLong != longChannel.end(); )
+	for(; lChannelIT != lChannel.end(); )
 	{
-		//curFrameType = GetPulseType(itShort->type, itLong->type);
+		curFrameType = GetPulseType(lChannelIT->type, rChannelIT->type);
 		{
 			CalcAvgStdAndFps(mFramePulse, avg, stdevp, fps);
 
 			if(!mFramePulse.empty()){
 				double pre_start = mFramePulse.back().end;
-				FrameDesc frame(curFrameType, pre_start, itLong->start, fps, avg, stdevp, index++);
+				FrameDesc frame(curFrameType, pre_start, rChannelIT->start, fps, avg, stdevp, index++);
 				mFramePulse.push_back(frame);
 			}else{
-				FrameDesc frame(curFrameType, 0, itLong->start, fps, avg, stdevp, index++);
+				FrameDesc frame(curFrameType, 0, rChannelIT->start, fps, avg, stdevp, index++);
 				mFramePulse.push_back(frame);
 			}
 
 			fps = stdevp = 0.0f;
 		}
 
-		ReportProgress(itLong->index, longChannel.size());
+		ReportProgress(lChannelIT->index, rChannel.size());
 
-		itLong++;
+		rChannelIT++;
+		lChannelIT++;
 	}
 }
-
-void PulseAnalyzer::GetFrameInfoByDuration(const double &pulseDuration)
-{
-	int32_t curFrameType = 0;
-	double fps = 0.0f;
-	double stdevp = 0.0f;
-	double avg = 0.0f;
-	int32_t index = 0;
-
-	std::list<PulseDesc>::iterator itLong;
-	std::list<PulseDesc>::iterator itShort;
-	std::list<PulseDesc> shortChannel; // short list
-	std::list<PulseDesc> longChannel; // long list
-
-	int32_t step = 1;
-
-	if (mPulseList[LCHANNEL].size() >= mPulseList[RCHANNEL].size()){
-		longChannel = mPulseList[LCHANNEL];
-		shortChannel = mPulseList[RCHANNEL];
-	} else{
-		longChannel = mPulseList[RCHANNEL];
-		shortChannel = mPulseList[LCHANNEL];
-	}
-
-	itLong = longChannel.begin();
-	itShort = shortChannel.begin();
-
-	for(; (itLong != longChannel.end()) && (itShort != shortChannel.end()); )
-	{
-		curFrameType = GetPulseType(itShort->type, itLong->type);
-		{
-			CalcAvgStdAndFps(mFramePulse, avg, stdevp, fps);
-			FrameDesc frame(curFrameType, itLong->start, itLong->end, fps, avg, stdevp, index++);
-			mFramePulse.push_back(frame);
-			fps = stdevp = 0.0f;
-		}
-
-		ReportProgress(itLong->index, longChannel.size());
-		
-		itLong++;
-
-		if(!(step % 2)){
-			step = 0;
-			itShort++;
-		}
-		step++;
-	}
-}
-
-
-/*
-void PulseAnalyzer::GetFrameInfo(double &pulseDuration)
-{
-	int32_t curFrameType = 0;
-	double referenceTimeBase = 0.0f;
-	double fps = 0.0f;
-	double MSE = 0.0f;
-	int32_t index = 0;
-	int32_t lstep = 1;
-	int32_t rstep = 1;
-
-	referenceTimeBase = min(mPulseList[LCHANNEL].front().start, mPulseList[RCHANNEL].front().start);
-	inter_log(Info, "Reference base time is %.3f ms", referenceTimeBase);
-
-	if(!mPulseList[LCHANNEL].empty() || !mPulseList[RCHANNEL].empty()){
-		std::list<PulseDesc>::iterator lit;
-		std::list<PulseDesc>::iterator rit;
-		PulseDesc lBak = *mPulseList[LCHANNEL].begin();
-		PulseDesc rBak = *mPulseList[RCHANNEL].begin();
-
-		for(lit = mPulseList[LCHANNEL].begin(), rit = mPulseList[RCHANNEL].begin();
-			(lit != mPulseList[LCHANNEL].end()) && (rit!=mPulseList[RCHANNEL].end());)
-		{
-			curFrameType = GetPulseType(lBak.type, rBak.type);
-			if(!(curFrameType < 0)){
-				fps = CacluFrameRate(mFramePulse);
-				MSE = CacluMSEInOneSecond(mFramePulse);
-				FrameDesc frame(curFrameType, min(lBak.start,rBak.start), max(lBak.end, rBak.end), fps, MSE, index++);
-				mFramePulse.push_back(frame);
-			}
-
-			if(pulseDuration > 0.0f){
-				if((fabs(lBak.duration - pulseDuration) < 0.005) || (lBak.duration < 0.0f)){ // 5ms 
-					lit++;
-					if(lit != mPulseList[LCHANNEL].end())
-						lBak = *lit;
-				}else{
-					lBak.start += pulseDuration;
-					lBak.duration -= pulseDuration;
-				}
-
-				if((fabs(rBak.duration - pulseDuration) < 0.005) || (rBak.duration < 0.0f)){ // 5ms
-					rit++;
-					if(rit != mPulseList[RCHANNEL].end())
-						rBak = *rit;
-				}else{
-					rBak.start += pulseDuration;
-					rBak.duration -= pulseDuration;
-				}
-			}else{
-				lit++;
-				if(lit != mPulseList[LCHANNEL].end())
-					lBak = *lit;
-
-				rit++;
-				if(rit != mPulseList[RCHANNEL].end())
-					rBak = *rit;
-			}
-		}
-	}
-}
-*/
 
 
 void PulseAnalyzer::WriteRawPulseDetail()
@@ -622,7 +454,7 @@ void PulseAnalyzer::ProcessSyncDetail(double pulseWidth)
 							sync = (int32_t)firstDiff;
 						}
 					}else{
-						inter_log(Info, "debg");
+						//inter_log(Info, "debg");
 					}
 					
 				}
@@ -700,6 +532,90 @@ void PulseAnalyzer::WriteSyncDetail()
 	}
 }
 
+
+void PulseAnalyzer::HistogramInfo(const double &pulseWidth)
+{
+	std::list<FrameDesc>::iterator it = mFramePulse.begin();
+	int32_t NormalLevel = PULSE_LEVEL(pulseWidth);
+
+	inter_log(Info, "Normal Level is %d.", NormalLevel);
+
+	while(it != mFramePulse.end()){
+		if((it->level < SYSTEM_RESOLUTION) && (it->level>0)){
+			mFrameHistograms[it->level]++;
+		}else{
+			mFrameHistograms[BAD_RESOLUTION]++;
+		}
+
+		if(it->level == NormalLevel){
+			mFrameHistograms[NORMATL_RESOLUTION]++;
+		} 
+
+		mFrameHistograms[TOTAL_RESOLUTION]++;
+
+		it++;
+	}
+}
+
+void PulseAnalyzer::JudgetDropFrame()
+{
+	int32_t exceptNextType = 0;
+	int32_t curFrameType = 0;
+	bool bSkip = false;
+
+	std::list<FrameDesc>::iterator it;
+	std::list<FrameDesc>::iterator itPre;
+	std::list<FrameDesc> &channel = mFramePulse;
+
+	it = channel.begin();
+	exceptNextType = it->frameType;
+
+	for(; it != channel.end(); )
+	{
+		curFrameType = it->frameType;
+		if(curFrameType == exceptNextType){
+			exceptNextType = (exceptNextType+1)%PULSETABLECOUNT;
+		}else{
+			exceptNextType = (curFrameType+1)%PULSETABLECOUNT; // restart calculate
+			itPre = it;
+			itPre--;
+
+			{
+				int32_t drops = abs(exceptNextType - curFrameType)%PULSETABLECOUNT;
+				double threashold = drops*MINIST_PULSE_DURATION;
+				double duration = abs((it->start - itPre->start)*1000);
+
+				if(duration < threashold){
+					mFrameHistograms[BAD_RESOLUTION]++;
+					bSkip = true;
+				}else{
+					mFrameHistograms[DROP_RESOLUTION] += drops;
+				}
+			}
+		}
+
+		if(!bSkip){
+			if(it->IsLevelInvalid()){
+				mFrameHistograms[BAD_RESOLUTION]++;
+			}
+		}
+
+		bSkip = false;
+
+		ReportProgress(it->index, channel.size());
+
+		it++;
+	}
+
+	//inter_log(Error, "drop %d frames, bad %d frames.\n", dropFrame, badFrame);
+}
+
+void PulseAnalyzer::AnalyzerSmoooth(const double &pulseWidth)
+{
+	HistogramInfo(pulseWidth);
+	JudgetDropFrame();
+}
+
 void PulseAnalyzer::WriteSmoothDetail()
 {
 	double stdevp = 0.0f;
@@ -715,14 +631,26 @@ void PulseAnalyzer::WriteSmoothDetail()
 		file.WriteCsvLine("STDEVP, FPS, Avg, Frames, Duration, ");
 		file.WriteCsvLine("%.3f, %.3f, %.3f, %d, %.3f,", stdevp, fps, avg, mFramePulse.size(), (mFramePulse.back().end - mFramePulse.front().start)*1000);
 
-		file.WriteCsvLine("");
+		file.WriteCsvLine(",");
+
+		file.WriteCsvLine("Total, Normal, Percent, 1Pulse, 2Pulse, 3Pulse, Bad, Drops,");
+		file.WriteCsvLine("%u, %u,"
+			"%.3f, "
+			" %u, %u, %u, %u, %u,", 
+			mFrameHistograms[TOTAL_RESOLUTION], mFrameHistograms[NORMATL_RESOLUTION], 
+			100.0 * mFrameHistograms[NORMATL_RESOLUTION]/mFrameHistograms[TOTAL_RESOLUTION],
+			mFrameHistograms[1], mFrameHistograms[2], mFrameHistograms[3], 
+			mFrameHistograms[BAD_RESOLUTION], mFrameHistograms[DROP_RESOLUTION]);
+
+		file.WriteCsvLine(",");
 		file.WriteCsvLine("All data in millisecond,");
-		file.WriteCsvLine("");
-		file.WriteCsvLine("Index, Start, End, Duration, Average, Delta, STDEVP, FPS, Type,");
+		file.WriteCsvLine(",");
+
+		file.WriteCsvLine("Index, Start, End, Duration, Average, Delta, STDEVP, FPS, Type, level, ");
 		while(!mFramePulse.empty()){
 			FrameDesc frame = mFramePulse.front();
-			file.WriteCsvLine("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %d, "
-				, frame.index, frame.start, frame.end, frame.duration, frame.AVG, frame.offset, frame.STDEVP, frame.frameRate, frame.frameType);
+			file.WriteCsvLine("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %d, %d, "
+				, frame.index, frame.start, frame.end, frame.duration, frame.AVG, frame.offset, frame.STDEVP, frame.frameRate, frame.frameType, frame.level);
 			mFramePulse.pop_front();
 
 			ReportProgress(frame.index, mFramePulse.size());
@@ -751,6 +679,8 @@ void PulseAnalyzer::OutputResult()
 
 	inter_log(Info, "Detect Frame Info... ");
 	GetFrameInfoByChannel(pulseWidth);
+
+	AnalyzerSmoooth(pulseWidth);
 	
 	inter_log(Info, "Write Smooth Data... ");
 	WriteSmoothDetail();
