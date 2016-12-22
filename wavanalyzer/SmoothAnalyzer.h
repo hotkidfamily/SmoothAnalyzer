@@ -73,12 +73,14 @@ protected:
 	BOOL DetectPulseWidth(double &);
 	inline int32_t GetPulseType(PULSETYPE ltype, PULSETYPE rtype);
 
+	void ProcessSyncDetail(double);
 	void WriteSyncDetail();
+
 	void WriteRawPulseDetail();
 
-	void GetFrameInfoByDuration(double &);
-	void GetFrameInfoByStartTime(double &);
-	void GetFrameInfoByChannel(double &);
+	void GetFrameInfoByDuration(const double &);
+	void GetFrameInfoByStartTime(const double &);
+	void GetFrameInfoByChannel(const double &);
 
 	void WriteSmoothDetail();
 

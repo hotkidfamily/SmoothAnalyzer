@@ -4,7 +4,7 @@
 
 DataSeparater::DataSeparater(std::string &name)
 {
-	mDataDump = new iDump(name + ".sp.pcm");
+	mDataDump = new iDump(name + ".original.pcm");
 }
 
 DataSeparater::~DataSeparater(void)
