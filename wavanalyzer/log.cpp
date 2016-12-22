@@ -31,6 +31,10 @@ void inter_log(log_level level, const char* format, ...)
 
 	if (level >= log_level_base)
 	{
-		fprintf(stderr, "%s: %s\n", level_strs[level], str);
+		if(level > Error){
+			fprintf(stderr, "\n%s: %s\n\n", level_strs[level], str);
+		}else{
+			fprintf(stderr, "%s: %s\n", level_strs[level], str);
+		}
 	}
 }
