@@ -20,6 +20,9 @@ typedef struct _WaveFormat
     uint32_t nAvgBytesRate;   // 码率  
     uint16_t nBlockAlign; 
     uint16_t nBitsPerSample;  // 采样深度      
+
+	inline int32_t GetBytesPerSample() { return nBitsPerSample >> 3; };
+
 } WaveFormat; 
 #pragma pack() 
 

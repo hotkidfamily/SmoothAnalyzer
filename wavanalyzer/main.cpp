@@ -3,7 +3,6 @@
 
 #include "stdafx.h"
 #include "log.h"
-#include "wavFileParse.h"
 #include "waveAnalyzer.h"
 #include "fileEnum.h"
 #include "SmoothAnalyzer.h"
@@ -38,60 +37,10 @@ static int32_t parse_parameters(int32_t argc, char* argv[])
 	}
 
 	if(argc >= 3){
-		gChannelOffset = atof(argv[2]);
+		gChannelOffset = atof(argv[2])/1000;
 	}
 	
 	return ret;
-}
-
-static int32_t analyzeFileByChannel(CHANNELID index, std::string file, PulseAnalyzer* &analyzer)
-{
-	std::string ChannelData;
-	std::string sourceData;
-	DataSeparater *dataSeparater = new DataSeparater(file + "." + chanenlIDNameList[index]);
-	CWaveReader *fileReader = new CWaveReader();
-	WaveAnalyzer *channelAnalyzer = new WaveAnalyzer(index, file);
-	int32_t ret = 0;
-
-	if (!fileReader->Open(file.c_str())){
-		return -1;
-	}
-
-	channelAnalyzer->SetWavFormat(fileReader->GetFormat());
-	dataSeparater->SetWavFormat(fileReader->GetFormat());
-
-	while(1){
-		std::list<SamplePos> SamplePosList;
-		uint32_t startSampleIndex = 0;
-		uint32_t endSampleIndex = 0;
-
-		ChannelData.clear();
-		ret = fileReader->ReadData(sourceData);
-
-		dataSeparater->GetChannelData(index, sourceData ,ChannelData);
-
-		retType retAnalyzer = RET_OK;
-
-		retAnalyzer = channelAnalyzer->Analyzer(ChannelData, SamplePosList);
-		if(retAnalyzer == RET_FIND_PULSE){
-			while(!SamplePosList.empty()){
-				SamplePos &samplePos = SamplePosList.front();
-				analyzer->RecordPulse(index, fileReader->SampeIndexToSecond(samplePos.startIndex), fileReader->SampeIndexToSecond(samplePos.endIndex));
-				SamplePosList.pop_front();
-			}
-		}
-
-		if(ret < 0)
-			break;
-	}
-
-	fileReader->Close();
-
-	delete fileReader;
-	delete channelAnalyzer;
-	delete dataSeparater;
-
-	return ret == EOF;
 }
 
 static int analyzeFile(std::string file)
@@ -100,16 +49,21 @@ static int analyzeFile(std::string file)
 	int32_t ret = 0;
 	PulseAnalyzer *smoothAnalyzer = NULL;
 	smoothAnalyzer = new PulseAnalyzer(file);
+	WaveAnalyzer *wavAnalyzer = new WaveAnalyzer(file);
 
 	inter_log(Info, "File %s, channel offset %f", file.c_str(), gChannelOffset);
 
 	smoothAnalyzer->SetOffset(gChannelOffset);
-	analyzeFileByChannel(LCHANNEL, file, smoothAnalyzer);
-	analyzeFileByChannel(RCHANNEL, file, smoothAnalyzer);
+	wavAnalyzer->AnalyzeFilePulse();
+	smoothAnalyzer->SetAnalyzerData(wavAnalyzer->GetPulseData());
 
 	inter_log(Info, "\nAnalyzer... ");
 
 	smoothAnalyzer->OutputResult();
+
+	if(wavAnalyzer){
+		delete wavAnalyzer;
+	}
 
 	if(smoothAnalyzer){
 		delete smoothAnalyzer;

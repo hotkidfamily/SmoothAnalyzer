@@ -6,6 +6,12 @@ enum PULSETYPE{
 	PULSE_NONE
 };
 
+enum CHANNELID{
+	LCHANNEL,
+	RCHANNEL,
+	MAX_CHANNEL = RCHANNEL+1
+};
+
 struct Pulse{
 	Pulse(double s, double e)
 		: start(s)
@@ -29,10 +35,54 @@ struct Pulse{
 	int32_t level;
 };
 
-enum CHANNELID{
-	LCHANNEL,
-	RCHANNEL,
-	MAX_CHANNEL = 0xFF
+struct PulseDesc: public Pulse
+{
+	PulseDesc()
+		:Pulse(0.0f, 0.0f)
+		, channelID(MAX_CHANNEL)
+		, type(PULSE_NONE)
+		, index(0)
+	{
+
+	}
+
+	PulseDesc(CHANNELID id, double start, double end, PULSETYPE pulseType, int32_t idx)
+		: Pulse(start, end)
+		, channelID(id)
+		, channelName(id==LCHANNEL?'L':'R')
+		, type(pulseType)
+		, index(idx)
+	{}
+
+	bool IsInvalid()
+	{
+		return (type == PULSE_NONE) && (channelID == MAX_CHANNEL);
+	}
+
+	int32_t index;
+	PULSETYPE type;
+	CHANNELID channelID;
+	char channelName;
+};
+
+struct FrameDesc: public Pulse
+{
+	FrameDesc(int32_t type, double start, double end, double fps, double avg, double stdevp, int32_t idx)
+		: Pulse(start, end)
+		, frameType(type)
+		, frameRate(fps)
+		, STDEVP(stdevp)
+		, AVG(avg)
+		, offset(duration - avg)
+		, index(idx)
+	{}
+
+	int32_t index;
+	int32_t frameType;
+	double frameRate;
+	double STDEVP;
+	double AVG;
+	double offset;
 };
 
 #define to_str(x) #x

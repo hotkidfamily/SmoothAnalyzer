@@ -39,12 +39,12 @@ int32_t SmoothFilter::process(std::string &channelData, int32_t Bps)
 	return 0;
 }
 
-UDFilter::UDFilter(std::string &filePath)
+RmNegativeFilter::RmNegativeFilter(std::string &filePath)
 	:iDump(filePath + ".RemoveNegative.pcm")
 {
 }
 
-int32_t UDFilter::process(std::string &channelData, int32_t Bps)
+int32_t RmNegativeFilter::process(std::string &channelData, int32_t Bps)
 {
 	int16_t *data = (int16_t*)channelData.c_str();
 

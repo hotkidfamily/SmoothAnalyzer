@@ -27,7 +27,6 @@ PulseAnalyzer::PulseAnalyzer(std::string &filename)
 
 	ZeroMemory(mFrameHistograms, sizeof(mFrameHistograms));
 
-	ZeroMemory(mFrameId, sizeof(mFrameId));
 }
 
 PulseAnalyzer::~PulseAnalyzer(void)
@@ -40,76 +39,10 @@ void PulseAnalyzer::ReportProgress(int32_t progress, int32_t total)
 		fprintf(stderr, "\t progress %.3f\r", progress*100.0 / total);
 }
 
-double PulseAnalyzer::CalcAvgValue(std::list<FrameDesc>& durationList)
+void PulseAnalyzer::SetAnalyzerData(std::list<PulseDesc>* dataPtr)
 {
-	double sum = 0.0f;
-	double avgValue = 0.0f;
-	std::list<FrameDesc>::iterator it;
-
-	if (!durationList.empty()){
-		for (it = durationList.begin(); it != durationList.end(); it++){
-			sum += it->duration;
-		}
-
-		avgValue = sum / durationList.size();
-	}
-
-	return avgValue;
-}
-
-
-
-double PulseAnalyzer::CalcSTDEVP(std::list<FrameDesc>& durationList, const double &avg)
-{
-	double Sum = 0.0f;
-	double SD = 0.0f;
-	std::list<FrameDesc>::iterator it;
-
-	if (!durationList.empty()){
-		for(it = durationList.begin(); it != durationList.end(); it++){
-			Sum += pow(fabs(it->duration - avg), 2);
-		}
-
-		SD = 100.0 * sqrt(Sum / durationList.size()) / avg;
-	}
-	return SD;
-}
-
-
-
-double PulseAnalyzer::CalcFps(std::list<FrameDesc> &frameList)
-{
-	double fps = 0.0f;
-	double duraionInSecond = 0.0;
-
-	if (!frameList.empty()){
-		duraionInSecond = frameList.back().end - frameList.front().start;
-		fps = frameList.size() / duraionInSecond;
-	}
-
-	return fps;
-}
-
-bool PulseAnalyzer::CalcAvgStdAndFps(std::list<FrameDesc> &frameList, double& avg, double& stdevp, double&fps)
-{
-	std::list<FrameDesc>::reverse_iterator rit;
-	avg = stdevp = fps = 0.0f;
-
-	for (rit = frameList.rbegin(); rit != frameList.rend(); rit++) {
-		if ((frameList.back().end - rit->start) > 1.0) {
-			std::list<FrameDesc> frameListSplit;
-
-			rit++;
-			frameListSplit.assign(rit.base(), frameList.end());
-			avg = CalcAvgValue(frameListSplit);
-			stdevp = CalcSTDEVP(frameListSplit, avg);
-			fps = CalcFps(frameListSplit);
-
-			break;
-		}
-	}
-
-	return true;
+	mPulseList[LCHANNEL] = dataPtr[LCHANNEL];
+	mPulseList[RCHANNEL] = dataPtr[RCHANNEL];
 }
 
 int32_t PulseAnalyzer::GetPulseType(PULSETYPE ltype, PULSETYPE rtype)
@@ -122,35 +55,6 @@ int32_t PulseAnalyzer::GetPulseType(PULSETYPE ltype, PULSETYPE rtype)
 	}
 
 	return -1;
-}
-
-void PulseAnalyzer::RecordPulse(CHANNELID channelID, double start, double end)
-{
-	if(((end - start)*1000) < MINIST_PULSE_DURATION){
-		return ;
-	}
-
-	if(!mPulseList[channelID].empty()){
-		PulseDesc &lastTime = mPulseList[channelID].back();
-
-		if(lastTime.type != PULSE_HIGH ) {
-			inter_log(Error, "?? last pulse is \"%s\", not high pulse.", lastTime.type==PULSE_LOW?"low":"high");
-			return ;
-		}
-
-		PulseDesc timeInsert(channelID, lastTime.end, start, PULSE_LOW, mFrameId[channelID]++);
-		mPulseList[channelID].push_back(timeInsert);
-
-		// filter 
-#if 0
-		if(((time.start - lastTime.end) < 0.500)
-			|| (end - start < 0.003)){ // remove less than 3ms pulse 
-				return;
-		}
-#endif
-	}
-	PulseDesc time(channelID, start, end, PULSE_HIGH, mFrameId[channelID]++);
-	mPulseList[channelID].push_back(time);	
 }
 
 void PulseAnalyzer::MergeOffset()
@@ -315,7 +219,7 @@ void PulseAnalyzer::GetFrameInfoByChannel(const double &duration)
 	{
 		curFrameType = GetPulseType(lChannelIT->type, rChannelIT->type);
 		{
-			CalcAvgStdAndFps(mFramePulse, avg, stdevp, fps);
+			mStdevpAlgorithm.CalcAvgStdAndFps(mFramePulse, avg, stdevp, fps);
 
 			if(!mFramePulse.empty()){
 				double pre_start = mFramePulse.back().end;
@@ -484,7 +388,7 @@ void PulseAnalyzer::ProcessSyncDetail(double pulseWidth)
 		if(!longPulse.IsInvalid()){
 			itLong++;
 		}else{
-			if(itLong != longChannel.end()){
+			if(itLong != longChannel.begin()){
 				itLong--;
 				longPulse = *itLong;
 				itLong++;
@@ -643,9 +547,9 @@ void PulseAnalyzer::WriteSmoothDetail()
 	if(!mFramePulse.empty()){
 		CSVFile file(filePath);
 
-		double avg = CalcAvgValue(mFramePulse);
-		stdevp = CalcSTDEVP(mFramePulse, avg);
-		fps = CalcFps(mFramePulse);
+		double avg = mStdevpAlgorithm.CalcAvgValue(mFramePulse);
+		stdevp = mStdevpAlgorithm.CalcSTDEVP(mFramePulse, avg);
+		fps = mStdevpAlgorithm.CalcFps(mFramePulse);
 		file.WriteCsvLine("STDEVP, FPS, Avg, Frames, Duration, ");
 		file.WriteCsvLine("%.3f, %.3f, %.3f, %d, %.3f,", stdevp, fps, avg, mFramePulse.size(), (mFramePulse.back().end - mFramePulse.front().start)*1000);
 

@@ -215,6 +215,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\StdevAlgorithm.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\waveAnalyzer.cpp"
 				>
 			</File>
@@ -266,6 +270,10 @@
 			</File>
 			<File
 				RelativePath=".\stdafx.h"
+				>
+			</File>
+			<File
+				RelativePath=".\StdevAlgorithm.h"
 				>
 			</File>
 			<File

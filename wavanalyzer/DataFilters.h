@@ -5,7 +5,7 @@
 enum FILTERS_INDEX{
 	FILTER_ABS,
 	FILTER_SMOOTH,
-	FILTER_UPDOWN,
+	FILTER_RMNEGTV,
 	FILTER_LOW,
 	FILTER_COUNT,
 };
@@ -29,13 +29,13 @@ public:
 	virtual int32_t process(std::string &samples, int32_t Bps);
 };
 
-class UDFilter
+class RmNegativeFilter
 	: public IFilter
 	, public iDump
 {
 public:
-	UDFilter(std::string &filePath);
-	~UDFilter(){};
+	RmNegativeFilter(std::string &filePath);
+	~RmNegativeFilter(){};
 
 	virtual int32_t process(std::string &samples, int32_t Bps);
 };
