@@ -15,8 +15,9 @@ const struct tagPulseType{
 #define PULSETABLECOUNT (ARRAYSIZE(pulseTable))
 
 PulseAnalyzer::PulseAnalyzer(std::string &filename)
+: mChannelOffset(0)
+, mSourceFileName(filename)
 {
-	mSourceFileName = filename;
 	SYSTEMTIME systime;
 	char buffer[256] = {'\0'};
 	GetLocalTime(&systime);
@@ -152,10 +153,27 @@ void PulseAnalyzer::RecordPulse(CHANNELID channelID, double start, double end)
 	mPulseList[channelID].push_back(time);	
 }
 
+void PulseAnalyzer::MergeOffset()
+{
+	std::list<PulseDesc> &longChannel = mPulseList[LCHANNEL].size()>mPulseList[RCHANNEL].size()?mPulseList[LCHANNEL]:mPulseList[RCHANNEL];
+	std::list<PulseDesc>::iterator it = longChannel.begin();
+
+	while(it != longChannel.end()){
+		it->start += mChannelOffset;
+		it->end += mChannelOffset;
+		it++;
+	}
+}
+
 void PulseAnalyzer::PulseFilter()
 {
 	PulseLowFilter(mPulseList[LCHANNEL]);
 	PulseLowFilter(mPulseList[RCHANNEL]);
+
+	// merge offfset
+	if(fabs(mChannelOffset) >= 0.0001f){
+		MergeOffset();
+	}
 }
 
 void PulseAnalyzer::PulseLowFilter(std::list<PulseDesc> &channelPulse)
@@ -667,6 +685,8 @@ void PulseAnalyzer::OutputResult()
 
 	inter_log(Info, "Filter Raw Pulse... ");
 	PulseFilter();
+
+	WriteRawPulseDetail();
 
 	inter_log(Info, "Detect Pulse Width... ");
 	DetectPulseWidth(pulseWidth);

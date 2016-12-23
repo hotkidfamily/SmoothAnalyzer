@@ -60,6 +60,7 @@ public:
 	PulseAnalyzer(std::string &filename);
 	~PulseAnalyzer(void);
 
+	void SetOffset(double offset) { mChannelOffset = (offset/1000); };
 	void RecordPulse(CHANNELID channelID, double start, double end);
 	void OutputResult();
 
@@ -87,6 +88,7 @@ protected:
 
 	void PulseLowFilter(std::list<PulseDesc> &);
 	void PulseFilter();
+	void MergeOffset();
 
 	void ReportProgress(int32_t progress, int32_t total);
 
@@ -97,4 +99,6 @@ private:
 	uint32_t mFrameHistograms[SYSTEM_RESOLUTION+2];
 	std::string mSourceFileName;
 	int32_t mFrameId[MAX_CHANNEL];
+
+	double mChannelOffset;
 };

@@ -11,22 +11,22 @@
 #ifdef _DEBUG
 char* debug_args[] ={
 	"",
-	"e:\\smooth\\smooth_2_for_test_d.pt.wav"
+	"e:\\smooth\\ios-sony-entertainment.wav",
+	"-8"
 };
 #endif
 
+double gChannelOffset = 0;
+
 static void print_usage(const char *name)
 {
-	std::string program_name = name;
-	std::string helpString = "\nUsage: Analyze AV sync result recording wav files, " + program_name + " <input file>\n"
-		"\nExample1 : " + program_name + " result.wav\n"
-		"\tIt will analyze result.wav file\n"
-		"Example2 : " + program_name + " result1.wav result2.wav\n"
-		"\tIt will analyze result1.wav and result2.wav file\n"
-		"\nNote: Can only analyze wav files in current folder, and no recursive search.\n"
-		"If you want to analyze all wav files in current folder, use: " + program_name + " <Path>\n";
+	const char *help = "\n%s\n\tAnazlyer a smooth steam wave file.\n\n"
+		"Usage:\t%s <PATH>/<File Name> [Offset]\n\n"
+		"Tips:\tIf you want indicate channels different Please fill [Offset].\n"
+		"     \t[Offset]: Negative indicate ahead, Positive indicate behind.\n\n"
+		"Warning:Only Support .WAV File With 2 Channels.\n\n";
 
-	printf("%s", helpString.c_str());
+	printf(help, name, name);
 }
 
 static int32_t parse_parameters(int32_t argc, char* argv[])
@@ -35,6 +35,10 @@ static int32_t parse_parameters(int32_t argc, char* argv[])
 	if(argc < 2){
 		print_usage(argv[0]);
 		ret = -1;
+	}
+
+	if(argc >= 3){
+		gChannelOffset = atof(argv[2]);
 	}
 	
 	return ret;
@@ -97,8 +101,9 @@ static int analyzeFile(std::string file)
 	PulseAnalyzer *smoothAnalyzer = NULL;
 	smoothAnalyzer = new PulseAnalyzer(file);
 
-	inter_log(Info, "File %s", file.c_str());
+	inter_log(Info, "File %s, channel offset %f", file.c_str(), gChannelOffset);
 
+	smoothAnalyzer->SetOffset(gChannelOffset);
 	analyzeFileByChannel(LCHANNEL, file, smoothAnalyzer);
 	analyzeFileByChannel(RCHANNEL, file, smoothAnalyzer);
 
