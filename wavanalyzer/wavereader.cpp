@@ -1,9 +1,11 @@
 #include "stdafx.h"
 #include "wavereader.h"
+#include "log.h"
 
 // CWaveReaderÀàÊµÏÖ    
 CWaveReader::CWaveReader()   
 : m_pFile(NULL)
+, m_totalReadLength(0)
 {   
 	memset(&m_WaveFormat, 0, sizeof(m_WaveFormat));   
 }    
@@ -11,17 +13,22 @@ CWaveReader::CWaveReader()
 CWaveReader::~CWaveReader()   
 {   
 	Close();   
+	inter_log(Error, "WaveReader %d bytes, duration %f seconds.", 
+		m_totalReadLength, m_totalReadLength*1.0/m_WaveFormat.GetDataSizePerSecond());
 }   
 
 bool CWaveReader::Open(const char* pFileName)
 {   
 	Close();   
-	fopen_s(&m_pFile, pFileName, "rb");
+	fopen_s(&m_pFile, pFileName, "rb+");
 	if( !m_pFile )   
 		return false;   
 
 	if( !ReadHeader() )
 		return false;
+
+	inter_log(Info, "file %s, %d bytes, duration %f seconds.", 
+		pFileName, m_nDataLen, m_nDataLen*1.0/m_WaveFormat.GetDataSizePerSecond());
 
 	return true;      
 }   
@@ -123,17 +130,16 @@ double CWaveReader::SampeIndexToSecond(uint32_t sampleIndex)
 	return sampleIndex*1.0 / m_WaveFormat.nSampleRate;
 }
 
-size_t CWaveReader::ReadData(uint8_t* pData, int32_t nLen)   
+size_t CWaveReader::ReadRawData(uint8_t* pData, int32_t nLen)   
 {      
 	size_t size = 0;
 	if(m_pFile)
 		size = fread(pData, 1, nLen, m_pFile); 
 	if(size > 0){
-		long pos = ftell(m_pFile);
-		m_Progress = pos*100.0 / m_nDataLen;
+		m_Progress = m_totalReadLength*100.0 / m_nDataLen;
 	}
 
-	fprintf(stderr, "\t progress %.3f\r", Progress());
+	fprintf(stderr, "\t progress %.3f\r", m_Progress);
 
 	return size;   
 } 
@@ -146,16 +152,22 @@ int32_t CWaveReader::ReadData(std::string &data)
 	int32_t readDataLength = 0;
 
 	data.resize(nbSampleDataSize, 0);
-	char* buffer = (char*)data.c_str();
 
-	readDataLength = ReadData((unsigned char*)buffer, data.size());
-	if(readDataLength < nbSampleDataSize){ 
+	readDataLength = ReadRawData((uint8_t*)data.c_str(), nbSampleDataSize);
+	if(readDataLength < nbSampleDataSize){
+		readDataLength = m_nDataLen - m_totalReadLength;
+		std::string newdata;
+		newdata.append(data.c_str(), readDataLength);
+		data.clear();
+		data.append(newdata);
 		if(readDataLength<0){
 			ret = -2;
 			goto cleanup;
 		}
 		ret = EOF;
 	}
+
+	m_totalReadLength += readDataLength;
 
 cleanup:
 	return ret;

@@ -5,7 +5,7 @@
 #include "wavereader.h"
 #include "DataFilters.h"
 
-class DataSeparater
+class DataSeparater: public iDump
 {
 public:
 	DataSeparater(std::string &name);
@@ -19,5 +19,5 @@ protected:
 	
 private:
 	WaveFormat m_wavFormat;
-	iDump *mDataDump;
+	int32_t mTotalSpDataSize;
 };

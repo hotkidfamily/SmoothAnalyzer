@@ -22,6 +22,7 @@ typedef struct _WaveFormat
     uint16_t nBitsPerSample;  // 采样深度      
 
 	inline int32_t GetBytesPerSample() { return nBitsPerSample >> 3; };
+	inline int32_t GetDataSizePerSecond() { return GetBytesPerSample()*nSampleRate*nChannels; };
 
 } WaveFormat; 
 #pragma pack() 
@@ -37,11 +38,10 @@ public:
     ~CWaveReader(); 
     bool Open(const char* pFileName);
     void Close(); 
-    size_t ReadData(uint8_t* pData, int nLen); 
-	int32_t CWaveReader::ReadData(std::string &data);
+    size_t ReadRawData(uint8_t* pData, int nLen); 
+	int32_t ReadData(std::string &data);
     WaveFormat &GetFormat(); 
     FILE* Handle();
-	double Progress() { return m_Progress; };
 	double SampeIndexToSecond(uint32_t sampleIndex);
 
 private:
@@ -52,6 +52,7 @@ private:
     int m_nDataLen; 
 	double m_Progress;
     WaveFormat m_WaveFormat; 
+	int32_t m_totalReadLength;
 };  
  
 #endif 

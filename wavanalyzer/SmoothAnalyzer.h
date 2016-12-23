@@ -33,6 +33,7 @@ protected:
 
 	void ProcessSyncDetail(double);
 	void WriteSyncDetail();
+	void WriteRawSyncDetail();
 
 	void WriteRawPulseDetail();
 
