@@ -10,11 +10,11 @@ StdevAlgorithm::~StdevAlgorithm(void)
 }
 
 
-double StdevAlgorithm::CalcAvgValue(std::list<FrameDesc>& durationList)
+double StdevAlgorithm::CalcAvgValue(std::vector<FrameDesc>& durationList)
 {
 	double sum = 0.0f;
 	double avgValue = 0.0f;
-	std::list<FrameDesc>::iterator it;
+	std::vector<FrameDesc>::iterator it;
 
 	if (!durationList.empty()){
 		for (it = durationList.begin(); it != durationList.end(); it++){
@@ -27,11 +27,11 @@ double StdevAlgorithm::CalcAvgValue(std::list<FrameDesc>& durationList)
 	return avgValue;
 }
 
-double StdevAlgorithm::CalcSTDEVP(std::list<FrameDesc>& durationList, const double &avg)
+double StdevAlgorithm::CalcSTDEVP(std::vector<FrameDesc>& durationList, const double &avg)
 {
 	double Sum = 0.0f;
 	double SD = 0.0f;
-	std::list<FrameDesc>::iterator it;
+	std::vector<FrameDesc>::iterator it;
 
 	if (!durationList.empty()){
 		for(it = durationList.begin(); it != durationList.end(); it++){
@@ -43,7 +43,7 @@ double StdevAlgorithm::CalcSTDEVP(std::list<FrameDesc>& durationList, const doub
 	return SD;
 }
 
-double StdevAlgorithm::CalcFps(std::list<FrameDesc> &frameList)
+double StdevAlgorithm::CalcFps(std::vector<FrameDesc> &frameList)
 {
 	double fps = 0.0f;
 	double duraionInSecond = 0.0;
@@ -56,14 +56,14 @@ double StdevAlgorithm::CalcFps(std::list<FrameDesc> &frameList)
 	return fps;
 }
 
-bool StdevAlgorithm::CalcAvgStdAndFps(std::list<FrameDesc> &frameList, double& avg, double& stdevp, double&fps)
+bool StdevAlgorithm::CalcAvgStdAndFps(std::vector<FrameDesc> &frameList, double& avg, double& stdevp, double&fps)
 {
-	std::list<FrameDesc>::reverse_iterator rit;
+	std::vector<FrameDesc>::reverse_iterator rit;
 	avg = stdevp = fps = 0.0f;
 
 	for (rit = frameList.rbegin(); rit != frameList.rend(); rit++) {
 		if ((frameList.back().end - rit->start) > 1.0) {
-			std::list<FrameDesc> frameListSplit;
+			std::vector<FrameDesc> frameListSplit;
 
 			rit++;
 			frameListSplit.assign(rit.base(), frameList.end());

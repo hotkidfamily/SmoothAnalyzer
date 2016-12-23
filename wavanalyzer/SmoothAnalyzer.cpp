@@ -129,7 +129,6 @@ void PulseAnalyzer::PulseLowFilter(std::list<PulseDesc> &channelPulse)
 	longChannel = newChannel;
 }
 
-
 BOOL PulseAnalyzer::DetectPulseWidth(double &duration)
 {
 	int32_t exceptNextType = 0;
@@ -240,7 +239,6 @@ void PulseAnalyzer::GetFrameInfoByChannel(const double &duration)
 	}
 }
 
-
 void PulseAnalyzer::WriteRawPulseDetail()
 {
 	std::list<PulseDesc>::iterator lit;
@@ -253,40 +251,35 @@ void PulseAnalyzer::WriteRawPulseDetail()
 
 	file.WriteCsvLine(" channel, index, start, end, duration, type, channel, index, start, end, duration, type, ");
 
-	for(lit = mPulseList[LCHANNEL].begin(), rit = mPulseList[RCHANNEL].begin();
-		(lit != mPulseList[LCHANNEL].end()) || (rit!=mPulseList[RCHANNEL].end());)
+	lit = mPulseList[LCHANNEL].begin();
+	rit = mPulseList[RCHANNEL].begin();
+
+	while((lit != mPulseList[LCHANNEL].end()) && (rit!=mPulseList[RCHANNEL].end()))
 	{
-		PulseDesc lPulse, rPulse;
+		file.WriteCsvLine(
+			" %c, %d, %.3f, %.3f, %.3f, %d, "
+			" %c, %d, %.3f, %.3f, %.3f, %d, ",
+			lit->channelName, lit->index, lit->start, lit->end, lit->duration, lit->type, 
+			rit->channelName, rit->index, rit->start, rit->end, rit->duration, rit->type);
 
-		if(lit != mPulseList[LCHANNEL].end()){
-			lPulse = *lit;
-			lit++;
-		}
+		lit++;
+		rit++;
+	}
 
-		if(rit != mPulseList[RCHANNEL].end()){
-			rPulse = *rit;
-			rit++;
-		}
+	while(lit!= mPulseList[LCHANNEL].end()){
+		file.WriteCsvLine(
+			" %c, %d, %.3f, %.3f, %.3f, %d, "
+			" ,,,,,, ",
+			lit->channelName, lit->index, lit->start, lit->end, lit->duration, lit->type);
+		lit++;
+	}
 
-		if(!lPulse.IsInvalid() && !rPulse.IsInvalid()){
-			file.WriteCsvLine(
-				" %c, %d, %.3f, %.3f, %.3f, %d, "
-				" %c, %d, %.3f, %.3f, %.3f, %d, ",
-				lPulse.channelName, lPulse.index, lPulse.start, lPulse.end, lPulse.duration, lPulse.type, 
-				rPulse.channelName, rPulse.index, rPulse.start, rPulse.end, rPulse.duration, rPulse.type);
-		}else if(!lPulse.IsInvalid()){
-			file.WriteCsvLine(
-				" %c, %d, %.3f, %.3f, %.3f, %d, "
-				" ,,,,,, ",
-				lPulse.channelName, lPulse.index, lPulse.start, lPulse.end, lPulse.duration, lPulse.type);
-		}else if(!rPulse.IsInvalid()){
-			file.WriteCsvLine(
-				" ,,,,,, "
-				" %c, %d, %.3f, %.3f, %.3f, %d, ",
-				rPulse.channelName, rPulse.index, rPulse.start, rPulse.end, rPulse.duration, rPulse.type);
-		}
-
-		ReportProgress((lPulse.IsInvalid()?rPulse.index:lPulse.index), channel.size());
+	while(rit != mPulseList[RCHANNEL].end()){
+		file.WriteCsvLine(
+			" ,,,,,, "
+			" %c, %d, %.3f, %.3f, %.3f, %d, ",
+			rit->channelName, rit->index, rit->start, rit->end, rit->duration, rit->type);
+		rit++;
 	}
 }
 
@@ -377,6 +370,10 @@ void PulseAnalyzer::ProcessSyncDetail(double pulseWidth)
 						}
 					}else{
 						//inter_log(Info, "debg");
+
+						// a1 b1
+						// a2 b2
+						// a1-b1  < a2-b1
 					}
 					
 				}
@@ -455,101 +452,80 @@ void PulseAnalyzer::WriteSyncDetail()
 }
 
 
-void PulseAnalyzer::HistogramInfo(const double &pulseWidth)
+void PulseAnalyzer::HistogramInfo(const int32_t &NormalLevel, const double &pulseWidth)
 {
-	std::list<FrameDesc>::iterator it = mFramePulse.begin();
-	int32_t NormalLevel = PULSE_LEVEL(pulseWidth);
+	int32_t i = 0;
 
-	inter_log(Info, "Normal Level is %d.", NormalLevel);
+	mFrameHistograms[FH_TOTAL] = mFramePulse.size();
 
-	while(it != mFramePulse.end()){
-		if((it->level < SYSTEM_RESOLUTION) && (it->level>0)){
-			mFrameHistograms[it->level]++;
-		}else{
-			mFrameHistograms[BAD_RESOLUTION]++;
+	for(; i<mFramePulse.size();i++){
+		if((mFramePulse[i].level < SYSTEM_RESOLUTION) && (mFramePulse[i].level>0)){
+			mFrameHistograms[mFramePulse[i].level]++;
 		}
 
-		if(it->level == NormalLevel){
-			mFrameHistograms[NORMATL_RESOLUTION]++;
+		if(mFramePulse[i].level == NormalLevel){
+			mFrameHistograms[FH_NORMAL]++;
 		} 
-
-		mFrameHistograms[TOTAL_RESOLUTION]++;
-
-		it++;
 	}
 }
 
-void PulseAnalyzer::JudgetDropFrame()
+void PulseAnalyzer::JudgetDropFrame(const int32_t &NormalLevel)
 {
 	int32_t exceptNextType = 0;
 	int32_t curFrameType = 0;
-	bool bSkip = false;
+	int32_t i = 0;
 
-	std::list<FrameDesc>::iterator it;
-	std::list<FrameDesc>::iterator itPre;
-	std::list<FrameDesc> &channel = mFramePulse;
+	std::vector<FrameDesc> frameVect;
+	frameVect.assign(mFramePulse.begin(), mFramePulse.end());
 
-	it = channel.begin();
-	exceptNextType = it->frameType;
+	exceptNextType = frameVect[0].frameType;
 
-	for(; it != channel.end(); )
-	{
-		curFrameType = it->frameType;
+	while(i<frameVect.size()){
+		curFrameType = frameVect[i].frameType;
 		if(curFrameType == exceptNextType){
 			exceptNextType = (exceptNextType+1)%PULSETABLECOUNT;
 		}else{
-			exceptNextType = (curFrameType+1)%PULSETABLECOUNT; // restart calculate
-			itPre = it;
-			itPre--;
-
 			{
 				int32_t drops = abs(exceptNextType - curFrameType)%PULSETABLECOUNT;
 				double threashold = drops*MINIST_PULSE_DURATION;
-				double duration = abs((it->start - itPre->start)*1000);
+				double duration = abs((frameVect[i].start - frameVect[i-1].start)*1000);
 
-				if(duration < threashold){
-					mFrameHistograms[BAD_RESOLUTION]++;
-					bSkip = true;
+				// if the duration of frame is invalid
+				if(duration >= threashold){
+					mFrameHistograms[FH_DROP] += drops;
 				}else{
-					mFrameHistograms[DROP_RESOLUTION] += drops;
+					mFrameHistograms[FH_BAD]++;
+				}
+				if(frameVect[i].level == NormalLevel){
+					mFrameHistograms[FH_NORMAL]--;
 				}
 			}
+			exceptNextType = (curFrameType+1)%PULSETABLECOUNT; // restart calculate
 		}
 
-		if(!bSkip){
-			if(it->IsLevelInvalid()){
-				mFrameHistograms[BAD_RESOLUTION]++;
-			}
-		}
-
-		bSkip = false;
-
-		ReportProgress(it->index, channel.size());
-
-		it++;
+		ReportProgress(i, frameVect.size());
+		i++;
 	}
-
-	//inter_log(Error, "drop %d frames, bad %d frames.\n", dropFrame, badFrame);
 }
 
 void PulseAnalyzer::AnalyzerSmoooth(const double &pulseWidth)
 {
-	HistogramInfo(pulseWidth);
-	JudgetDropFrame();
+	int32_t NormalLevel = PULSE_LEVEL(pulseWidth);
+	HistogramInfo(NormalLevel, pulseWidth);
+	JudgetDropFrame(NormalLevel);
 }
 
 void PulseAnalyzer::WriteSmoothDetail()
 {
-	double stdevp = 0.0f;
-	double fps = 0.0f;
+	int32_t i=0;
 	std::string filePath = mSourceFileName + ".smooth.csv";
 
 	if(!mFramePulse.empty()){
 		CSVFile file(filePath);
 
 		double avg = mStdevpAlgorithm.CalcAvgValue(mFramePulse);
-		stdevp = mStdevpAlgorithm.CalcSTDEVP(mFramePulse, avg);
-		fps = mStdevpAlgorithm.CalcFps(mFramePulse);
+		double stdevp = mStdevpAlgorithm.CalcSTDEVP(mFramePulse, avg);
+		double fps = mStdevpAlgorithm.CalcFps(mFramePulse);
 		file.WriteCsvLine("STDEVP, FPS, Avg, Frames, Duration, ");
 		file.WriteCsvLine("%.3f, %.3f, %.3f, %d, %.3f,", stdevp, fps, avg, mFramePulse.size(), (mFramePulse.back().end - mFramePulse.front().start)*1000);
 
@@ -559,23 +535,24 @@ void PulseAnalyzer::WriteSmoothDetail()
 		file.WriteCsvLine("%u, %u,"
 			"%.3f, "
 			" %u, %u, %u, %u, %u,", 
-			mFrameHistograms[TOTAL_RESOLUTION], mFrameHistograms[NORMATL_RESOLUTION], 
-			100.0 * mFrameHistograms[NORMATL_RESOLUTION]/mFrameHistograms[TOTAL_RESOLUTION],
+			mFrameHistograms[FH_TOTAL], mFrameHistograms[FH_NORMAL], 
+			100.0 * mFrameHistograms[FH_NORMAL]/mFrameHistograms[FH_TOTAL],
 			mFrameHistograms[1], mFrameHistograms[2], mFrameHistograms[3], 
-			mFrameHistograms[BAD_RESOLUTION], mFrameHistograms[DROP_RESOLUTION]);
+			mFrameHistograms[FH_BAD], mFrameHistograms[FH_DROP]);
 
 		file.WriteCsvLine(",");
 		file.WriteCsvLine("All data in millisecond,");
 		file.WriteCsvLine(",");
 
 		file.WriteCsvLine("Index, Start, End, Duration, Average, Delta, STDEVP, FPS, Type, level, ");
-		while(!mFramePulse.empty()){
-			FrameDesc frame = mFramePulse.front();
+		while( i < mFramePulse.size()){
+			FrameDesc frame = mFramePulse[i];
+
 			file.WriteCsvLine("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %d, %d, "
 				, frame.index, frame.start, frame.end, frame.duration, frame.AVG, frame.offset, frame.STDEVP, frame.frameRate, frame.frameType, frame.level);
-			mFramePulse.pop_front();
 
-			ReportProgress(frame.index, mFramePulse.size());
+			ReportProgress(i, mFramePulse.size());
+			i++;
 		}
 		
 	}

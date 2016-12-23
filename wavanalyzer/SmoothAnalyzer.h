@@ -5,6 +5,18 @@
 #include "csvFileMaker.h"
 #include "StdevAlgorithm.h"
 
+enum FrameHistograms{
+	FH_TOTAL,
+	FH_LEVEL1,
+	FH_LEVEL2,
+	FH_LEVEL3,
+	FH_RESOLUTION = SYSTEM_RESOLUTION,
+	FH_BAD,
+	FH_NORMAL,
+	FH_DROP,
+	FH_COUNT
+};
+
 class PulseAnalyzer
 {
 public:
@@ -26,8 +38,8 @@ protected:
 
 	void GetFrameInfoByChannel(const double &);
 
-	void JudgetDropFrame();
-	void HistogramInfo(const double &);
+	void JudgetDropFrame(const int32_t &);
+	void HistogramInfo(const int32_t &, const double &);
 	void AnalyzerSmoooth(const double &);
 	void WriteSmoothDetail();
 
@@ -39,9 +51,8 @@ protected:
 
 private:
 	std::list<PulseDesc>mPulseList[MAX_CHANNEL];
-	std::list<FrameDesc> mFramePulse;
-	std::list<FrameDesc> mFrameResult;
-	uint32_t mFrameHistograms[SYSTEM_RESOLUTION+2];
+	std::vector<FrameDesc> mFramePulse;
+	uint32_t mFrameHistograms[FH_COUNT];
 	std::string mSourceFileName;
 
 	double mChannelOffset;
