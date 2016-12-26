@@ -131,6 +131,16 @@ void PulseAnalyzer::PulseLowFilter(std::list<PulseDesc> &channelPulse)
 	longChannel = newChannel;
 }
 
+BOOL PulseAnalyzer::GetPulseWidthByInput(double &duration)
+{
+	BOOL bRet = TRUE;
+	bRet = (mWorkParams.pulseWidth > 0.0001);
+	if(bRet)
+		duration = mWorkParams.pulseWidth;
+
+	return bRet;
+}
+
 BOOL PulseAnalyzer::DetectPulseWidth(double &duration)
 {
 	int32_t exceptNextType = 0;
@@ -147,8 +157,6 @@ BOOL PulseAnalyzer::DetectPulseWidth(double &duration)
 	std::list<PulseDesc> longChannel; // long list
 
 	int32_t step = 1;
-
-	inter_log(Info, "Detect Pulse Width... ");
 
 	if (mPulseList[LCHANNEL].size() >= mPulseList[RCHANNEL].size()){
 		longChannel = mPulseList[LCHANNEL];
@@ -195,13 +203,28 @@ BOOL PulseAnalyzer::DetectPulseWidth(double &duration)
 	if(durationCount){
 		duration = durationSum / durationCount;
 		bRet = TRUE;
-		inter_log(Info, "Detect frame duration %.3f ms", duration);
-	}else{
-		inter_log(Error, "Detect frame duration %.3f ms", duration);
 	}
 
 	return bRet;
 }
+
+BOOL PulseAnalyzer::GetPulseWidth(double &duration)
+{
+	BOOL bRet = FALSE;
+
+	inter_log(Info, "Calc Pulse Width... ");
+
+	bRet = GetPulseWidthByInput(duration);
+	if(!bRet){
+		bRet = DetectPulseWidth(duration);
+	}
+
+	inter_log(Info, "Detect frame duration %.3f ms", duration);
+
+	return bRet;
+}
+
+
 
 void PulseAnalyzer::GetFrameInfoByChannel(const double &duration)
 {
@@ -704,12 +727,7 @@ void PulseAnalyzer::OutputResult()
 	WriteRawSyncDetail();
 
 //	WriteRawPulseDetail();
-
-	if(mWorkParams.pulseWidth > 0.0001){
-		pulseWidth = mWorkParams.pulseWidth;
-	} else{
-		DetectPulseWidth(pulseWidth);
-	}
+	GetPulseWidth(pulseWidth);
 
 	ProcessSyncDetail(pulseWidth);
 

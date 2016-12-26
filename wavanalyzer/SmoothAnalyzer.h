@@ -37,7 +37,11 @@ public:
 	void OutputResult();
 
 protected:
+	BOOL GetPulseWidthByInput(double &);
 	BOOL DetectPulseWidth(double &);
+	BOOL GetPulseWidth(double &);
+
+
 	inline int32_t GetPulseType(PULSETYPE ltype, PULSETYPE rtype);
 
 	void ProcessSyncDetail(double);
