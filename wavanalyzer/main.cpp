@@ -11,18 +11,23 @@
 char* debug_args[] ={
 	"",
 	"e:\\smooth\\ios-sony-entertainment.wav",
-	"-8"
+	"-8",
+	"30"
 };
 #endif
 
 double gChannelOffset = 0;
+double gFps = 0;
 
 static void print_usage(const char *name)
 {
-	const char *help = "\n%s\n\tAnazlyer a smooth steam wave file.\n\n"
-		"Usage:\t%s <PATH>/<File Name> [Offset]\n\n"
-		"Tips:\tIf you want indicate channels different Please fill [Offset].\n"
-		"     \t[Offset]: Negative indicate ahead, Positive indicate behind.\n\n"
+	const char *help = "\n\tAnazlyer a smooth steam wave file.\n\n"
+		"Usage:\t%s <PATH>/<File Name> [Offset] [fps]\n"
+		"e.g., \t%s a.wav -8 30\n\n"
+		"Tips:\tIf you want indicate channels different Please fill [offset].\n"
+		"     \tAnd if you know frame rate Please fill [fps].\n"
+		"     \t[offset]: Negative indicate ahead, Positive indicate behind.\n"
+		"     \t[fps]	: Frame rate of analyzed view, e.g., if frame rate is 30fps then input 30.\n\n"
 		"Warning:Only Support .WAV File With 2 Channels.\n\n";
 
 	printf(help, name, name);
@@ -38,6 +43,10 @@ static int32_t parse_parameters(int32_t argc, char* argv[])
 
 	if(argc >= 3){
 		gChannelOffset = atof(argv[2])/1000;
+	}
+
+	if(argc >= 4){
+		gFps = atof(argv[3])/1000;
 	}
 	
 	return ret;
