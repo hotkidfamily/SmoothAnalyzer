@@ -29,7 +29,7 @@ int32_t SmoothFilter::process(std::string &channelData, int32_t Bps)
 	}
 
 	if(bInPulse){
-		for(int32_t i=maxPoint; i<channelData.size()/Bps; i++){
+		for(std::size_t i=maxPoint; i<channelData.size()/Bps; i++){
 			data[i] = 30000;
 		}
 	}

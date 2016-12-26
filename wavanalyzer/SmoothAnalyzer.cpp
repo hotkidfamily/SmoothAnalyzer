@@ -15,15 +15,13 @@ const struct tagPulseType{
 #define PULSETABLECOUNT (ARRAYSIZE(pulseTable))
 
 PulseAnalyzer::PulseAnalyzer(std::string &filename)
-: mChannelOffset(0)
-, mSourceFileName(filename)
 {
 	SYSTEMTIME systime;
 	char buffer[256] = {'\0'};
 	GetLocalTime(&systime);
 	sprintf_s(buffer, 256-1, "-%04d-%02d%02d-%02d%02d-%02d", systime.wYear, systime.wMonth, systime.wDay, systime.wHour, systime.wMinute, systime.wSecond);
 
-	mSourceFileName += buffer;
+	mWorkParams.mSourceFileName = filename + buffer;
 
 	ZeroMemory(mFrameHistograms, sizeof(mFrameHistograms));
 
@@ -37,6 +35,12 @@ void PulseAnalyzer::ReportProgress(int32_t progress, int32_t total)
 {
 	if(total)
 		fprintf(stderr, "\t progress %.3f\r", progress*100.0 / total);
+}
+
+void PulseAnalyzer::SetWorkingParam(ANALYZER_PARAMS &params)
+{
+	mWorkParams.pulseWidth = params.pulseWidth;
+	mWorkParams.channelOffset = params.channelOffset/1000;/* convert millisecond to second */
 }
 
 void PulseAnalyzer::SetAnalyzerData(std::list<PulseDesc>* dataPtr)
@@ -63,8 +67,8 @@ void PulseAnalyzer::MergeOffset()
 	std::list<PulseDesc>::iterator it = longChannel.begin();
 
 	while(it != longChannel.end()){
-		it->start += mChannelOffset;
-		it->end += mChannelOffset;
+		it->start += mWorkParams.channelOffset;
+		it->end += mWorkParams.channelOffset;
 		it++;
 	}
 }
@@ -77,7 +81,7 @@ void PulseAnalyzer::PulseFilter()
 	PulseLowFilter(mPulseList[RCHANNEL]);
 
 	// merge offfset
-	if(fabs(mChannelOffset) >= 0.0001f){
+	if(fabs(mWorkParams.channelOffset) >= 0.0001f){
 		MergeOffset();
 	}
 }
@@ -583,7 +587,7 @@ void PulseAnalyzer::WriteRawSyncDetail()
 
 void PulseAnalyzer::HistogramInfo(const int32_t &NormalLevel, const double &pulseWidth)
 {
-	int32_t i = 0;
+	std::size_t i = 0;
 
 	mFrameHistograms[FH_TOTAL] = mFramePulse.size();
 
@@ -602,7 +606,7 @@ void PulseAnalyzer::JudgetDropFrame(const int32_t &NormalLevel)
 {
 	int32_t exceptNextType = 0;
 	int32_t curFrameType = 0;
-	int32_t i = 0;
+	std::size_t i = 0;
 
 	std::vector<FrameDesc> frameVect;
 	frameVect.assign(mFramePulse.begin(), mFramePulse.end());
@@ -646,7 +650,7 @@ void PulseAnalyzer::AnalyzerSmoooth(const double &pulseWidth)
 
 void PulseAnalyzer::WriteSmoothDetail()
 {
-	int32_t i=0;
+	std::size_t i=0;
 	std::string filePath = mSourceFileName + ".smooth.csv";
 
 	inter_log(Info, "Write Smooth Data... ");
@@ -701,7 +705,11 @@ void PulseAnalyzer::OutputResult()
 
 //	WriteRawPulseDetail();
 
-	DetectPulseWidth(pulseWidth);
+	if(mWorkParams.pulseWidth > 0.0001){
+		pulseWidth = mWorkParams.pulseWidth;
+	} else{
+		DetectPulseWidth(pulseWidth);
+	}
 
 	ProcessSyncDetail(pulseWidth);
 

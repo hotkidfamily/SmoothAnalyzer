@@ -17,6 +17,15 @@ enum FrameHistograms{
 	FH_COUNT
 };
 
+typedef struct tagAnalyzerParams{
+	tagAnalyzerParams(){
+		ZeroMemory(this, sizeof(struct tagAnalyzerParams));
+	}
+	double channelOffset;
+	double pulseWidth;
+	std::string mSourceFileName;
+}ANALYZER_PARAMS;
+
 class PulseAnalyzer
 {
 public:
@@ -24,7 +33,7 @@ public:
 	~PulseAnalyzer(void);
 
 	void SetAnalyzerData(std::list<PulseDesc>*);
-	void SetOffset(double offset) { mChannelOffset = offset; };
+	void SetWorkingParam(ANALYZER_PARAMS &params);
 	void OutputResult();
 
 protected:
@@ -56,7 +65,7 @@ private:
 	uint32_t mFrameHistograms[FH_COUNT];
 	std::string mSourceFileName;
 
-	double mChannelOffset;
+	ANALYZER_PARAMS mWorkParams;
 
 	StdevAlgorithm mStdevpAlgorithm;
 };

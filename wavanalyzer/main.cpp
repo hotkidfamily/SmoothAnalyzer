@@ -16,8 +16,11 @@ char* debug_args[] ={
 };
 #endif
 
-double gChannelOffset = 0;
-double gFps = 0;
+typedef struct programContext{
+	ANALYZER_PARAMS analyzerParams;
+	std::string targetPath;
+	FileEnumer *fileFinder;
+}SMOOTH_CONTEXT, *PSMOOTH_CONTEXT;
 
 static void print_usage(const char *name)
 {
@@ -26,14 +29,14 @@ static void print_usage(const char *name)
 		"e.g., \t%s a.wav -8 30\n\n"
 		"Tips:\tIf you want indicate channels different Please fill [offset].\n"
 		"     \tAnd if you know frame rate Please fill [fps].\n"
-		"     \t[offset]: Negative indicate ahead, Positive indicate behind.\n"
-		"     \t[fps]	: Frame rate of analyzed view, e.g., if frame rate is 30fps then input 30.\n\n"
+		"     \t[offset]- Negative indicate ahead, Positive indicate behind.\n"
+		"     \t[fps]	- Frame rate of analyzed view, e.g., if frame rate is 30fps then input 30.\n\n"
 		"Warning:Only Support .WAV File With 2 Channels.\n\n";
 
 	printf(help, name, name);
 }
 
-static int32_t parse_parameters(int32_t argc, char* argv[])
+static int32_t parse_parameters(SMOOTH_CONTEXT* ctx, const int32_t argc, char* argv[])
 {
 	int32_t ret = 0;
 	if(argc < 2){
@@ -41,18 +44,24 @@ static int32_t parse_parameters(int32_t argc, char* argv[])
 		ret = -1;
 	}
 
+	ctx->targetPath = argv[1];
+
 	if(argc >= 3){
-		gChannelOffset = atof(argv[2])/1000;
+		ctx->analyzerParams.channelOffset = atof(argv[2])/1000;
 	}
 
 	if(argc >= 4){
-		gFps = atof(argv[3])/1000;
+		double frameRate = 0.0f;
+		frameRate = atof(argv[3]);
+		if(frameRate != 0.0f){
+			ctx->analyzerParams.pulseWidth = 1000/frameRate;
+		}
 	}
 	
 	return ret;
 }
 
-static int analyzeFile(std::string file)
+static int analyzeFile(PSMOOTH_CONTEXT ctx, std::string file)
 {
 	std::string ChannelData;
 	int32_t ret = 0;
@@ -60,9 +69,9 @@ static int analyzeFile(std::string file)
 	smoothAnalyzer = new PulseAnalyzer(file);
 	WaveAnalyzer *wavAnalyzer = new WaveAnalyzer(file);
 
-	inter_log(Info, "File %s, channel offset %f", file.c_str(), gChannelOffset);
+	inter_log(Info, "File %s, channel offset %f", file.c_str(), ctx->analyzerParams.channelOffset);
 
-	smoothAnalyzer->SetOffset(gChannelOffset);
+	smoothAnalyzer->SetWorkingParam(ctx->analyzerParams);
 	wavAnalyzer->AnalyzeFilePulse();
 	smoothAnalyzer->SetAnalyzerData(wavAnalyzer->GetPulseData());
 
@@ -101,9 +110,8 @@ static int GetAbsolutlyPath(const char* path, std::string &rPath)
 
 int main(int argc, char* argv[])
 {
-	std::string absPath;
-	FileEnumer *fileFinder = NULL;
 	int32_t ret = 0;
+	PSMOOTH_CONTEXT pCtx = new SMOOTH_CONTEXT;
 
 #ifdef _DEBUG
 	argc = sizeof(debug_args)/sizeof(debug_args[0]);
@@ -111,39 +119,41 @@ int main(int argc, char* argv[])
 	argv = debug_args;
 #endif
 
-	if(parse_parameters(argc, argv) < 0){
+	if(parse_parameters(pCtx, argc, argv) < 0){
 		goto cleanup;
 	}
 
-	absPath = argv[1];
-
-	fileFinder = new FileEnumer();
-	if(!fileFinder){
+	pCtx->fileFinder = new FileEnumer();
+	if(!pCtx->fileFinder){
 		inter_log(Error, "Can not enum file.");
 		goto cleanup;
 	}
 
-	ret = fileFinder->IsDirectory(absPath);
+	ret = pCtx->fileFinder->IsDirectory(pCtx->targetPath);
 	if(ret < 0){
 		inter_log(Fatal, "path %s is invalid.", argv[1]);
 	}else if (ret > 0){
 		std::string file;
-		if(GetAbsolutlyPath(argv[1], absPath) < 0){
+		if(GetAbsolutlyPath(argv[1], pCtx->targetPath) < 0){
 			goto cleanup;
 		}
-		fileFinder->EnumDirectory(absPath + "*", ".wav");
-		while(!fileFinder->GetFile(file)){
-			file.insert(0, absPath);
-			analyzeFile(file);
+		pCtx->fileFinder->EnumDirectory(pCtx->targetPath + "*", ".wav");
+		while(!pCtx->fileFinder->GetFile(file)){
+			file.insert(0, pCtx->targetPath);
+			analyzeFile(pCtx, file);
 		}
 	}else {
-		analyzeFile(absPath);
+		analyzeFile(pCtx, pCtx->targetPath);
 	}
 
-cleanup:
-	if(fileFinder)
-		delete fileFinder;
+	ret = 0;
 
-	return 0;
+cleanup:
+	if(pCtx){
+		SAFE_DELETE(pCtx->fileFinder);
+		SAFE_DELETE(pCtx);
+	}
+
+	return ret;
 }
 

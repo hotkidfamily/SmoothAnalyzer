@@ -32,6 +32,9 @@
 #define SYNC_THRESHOLD (MINIST_PULSE_DURATION + 1)
 
 #define BASE_SCREEN_DURATION (MINIST_PULSE_DURATION)
-#define PULSE_LEVEL(x) ((x+BASE_SCREEN_DURATION/2)/BASE_SCREEN_DURATION) // filter all duration < duration/2
+#define PULSE_LEVEL(x) ((int32_t)((x+BASE_SCREEN_DURATION/2)/BASE_SCREEN_DURATION)) // filter all duration < duration/2
 
 #define SYSTEM_RESOLUTION (4) // only can analyzer 4 different pictures
+
+
+#define SAFE_DELETE(x) { if(x) delete x; x=NULL; }
