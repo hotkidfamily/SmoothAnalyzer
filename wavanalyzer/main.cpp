@@ -17,6 +17,9 @@ char* debug_args[] ={
 #endif
 
 typedef struct programContext{
+	programContext(){
+		ZeroMemory(this, sizeof(struct programContext));
+	}
 	ANALYZER_PARAMS analyzerParams;
 	std::string targetPath;
 	FileEnumer *fileFinder;
@@ -30,7 +33,8 @@ static void print_usage(const char *name)
 		"Tips:\tIf you want indicate channels different Please fill [offset].\n"
 		"     \tAnd if you know frame rate Please fill [fps].\n"
 		"     \t[offset]- Negative indicate ahead, Positive indicate behind.\n"
-		"     \t[fps]	- Frame rate of analyzed view, e.g., if frame rate is 30fps then input 30.\n\n"
+		"     \t[fps]	- Frame rate of analyzed view, if you want inut frame rate alone, you should make offset to 0.\n"
+		"     \t          e.g., frame rate is 30fps then input \"0 30\" .\n\n"
 		"Warning:Only Support .WAV File With 2 Channels.\n\n";
 
 	printf(help, name, name);
@@ -42,6 +46,7 @@ static int32_t parse_parameters(SMOOTH_CONTEXT* ctx, const int32_t argc, char* a
 	if(argc < 2){
 		print_usage(argv[0]);
 		ret = -1;
+		goto cleanup;
 	}
 
 	ctx->targetPath = argv[1];
@@ -58,6 +63,7 @@ static int32_t parse_parameters(SMOOTH_CONTEXT* ctx, const int32_t argc, char* a
 		}
 	}
 	
+cleanup:
 	return ret;
 }
 

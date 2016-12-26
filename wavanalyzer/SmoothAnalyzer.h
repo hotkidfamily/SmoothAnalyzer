@@ -67,7 +67,6 @@ private:
 	std::list<PulseDesc>mPulseList[MAX_CHANNEL];
 	std::vector<FrameDesc> mFramePulse;
 	uint32_t mFrameHistograms[FH_COUNT];
-	std::string mSourceFileName;
 
 	ANALYZER_PARAMS mWorkParams;
 

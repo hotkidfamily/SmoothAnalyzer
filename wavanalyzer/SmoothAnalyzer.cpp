@@ -219,7 +219,7 @@ BOOL PulseAnalyzer::GetPulseWidth(double &duration)
 		bRet = DetectPulseWidth(duration);
 	}
 
-	inter_log(Info, "Detect frame duration %.3f ms", duration);
+	inter_log(Info, "Frame duration %.3f ms", duration);
 
 	return bRet;
 }
@@ -272,7 +272,7 @@ void PulseAnalyzer::WriteRawPulseDetail()
 {
 	std::list<PulseDesc>::iterator lit;
 	std::list<PulseDesc>::iterator rit;
-	std::string filePath = mSourceFileName + ".raw.pulse.csv";
+	std::string filePath = mWorkParams.mSourceFileName + ".raw.pulse.csv";
 	CSVFile file(filePath);
 	std::list<PulseDesc> channel = mPulseList[LCHANNEL].size() > mPulseList[RCHANNEL].size()? mPulseList[LCHANNEL] : mPulseList[RCHANNEL];
 
@@ -453,7 +453,7 @@ void PulseAnalyzer::WriteSyncDetail()
 	std::list<PulseDesc>::iterator lit = mPulseList[LCHANNEL].begin();
 	std::list<PulseDesc>::iterator rit = mPulseList[RCHANNEL].begin();
 
-	std::string filePath = mSourceFileName + ".sync.detail.csv";
+	std::string filePath = mWorkParams.mSourceFileName + ".sync.detail.csv";
 	CSVFile file(filePath);
 
 	inter_log(Info, "Write Sync Data... ");
@@ -494,7 +494,7 @@ void PulseAnalyzer::WriteRawSyncDetail()
 	std::list<PulseDesc>::iterator itShortNext;
 	std::list<PulseDesc>::iterator itLong;
 	std::list<PulseDesc>::iterator itLongNext;
-	std::string filePath = mSourceFileName + ".raw.sync.detail.csv";
+	std::string filePath = mWorkParams.mSourceFileName + ".raw.sync.detail.csv";
 	CSVFile file(filePath);
 
 	if (mPulseList[LCHANNEL].size() >= mPulseList[RCHANNEL].size()){
@@ -674,7 +674,7 @@ void PulseAnalyzer::AnalyzerSmoooth(const double &pulseWidth)
 void PulseAnalyzer::WriteSmoothDetail()
 {
 	std::size_t i=0;
-	std::string filePath = mSourceFileName + ".smooth.csv";
+	std::string filePath = mWorkParams.mSourceFileName + ".smooth.csv";
 
 	inter_log(Info, "Write Smooth Data... ");
 
