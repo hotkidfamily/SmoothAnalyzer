@@ -22,7 +22,7 @@ typedef struct tagAnalyzerParams{
 		ZeroMemory(this, sizeof(struct tagAnalyzerParams));
 	}
 	double channelOffset;
-	double pulseWidth;
+	double sampleFrameRate;
 	std::string mSourceFileName;
 }ANALYZER_PARAMS;
 
@@ -41,27 +41,30 @@ protected:
 	BOOL DetectPulseWidth(double &);
 	BOOL GetPulseWidth(double &);
 
-
 	inline int32_t GetPulseType(PULSETYPE ltype, PULSETYPE rtype);
 
-	void ProcessChannelsSync(double);
+	void SyncChannelsAndMakeNewList(double);
 	void WriteSyncDetail();
 	void WriteRawSyncDetail();
 
 	void WriteRawPulseDetail();
 
-	void GetFrameInfoByChannel(const double &);
+	void GetFrameInfo(const double &);
 
-	void JudgetDropFrame(const int32_t &);
+	void JudgetDropFrame(const int32_t &, const double &);
 	void HistogramInfo(const int32_t &, const double &);
 	void AnalyzerSmoooth(const double &);
+
 	void WriteSmoothDetail();
 
 	void PulseLowFilter(std::list<PulseDesc> &);
 	void PulseFilter();
 	void MergeOffset();
+	void MergeChannelToFrame(const double &);
 
 	void ReportProgress(int32_t progress, int32_t total);
+
+	inline bool IsInvalidFrameDuration(const double &, const double &);
 
 private:
 	std::list<PulseDesc>mPulseList[MAX_CHANNEL];
