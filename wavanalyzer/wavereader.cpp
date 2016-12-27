@@ -125,9 +125,9 @@ bool CWaveReader::ReadHeader()
 	return false;   
 }
 
-double CWaveReader::SampeIndexToSecond(uint32_t sampleIndex)
+double CWaveReader::SampeIndexToMilliSecond(uint32_t sampleIndex)
 {
-	return sampleIndex*1.0 / m_WaveFormat.nSampleRate;
+	return sampleIndex*1000.0 / m_WaveFormat.nSampleRate;
 }
 
 size_t CWaveReader::ReadRawData(uint8_t* pData, int32_t nLen)   

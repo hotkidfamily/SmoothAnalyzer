@@ -138,7 +138,7 @@ void PulseAnalyzer::PulseFilter()
 BOOL PulseAnalyzer::GetPulseWidthByInput(double &duration)
 {
 	BOOL bRet = TRUE;
-	bRet = (mWorkParams.pulseWidth > 0.0001);
+	bRet = (mWorkParams.pulseWidth > 0.1);
 	if(bRet)
 		duration = mWorkParams.pulseWidth;
 
@@ -283,8 +283,8 @@ void PulseAnalyzer::WriteRawPulseDetail()
 		file.WriteCsvLine(
 			" %c, %d, %.3f, %.3f, %.3f, %d, "
 			" %c, %d, %.3f, %.3f, %.3f, %d, ",
-			lit->channelName, lit->index, lit->start, lit->end, lit->duration, lit->type, 
-			rit->channelName, rit->index, rit->start, rit->end, rit->duration, rit->type);
+			lit->channelName, lit->index, lit->startInSecond, lit->endInSecond, lit->duration, lit->type, 
+			rit->channelName, rit->index, rit->startInSecond, rit->endInSecond, rit->duration, rit->type);
 
 		lit++;
 		rit++;
@@ -294,7 +294,7 @@ void PulseAnalyzer::WriteRawPulseDetail()
 		file.WriteCsvLine(
 			" %c, %d, %.3f, %.3f, %.3f, %d, "
 			" ,,,,,, ",
-			lit->channelName, lit->index, lit->start, lit->end, lit->duration, lit->type);
+			lit->channelName, lit->index, lit->startInSecond, lit->endInSecond, lit->duration, lit->type);
 		lit++;
 	}
 
@@ -302,7 +302,7 @@ void PulseAnalyzer::WriteRawPulseDetail()
 		file.WriteCsvLine(
 			" ,,,,,, "
 			" %c, %d, %.3f, %.3f, %.3f, %d, ",
-			rit->channelName, rit->index, rit->start, rit->end, rit->duration, rit->type);
+			rit->channelName, rit->index, rit->startInSecond, rit->endInSecond, rit->duration, rit->type);
 		rit++;
 	}
 }
@@ -347,13 +347,13 @@ void PulseAnalyzer::ProcessChannelsSync(double pulseWidth)
 			itLongNext = itLong;
 			itLongNext++;
 
-			firstDiff = (itShort->start - itLong->start)*1000;
+			firstDiff = (itShort->start - itLong->start);
 			if(itLongNext != longChannel.end())
-				secondDiff = (itShort->start - itLongNext->start)*1000;
+				secondDiff = (itShort->start - itLongNext->start);
 			itShortNext = itShort;
 			itShortNext++;
 			if(itShortNext != shortChannel.end())
-				secondSLdiff = (itShortNext->start - itLong->start)*1000;
+				secondSLdiff = (itShortNext->start - itLong->start);
 
 			if(fabs(firstDiff) < SYNC_THRESHOLD){
 				if(fabs(secondDiff) > fabs(firstDiff)){
@@ -382,7 +382,7 @@ void PulseAnalyzer::ProcessChannelsSync(double pulseWidth)
 					longPulse = *itLong;
 				}
 			}
-		}else{ // drop all reset samples.
+		}else{ // drop all rest samples.
 			break;
 		}
 
@@ -439,14 +439,14 @@ void PulseAnalyzer::WriteSyncDetail()
 
 	while((lit != mPulseList[LCHANNEL].end()) && (rit != mPulseList[RCHANNEL].end()))
 	{
-		sync = (int32_t)((lit->start - rit->start)*1000);
+		sync = (int32_t)(lit->start - rit->start);
 
 		file.WriteCsvLine("%d, "
 			"%c, %u, %.3f, %.3f, %.3f, %d, %d, "
 			"%c, %u, %.3f, %.3f, %.3f, %d, %d, ",
 			sync,
-			lit->channelName, lit->index, lit->start, lit->end, lit->duration, lit->type, 0, 
-			rit->channelName, rit->index, rit->start, rit->end, rit->duration, rit->type, 0);
+			lit->channelName, lit->index, lit->startInSecond, lit->endInSecond, lit->duration, lit->type, 0, 
+			rit->channelName, rit->index, rit->startInSecond, rit->endInSecond, rit->duration, rit->type, 0);
 
 		ReportProgress(lit->index, mPulseList[LCHANNEL].size());
 
@@ -492,13 +492,13 @@ void PulseAnalyzer::WriteRawSyncDetail()
 			itLongNext = itLong;
 			itLongNext++;
 
-			firstDiff = (itShort->start - itLong->start)*1000;
+			firstDiff = itShort->start - itLong->start;
 			if(itLongNext != longChannel.end())
-				secondDiff = (itShort->start - itLongNext->start)*1000;
+				secondDiff = itShort->start - itLongNext->start;
 			itShortNext = itShort;
 			itShortNext++;
 			if(itShortNext != shortChannel.end())
-				secondSLdiff = (itShortNext->start - itLong->start)*1000;
+				secondSLdiff = itShortNext->start - itLong->start;
 
 			if(fabs(firstDiff) < SYNC_THRESHOLD){
 				if(fabs(secondDiff) > fabs(firstDiff)){
@@ -540,21 +540,21 @@ void PulseAnalyzer::WriteRawSyncDetail()
 				"%c, %u, %.3f, %.3f, %.3f, %d, %d, "
 				"%c, %u, %.3f, %.3f, %.3f, %d, %d, ",
 				sync,
-				shortPulse.channelName, shortPulse.index, shortPulse.start, shortPulse.end, shortPulse.duration, shortPulse.type, 0, 
-				longPulse.channelName, longPulse.index, longPulse.start, longPulse.end, longPulse.duration, longPulse.type, 0);
+				shortPulse.channelName, shortPulse.index, shortPulse.startInSecond, shortPulse.endInSecond, shortPulse.duration, shortPulse.type, 0, 
+				longPulse.channelName, longPulse.index, longPulse.startInSecond, longPulse.endInSecond, longPulse.duration, longPulse.type, 0);
 			itShort++;
 			itLong++;
 		}else if (!longPulse.IsInvalid()){
 			file.WriteCsvLine(", "
 				" ,  ,  ,  ,  , , , "
 				"%c, %u, %.3f, %.3f, %.3f, %d, %d,",
-				longPulse.channelName, longPulse.index, longPulse.start, longPulse.end, longPulse.duration, longPulse.type, 0);
+				longPulse.channelName, longPulse.index, longPulse.startInSecond, longPulse.endInSecond, longPulse.duration, longPulse.type, 0);
 			itLong++;
 		}else if(!shortPulse.IsInvalid()){
 			file.WriteCsvLine(", "
 				"%c, %u, %.3f, %.3f, %.3f, %d, %d,"
 				", , , , , , , ",
-				shortPulse.channelName, shortPulse.index, shortPulse.start, shortPulse.end, shortPulse.duration, shortPulse.type, 0);
+				shortPulse.channelName, shortPulse.index, shortPulse.startInSecond, shortPulse.endInSecond, shortPulse.duration, shortPulse.type, 0);
 			itShort++;
 		}
 
@@ -599,7 +599,7 @@ void PulseAnalyzer::JudgetDropFrame(const int32_t &NormalLevel)
 			{
 				int32_t drops = abs(exceptNextType - curFrameType)%PULSETABLECOUNT;
 				double threashold = drops*MINIST_PULSE_DURATION;
-				double duration = abs((frameVect[i].start - frameVect[i-1].start)*1000);
+				double duration = abs(frameVect[i].start - frameVect[i-1].start);
 
 				// if the duration of frame is invalid
 				if(duration >= threashold){
@@ -639,9 +639,9 @@ void PulseAnalyzer::WriteSmoothDetail()
 		double avg = mStdevpAlgorithm.CalcAvgValue(mFramePulse);
 		double stdevp = mStdevpAlgorithm.CalcSTDEVP(mFramePulse, avg);
 		//double fps = mStdevpAlgorithm.CalcFps(mFramePulse);
-		double fps = (mFrameHistograms[FH_TOTAL] - mFrameHistograms[FH_BAD])*1.0 / (mFramePulse.back().end - mFramePulse.front().start);
+		double fps = (mFrameHistograms[FH_TOTAL] - mFrameHistograms[FH_BAD])*1000.0 / (mFramePulse.back().end - mFramePulse.front().start);
 		file.WriteCsvLine("STDEVP, FPS, Avg, Frames, Duration, ");
-		file.WriteCsvLine("%.3f, %.3f, %.3f, %d, %.3f,", stdevp, fps, avg, mFramePulse.size(), (mFramePulse.back().end - mFramePulse.front().start)*1000);
+		file.WriteCsvLine("%.3f, %.3f, %.3f, %d, %.3f,", stdevp, fps, avg, mFramePulse.size(), mFramePulse.back().end - mFramePulse.front().start);
 
 		file.WriteCsvLine(",");
 
@@ -663,7 +663,7 @@ void PulseAnalyzer::WriteSmoothDetail()
 			FrameDesc frame = mFramePulse[i];
 
 			file.WriteCsvLine("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %d, %d, "
-				, frame.index, frame.start, frame.end, frame.duration, frame.AVG, frame.offset, frame.STDEVP, frame.frameRate, frame.frameType, frame.level);
+				, frame.index, frame.startInSecond, frame.endInSecond, frame.duration, frame.AVG, frame.offset, frame.STDEVP, frame.frameRate, frame.frameType, frame.level);
 
 			ReportProgress(i, mFramePulse.size());
 			i++;

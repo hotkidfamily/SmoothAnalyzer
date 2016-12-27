@@ -139,7 +139,7 @@ retType WaveAnalyzer::Analyzer(analyzerContext *ctx, std::string &channelData, s
 
 void WaveAnalyzer::RecordPulse(CHANNELID channelID, double start, double end)
 {
-	if(((end - start)*1000) < MINIST_PULSE_DURATION){
+	if((end - start) < MINIST_PULSE_DURATION){
 		return ;
 	}
 
@@ -214,7 +214,7 @@ bool WaveAnalyzer::AnalyzeFileByChannel(CHANNELID index)
 		if(retAnalyzer == RET_FIND_PULSE){
 			while(!SamplePosList.empty()){
 				SamplePos &samplePos = SamplePosList.front();
-				RecordPulse(index, fileReader->SampeIndexToSecond(samplePos.startIndex), fileReader->SampeIndexToSecond(samplePos.endIndex));
+				RecordPulse(index, fileReader->SampeIndexToMilliSecond(samplePos.startIndex), fileReader->SampeIndexToMilliSecond(samplePos.endIndex));
 				SamplePosList.pop_front();
 			}
 		}

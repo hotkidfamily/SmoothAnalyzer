@@ -56,14 +56,14 @@ static int32_t parse_parameters(SMOOTH_CONTEXT* ctx, const int32_t argc, char* a
 	/* convert input millisecond to second */
 
 	if(argc >= 3){
-		ctx->analyzerParams.channelOffset = atof(argv[2])/1000;
+		ctx->analyzerParams.channelOffset = atof(argv[2]);
 	}
 
 	if(argc >= 4){
 		double frameRate = 0.0f;
 		frameRate = atof(argv[3]);
 		if(frameRate != 0.0f){
-			ctx->analyzerParams.pulseWidth = 1.0/frameRate;
+			ctx->analyzerParams.pulseWidth = 1000.0/frameRate;
 		}
 	}
 	

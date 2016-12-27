@@ -49,7 +49,7 @@ double StdevAlgorithm::CalcFps(std::vector<FrameDesc> &frameList)
 	double duraionInSecond = 0.0;
 
 	if (!frameList.empty()){
-		duraionInSecond = frameList.back().end - frameList.front().start;
+		duraionInSecond = (frameList.back().end - frameList.front().start)/1000;
 		fps = frameList.size() / duraionInSecond;
 	}
 
@@ -62,7 +62,7 @@ bool StdevAlgorithm::CalcAvgStdAndFps(std::vector<FrameDesc> &frameList, double&
 	avg = stdevp = fps = 0.0f;
 
 	for (rit = frameList.rbegin(); rit != frameList.rend(); rit++) {
-		if ((frameList.back().end - rit->start) > 1.0) {
+		if ((frameList.back().end - rit->start) > 1000.0) {
 			std::vector<FrameDesc> frameListSplit;
 
 			rit++;

@@ -42,7 +42,7 @@ public:
 	int32_t ReadData(std::string &data);
     WaveFormat &GetFormat(); 
     FILE* Handle();
-	double SampeIndexToSecond(uint32_t sampleIndex);
+	double SampeIndexToMilliSecond(uint32_t sampleIndex);
 
 private:
     bool ReadHeader(); 

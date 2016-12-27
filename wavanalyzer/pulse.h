@@ -15,8 +15,10 @@ enum CHANNELID{
 struct Pulse{
 	Pulse(double s, double e)
 		: start(s)
+		, startInSecond(s/1000)
 		, end(e)
-		, duration((e-s)*1000)
+		, endInSecond(e/1000)
+		, duration(e-s)
 	{
 		level = PULSE_LEVEL(duration);
 	}
@@ -31,6 +33,8 @@ struct Pulse{
 
 	double start;
 	double end;
+	double startInSecond;
+	double endInSecond;
 	double duration;
 	int32_t level;
 };
