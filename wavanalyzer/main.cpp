@@ -11,6 +11,8 @@
 char* debug_args[] ={
 	"",
 	"e:\\smooth\\ios-sony-entertainment.wav",
+//	"e:\\smooth\\xiaomi4-sony-entertainment.wav",
+//	"e:\\smooth\\mpc-hc-sony-entertainment-default-render.wav",
 	"-8",
 	"30"
 };
@@ -30,7 +32,7 @@ static void print_usage(const char *name)
 	const char *help = "\n\tAnazlyer a smooth steam wave file.\n\n"
 		"Usage:\t%s <PATH>/<File Name> [Offset] [fps]\n"
 		"e.g., \t%s a.wav -8 30\n\n"
-		"Tips:\tIf you want indicate channels different Please fill [offset].\n"
+		"Tips:\tIf you want indicate channels different Please fill [offset] in millisecond.\n"
 		"     \tAnd if you know frame rate Please fill [fps].\n"
 		"     \t[offset]- Negative indicate ahead, Positive indicate behind.\n"
 		"     \t[fps]	- Frame rate of analyzed view, if you want inut frame rate alone, you should make offset to 0.\n"
@@ -51,6 +53,8 @@ static int32_t parse_parameters(SMOOTH_CONTEXT* ctx, const int32_t argc, char* a
 
 	ctx->targetPath = argv[1];
 
+	/* convert input millisecond to second */
+
 	if(argc >= 3){
 		ctx->analyzerParams.channelOffset = atof(argv[2])/1000;
 	}
@@ -59,7 +63,7 @@ static int32_t parse_parameters(SMOOTH_CONTEXT* ctx, const int32_t argc, char* a
 		double frameRate = 0.0f;
 		frameRate = atof(argv[3]);
 		if(frameRate != 0.0f){
-			ctx->analyzerParams.pulseWidth = 1000/frameRate;
+			ctx->analyzerParams.pulseWidth = 1.0/frameRate;
 		}
 	}
 	

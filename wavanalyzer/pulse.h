@@ -85,6 +85,10 @@ struct FrameDesc: public Pulse
 	double offset;
 };
 
+typedef std::list<PulseDesc> PulseList;
+typedef std::list<FrameDesc> FrameList;
+typedef std::vector<FrameDesc> FrameVector;
+
 #define to_str(x) #x
 
 static const char* chanenlIDNameList [] = {

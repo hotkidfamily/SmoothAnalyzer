@@ -44,7 +44,7 @@ protected:
 
 	inline int32_t GetPulseType(PULSETYPE ltype, PULSETYPE rtype);
 
-	void ProcessSyncDetail(double);
+	void ProcessChannelsSync(double);
 	void WriteSyncDetail();
 	void WriteRawSyncDetail();
 

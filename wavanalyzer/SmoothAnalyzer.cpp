@@ -40,13 +40,18 @@ void PulseAnalyzer::ReportProgress(int32_t progress, int32_t total)
 void PulseAnalyzer::SetWorkingParam(ANALYZER_PARAMS &params)
 {
 	mWorkParams.pulseWidth = params.pulseWidth;
-	mWorkParams.channelOffset = params.channelOffset/1000;/* convert millisecond to second */
+	mWorkParams.channelOffset = params.channelOffset;
 }
 
-void PulseAnalyzer::SetAnalyzerData(std::list<PulseDesc>* dataPtr)
+void PulseAnalyzer::SetAnalyzerData(PulseList* dataPtr)
 {
 	mPulseList[LCHANNEL] = dataPtr[LCHANNEL];
 	mPulseList[RCHANNEL] = dataPtr[RCHANNEL];
+
+	// source pulse have different frequency, move high frequency to "R" channel
+	if(dataPtr[LCHANNEL].size() > dataPtr[RCHANNEL].size()){
+		std::swap(mPulseList[LCHANNEL], mPulseList[RCHANNEL]);
+	}
 }
 
 int32_t PulseAnalyzer::GetPulseType(PULSETYPE ltype, PULSETYPE rtype)
@@ -63,39 +68,30 @@ int32_t PulseAnalyzer::GetPulseType(PULSETYPE ltype, PULSETYPE rtype)
 
 void PulseAnalyzer::MergeOffset()
 {
-	std::list<PulseDesc> &longChannel = mPulseList[LCHANNEL].size()>mPulseList[RCHANNEL].size()?mPulseList[LCHANNEL]:mPulseList[RCHANNEL];
-	std::list<PulseDesc>::iterator it = longChannel.begin();
+	PulseList &adjustChannel = mPulseList[RCHANNEL];
+	PulseList::iterator it = adjustChannel.begin();
 
-	while(it != longChannel.end()){
+	if(fabs(mWorkParams.channelOffset) < 0.0001f){
+		return ;
+	}
+
+	while(it != adjustChannel.end()){
 		it->start += mWorkParams.channelOffset;
 		it->end += mWorkParams.channelOffset;
 		it++;
 	}
 }
 
-void PulseAnalyzer::PulseFilter()
+void PulseAnalyzer::PulseLowFilter(PulseList &channelPulse)
 {
-	inter_log(Info, "Filter Raw Pulse... ");
+	PulseList::iterator it;
+	PulseList::iterator itPre;
+	PulseList::iterator itPos;
+	PulseList &sourceChannel = channelPulse;
+	PulseList newChannel;
 
-	PulseLowFilter(mPulseList[LCHANNEL]);
-	PulseLowFilter(mPulseList[RCHANNEL]);
-
-	// merge offfset
-	if(fabs(mWorkParams.channelOffset) >= 0.0001f){
-		MergeOffset();
-	}
-}
-
-void PulseAnalyzer::PulseLowFilter(std::list<PulseDesc> &channelPulse)
-{
-	std::list<PulseDesc>::iterator it;
-	std::list<PulseDesc>::iterator itPre;
-	std::list<PulseDesc>::iterator itPos;
-	std::list<PulseDesc> &longChannel = channelPulse;
-	std::list<PulseDesc> newChannel;
-
-	it = longChannel.begin();
-	for(int32_t index = 0; it != longChannel.end(); index++)
+	it = sourceChannel.begin();
+	for(int32_t index = 0; it != sourceChannel.end(); index++)
 	{
 		if(!it->IsPulseInvalid()){
 			// link the sample before and after together
@@ -104,7 +100,7 @@ void PulseAnalyzer::PulseLowFilter(std::list<PulseDesc> &channelPulse)
 			itPre --;
 			itPos ++;
 
-			if((itPre == longChannel.begin()) || (itPos == longChannel.end())){
+			if((itPre == sourceChannel.begin()) || (itPos == sourceChannel.end())){
 				// 
 				inter_log(Error, "pulse duration is to small at begin or end.");
 			}
@@ -122,13 +118,21 @@ void PulseAnalyzer::PulseLowFilter(std::list<PulseDesc> &channelPulse)
 			newChannel.push_back(*it);
 		}
 
-		ReportProgress(it->index, longChannel.size());
+		ReportProgress(it->index, sourceChannel.size());
 
 		it++;
 	}
 
-	longChannel.clear();
-	longChannel = newChannel;
+	sourceChannel.assign(newChannel.begin(), newChannel.end());
+}
+
+void PulseAnalyzer::PulseFilter()
+{
+	inter_log(Info, "Filter Raw Pulse... ");
+
+	for(int32_t i =0; i<MAX_CHANNEL; i++){
+		PulseLowFilter(mPulseList[i]);
+	}
 }
 
 BOOL PulseAnalyzer::GetPulseWidthByInput(double &duration)
@@ -151,20 +155,12 @@ BOOL PulseAnalyzer::DetectPulseWidth(double &duration)
 	int32_t durationCount = 0;
 	BOOL bRet = FALSE;
 
-	std::list<PulseDesc>::iterator itLong;
-	std::list<PulseDesc>::iterator itShort;
-	std::list<PulseDesc> shortChannel; // short list
-	std::list<PulseDesc> longChannel; // long list
+	PulseList::iterator itLong;
+	PulseList::iterator itShort;
+	PulseList &longChannel = mPulseList[RCHANNEL];
+	PulseList &shortChannel = mPulseList[LCHANNEL];
 
 	int32_t step = 1;
-
-	if (mPulseList[LCHANNEL].size() >= mPulseList[RCHANNEL].size()){
-		longChannel = mPulseList[LCHANNEL];
-		shortChannel = mPulseList[RCHANNEL];
-	} else{
-		longChannel = mPulseList[RCHANNEL];
-		shortChannel = mPulseList[LCHANNEL];
-	}
 
 	itLong = longChannel.begin();
 	itShort = shortChannel.begin();
@@ -212,7 +208,7 @@ BOOL PulseAnalyzer::GetPulseWidth(double &duration)
 {
 	BOOL bRet = FALSE;
 
-	inter_log(Info, "Calc Pulse Width... ");
+	inter_log(Info, "Calculate Pulse Width... ");
 
 	bRet = GetPulseWidthByInput(duration);
 	if(!bRet){
@@ -233,10 +229,10 @@ void PulseAnalyzer::GetFrameInfoByChannel(const double &duration)
 	double stdevp = 0.0f;
 	double avg = 0.0f;
 	int32_t index = 0;
-	std::list<PulseDesc>::iterator rChannelIT;
-	std::list<PulseDesc>::iterator lChannelIT;
-	std::list<PulseDesc> &lChannel = mPulseList[LCHANNEL];
-	std::list<PulseDesc> &rChannel = mPulseList[RCHANNEL];
+	PulseList::iterator rChannelIT;
+	PulseList::iterator lChannelIT;
+	PulseList &lChannel = mPulseList[LCHANNEL];
+	PulseList &rChannel = mPulseList[RCHANNEL];
 
 	lChannelIT = lChannel.begin();
 	rChannelIT = rChannel.begin();
@@ -270,11 +266,10 @@ void PulseAnalyzer::GetFrameInfoByChannel(const double &duration)
 
 void PulseAnalyzer::WriteRawPulseDetail()
 {
-	std::list<PulseDesc>::iterator lit;
-	std::list<PulseDesc>::iterator rit;
+	PulseList::iterator lit;
+	PulseList::iterator rit;
 	std::string filePath = mWorkParams.mSourceFileName + ".raw.pulse.csv";
 	CSVFile file(filePath);
-	std::list<PulseDesc> channel = mPulseList[LCHANNEL].size() > mPulseList[RCHANNEL].size()? mPulseList[LCHANNEL] : mPulseList[RCHANNEL];
 
 	inter_log(Info, "Write Raw Data... ");
 
@@ -313,35 +308,28 @@ void PulseAnalyzer::WriteRawPulseDetail()
 }
 
 /* compare short list to long list and write value */ 
-void PulseAnalyzer::ProcessSyncDetail(double pulseWidth)
+void PulseAnalyzer::ProcessChannelsSync(double pulseWidth)
 {
-	std::list<PulseDesc> shortChannel; // short list
-	std::list<PulseDesc> longChannel; // long list
+	PulseList shortChannel; // short list
+	PulseList longChannel; // long list
 
-	std::list<PulseDesc> lChannel; // new left channel list
-	std::list<PulseDesc> rChannel; // new right channel list
+	PulseList lChannel; // new left channel list
+	PulseList rChannel; // new right channel list
 
 	int32_t sync = 0;
 	double firstDiff = 0.0f;
 	double secondDiff = 0.0f;
 	double secondSLdiff = 0.0f;
 
-	std::list<PulseDesc>::iterator itShort;
-	std::list<PulseDesc>::iterator itShortNext;
-	std::list<PulseDesc>::iterator itLong;
-	std::list<PulseDesc>::iterator itLongNext;
+	PulseList::iterator itShort;
+	PulseList::iterator itShortNext;
+	PulseList::iterator itLong;
+	PulseList::iterator itLongNext;
 
 	inter_log(Info, "Process Sync Data... ");
 
-	pulseWidth /= 1000;
-
-	if (mPulseList[LCHANNEL].size() >= mPulseList[RCHANNEL].size()){
-		longChannel = mPulseList[LCHANNEL];
-		shortChannel = mPulseList[RCHANNEL];
-	} else{
-		longChannel = mPulseList[RCHANNEL];
-		shortChannel = mPulseList[LCHANNEL];
-	}
+	shortChannel = mPulseList[LCHANNEL];
+	longChannel = mPulseList[RCHANNEL];
 
 	itShort = shortChannel.begin();
 	itLong = longChannel.begin();
@@ -350,6 +338,7 @@ void PulseAnalyzer::ProcessSyncDetail(double pulseWidth)
 		PulseDesc shortPulse, longPulse;
 		secondDiff = 0.0f;
 		firstDiff = 0.0f;
+		secondSLdiff = 0.0f;
 
 		if((itShort != shortChannel.end()) && (itLong != longChannel.end())){
 			// find most suitable pulse
@@ -365,48 +354,34 @@ void PulseAnalyzer::ProcessSyncDetail(double pulseWidth)
 			itShortNext++;
 			if(itShortNext != shortChannel.end())
 				secondSLdiff = (itShortNext->start - itLong->start)*1000;
-			
-			if(firstDiff == 0.0f){
-				longPulse = *itLong;
-				shortPulse = *itShort;
-				sync = (int32_t)firstDiff;
-			} else if(secondDiff == 0.0f){
-				longPulse = *itLong;
-			}else if(firstDiff > 0 && secondDiff < 0){
-				longPulse = *itLong;
-				if((fabs(firstDiff) <= fabs(secondDiff)) && (fabs(firstDiff) < SYNC_THRESHOLD)){
-					shortPulse = *itShort;
-					sync = (int32_t)firstDiff;
-				}
-			} else if (firstDiff > 0 && secondDiff > 0){
-				if(firstDiff >= secondDiff){
-					longPulse = *itLong;
-				}else{
-					inter_log(Error, "can not happend 1.");
-				}
-			}else if(firstDiff < 0 && secondDiff > 0){
-				inter_log(Error, "can not happend 2.");
-			}else if(firstDiff < 0 && secondDiff < 0){
-				if(firstDiff < secondDiff){
-					inter_log(Error, "can not happend 3.");
-				}else{
-					// go to next short list element
-					shortPulse = *itShort;
+
+			if(fabs(firstDiff) < SYNC_THRESHOLD){
+				if(fabs(secondDiff) > fabs(firstDiff)){
 					if(fabs(secondSLdiff) > fabs(firstDiff)){
-						if(fabs(firstDiff) < SYNC_THRESHOLD){
+						shortPulse = *itShort;
+						longPulse = *itLong;
+						sync = (int32_t)firstDiff;
+					}else{
+						shortPulse = *itShort;
+						if(itShortNext == shortChannel.end()){
 							longPulse = *itLong;
 							sync = (int32_t)firstDiff;
 						}
-					}else{
-						//inter_log(Info, "debg");
-
-						// a1 b1
-						// a2 b2
-						// a1-b1  < a2-b1
 					}
-					
+				}else{
+					longPulse = *itLong;
+					if(itLongNext == longChannel.end()){
+						shortPulse = *itShort;
+						sync = (int32_t)firstDiff;
+					}
 				}
-			}			
+			}else{
+				if(firstDiff < 0.0f){
+					shortPulse = *itShort;
+				}else{
+					longPulse = *itLong;
+				}
+			}
 		}else{ // drop all reset samples.
 			break;
 		}
@@ -441,17 +416,15 @@ void PulseAnalyzer::ProcessSyncDetail(double pulseWidth)
 		ReportProgress(longPulse.index, longChannel.size());
 	}
 
-	mPulseList[LCHANNEL].clear();
-	mPulseList[LCHANNEL] = lChannel;
-	mPulseList[RCHANNEL].clear();
-	mPulseList[RCHANNEL] = rChannel;
+	mPulseList[LCHANNEL].assign(lChannel.begin(), lChannel.end());
+	mPulseList[RCHANNEL].assign(rChannel.begin(), rChannel.end());
 }
 
 void PulseAnalyzer::WriteSyncDetail()
 {
 	int32_t sync = 0;
-	std::list<PulseDesc>::iterator lit = mPulseList[LCHANNEL].begin();
-	std::list<PulseDesc>::iterator rit = mPulseList[RCHANNEL].begin();
+	PulseList::iterator lit = mPulseList[LCHANNEL].begin();
+	PulseList::iterator rit = mPulseList[RCHANNEL].begin();
 
 	std::string filePath = mWorkParams.mSourceFileName + ".sync.detail.csv";
 	CSVFile file(filePath);
@@ -460,8 +433,9 @@ void PulseAnalyzer::WriteSyncDetail()
 
 	file.WriteCsvLine("Left Right Sync Detail.,");
 
-	file.WriteCsvLine("sync, channel 1, index, start, end, duration, type, interval, "
-		"channel 2, index, start, end, duration, type, interval, ");
+	file.WriteCsvLine("sync,"
+		"channel, index, start, end, duration, type, interval, "
+		"channel, index, start, end, duration, type, interval, ");
 
 	while((lit != mPulseList[LCHANNEL].end()) && (rit != mPulseList[RCHANNEL].end()))
 	{
@@ -484,37 +458,32 @@ void PulseAnalyzer::WriteSyncDetail()
 /* compare short list to long list and write value */ 
 void PulseAnalyzer::WriteRawSyncDetail()
 {
-	std::list<PulseDesc> shortChannel; // short list
-	std::list<PulseDesc> longChannel; // long list
 	int32_t sync = 0;
 	double firstDiff = 0.0f;
 	double secondDiff = 0.0f;
 	double secondSLdiff = 0.0f;
-	std::list<PulseDesc>::iterator itShort;
-	std::list<PulseDesc>::iterator itShortNext;
-	std::list<PulseDesc>::iterator itLong;
-	std::list<PulseDesc>::iterator itLongNext;
+	PulseList::iterator itShort;
+	PulseList::iterator itShortNext;
+	PulseList::iterator itLong;
+	PulseList::iterator itLongNext;
 	std::string filePath = mWorkParams.mSourceFileName + ".raw.sync.detail.csv";
 	CSVFile file(filePath);
 
-	if (mPulseList[LCHANNEL].size() >= mPulseList[RCHANNEL].size()){
-		longChannel = mPulseList[LCHANNEL];
-		shortChannel = mPulseList[RCHANNEL];
-	} else{
-		longChannel = mPulseList[RCHANNEL];
-		shortChannel = mPulseList[LCHANNEL];
-	}
+	PulseList &shortChannel = mPulseList[LCHANNEL];
+	PulseList &longChannel = mPulseList[RCHANNEL];
 
 	itShort = shortChannel.begin();
 	itLong = longChannel.begin();
 
-	file.WriteCsvLine("sync, channel 1, index, start, end, duration, type, interval, "
-		"channel 2, index, start, end, duration, type, interval, ");
+	file.WriteCsvLine("sync, "
+		"channel, index, start, end, duration, type, interval, "
+		"channel, index, start, end, duration, type, interval, ");
 
 	while(1){
 		PulseDesc shortPulse, longPulse;
 		secondDiff = 0.0f;
 		firstDiff = 0.0f;
+		secondSLdiff = 0.0f;
 
 		if((itShort != shortChannel.end()) && (itLong != longChannel.end())){
 			// find most suitable pulse
@@ -531,45 +500,31 @@ void PulseAnalyzer::WriteRawSyncDetail()
 			if(itShortNext != shortChannel.end())
 				secondSLdiff = (itShortNext->start - itLong->start)*1000;
 
-			if(firstDiff == 0.0f){
-				longPulse = *itLong;
-				shortPulse = *itShort;
-				sync = (int32_t)firstDiff;
-			} else if(secondDiff == 0.0f){
-				longPulse = *itLong;
-			}else if(firstDiff > 0 && secondDiff < 0){
-				longPulse = *itLong;
-				if((fabs(firstDiff) <= fabs(secondDiff)) && (fabs(firstDiff) < SYNC_THRESHOLD)){
-					shortPulse = *itShort;
-					sync = (int32_t)firstDiff;
-				}
-			} else if (firstDiff > 0 && secondDiff > 0){
-				if(firstDiff >= secondDiff){
-					longPulse = *itLong;
-				}else{
-					inter_log(Error, "can not happend 1.");
-				}
-			}else if(firstDiff < 0 && secondDiff > 0){
-				inter_log(Error, "can not happend 2.");
-			}else if(firstDiff < 0 && secondDiff < 0){
-				if(firstDiff < secondDiff){
-					inter_log(Error, "can not happend 3.");
-				}else{
-					// go to next short list element
-					shortPulse = *itShort;
+			if(fabs(firstDiff) < SYNC_THRESHOLD){
+				if(fabs(secondDiff) > fabs(firstDiff)){
 					if(fabs(secondSLdiff) > fabs(firstDiff)){
-						if(fabs(firstDiff) < SYNC_THRESHOLD){
+						shortPulse = *itShort;
+						longPulse = *itLong;
+						sync = (int32_t)firstDiff;
+					}else{
+						shortPulse = *itShort;
+						if(itShortNext == shortChannel.end()){
 							longPulse = *itLong;
 							sync = (int32_t)firstDiff;
 						}
-					}else{
-						//inter_log(Info, "debg");
-
-						// a1 b1
-						// a2 b2
-						// a1-b1  < a2-b1
 					}
-
+				}else{
+					longPulse = *itLong;
+					if(itLongNext == longChannel.end()){
+						shortPulse = *itShort;
+						sync = (int32_t)firstDiff;
+					}
+				}
+			}else{
+				if(firstDiff < 0.0f){
+					shortPulse = *itShort;
+				}else{
+					longPulse = *itLong;
 				}
 			}
 		}else if(itShort != shortChannel.end()){// only "L" channel
@@ -579,7 +534,7 @@ void PulseAnalyzer::WriteRawSyncDetail()
 		}else{
 			break;
 		}
-
+		
 		if(!longPulse.IsInvalid() && !shortPulse.IsInvalid()){
 			file.WriteCsvLine("%d, "
 				"%c, %u, %.3f, %.3f, %.3f, %d, %d, "
@@ -631,7 +586,7 @@ void PulseAnalyzer::JudgetDropFrame(const int32_t &NormalLevel)
 	int32_t curFrameType = 0;
 	std::size_t i = 0;
 
-	std::vector<FrameDesc> frameVect;
+	FrameVector frameVect;
 	frameVect.assign(mFramePulse.begin(), mFramePulse.end());
 
 	exceptNextType = frameVect[0].frameType;
@@ -683,7 +638,8 @@ void PulseAnalyzer::WriteSmoothDetail()
 
 		double avg = mStdevpAlgorithm.CalcAvgValue(mFramePulse);
 		double stdevp = mStdevpAlgorithm.CalcSTDEVP(mFramePulse, avg);
-		double fps = mStdevpAlgorithm.CalcFps(mFramePulse);
+		//double fps = mStdevpAlgorithm.CalcFps(mFramePulse);
+		double fps = (mFrameHistograms[FH_TOTAL] - mFrameHistograms[FH_BAD])*1.0 / (mFramePulse.back().end - mFramePulse.front().start);
 		file.WriteCsvLine("STDEVP, FPS, Avg, Frames, Duration, ");
 		file.WriteCsvLine("%.3f, %.3f, %.3f, %d, %.3f,", stdevp, fps, avg, mFramePulse.size(), (mFramePulse.back().end - mFramePulse.front().start)*1000);
 
@@ -724,12 +680,13 @@ void PulseAnalyzer::OutputResult()
 
 	PulseFilter();
 
+	MergeOffset();
+
 	WriteRawSyncDetail();
 
-//	WriteRawPulseDetail();
 	GetPulseWidth(pulseWidth);
 
-	ProcessSyncDetail(pulseWidth);
+	ProcessChannelsSync(pulseWidth);
 
 	WriteSyncDetail();
 
