@@ -283,8 +283,8 @@ void PulseAnalyzer::WriteRawPulseDetail()
 		file.WriteCsvLine(
 			" %c, %d, %.3f, %.3f, %.3f, %d, "
 			" %c, %d, %.3f, %.3f, %.3f, %d, ",
-			lit->channelName, lit->index, lit->startInSecond, lit->endInSecond, lit->duration, lit->type, 
-			rit->channelName, rit->index, rit->startInSecond, rit->endInSecond, rit->duration, rit->type);
+			lit->channelName, lit->index, lit->start, lit->end, lit->duration, lit->type, 
+			rit->channelName, rit->index, rit->start, rit->end, rit->duration, rit->type);
 
 		lit++;
 		rit++;
@@ -294,7 +294,7 @@ void PulseAnalyzer::WriteRawPulseDetail()
 		file.WriteCsvLine(
 			" %c, %d, %.3f, %.3f, %.3f, %d, "
 			" ,,,,,, ",
-			lit->channelName, lit->index, lit->startInSecond, lit->endInSecond, lit->duration, lit->type);
+			lit->channelName, lit->index, lit->start, lit->end, lit->duration, lit->type);
 		lit++;
 	}
 
@@ -302,7 +302,7 @@ void PulseAnalyzer::WriteRawPulseDetail()
 		file.WriteCsvLine(
 			" ,,,,,, "
 			" %c, %d, %.3f, %.3f, %.3f, %d, ",
-			rit->channelName, rit->index, rit->startInSecond, rit->endInSecond, rit->duration, rit->type);
+			rit->channelName, rit->index, rit->start, rit->end, rit->duration, rit->type);
 		rit++;
 	}
 }
@@ -316,7 +316,6 @@ void PulseAnalyzer::ProcessChannelsSync(double pulseWidth)
 	PulseList lChannel; // new left channel list
 	PulseList rChannel; // new right channel list
 
-	int32_t sync = 0;
 	double firstDiff = 0.0f;
 	double secondDiff = 0.0f;
 	double secondSLdiff = 0.0f;
@@ -342,7 +341,6 @@ void PulseAnalyzer::ProcessChannelsSync(double pulseWidth)
 
 		if((itShort != shortChannel.end()) && (itLong != longChannel.end())){
 			// find most suitable pulse
-			sync = 0;
 
 			itLongNext = itLong;
 			itLongNext++;
@@ -360,19 +358,16 @@ void PulseAnalyzer::ProcessChannelsSync(double pulseWidth)
 					if(fabs(secondSLdiff) > fabs(firstDiff)){
 						shortPulse = *itShort;
 						longPulse = *itLong;
-						sync = (int32_t)firstDiff;
 					}else{
 						shortPulse = *itShort;
 						if(itShortNext == shortChannel.end()){
 							longPulse = *itLong;
-							sync = (int32_t)firstDiff;
 						}
 					}
 				}else{
 					longPulse = *itLong;
 					if(itLongNext == longChannel.end()){
 						shortPulse = *itShort;
-						sync = (int32_t)firstDiff;
 					}
 				}
 			}else{
@@ -445,8 +440,8 @@ void PulseAnalyzer::WriteSyncDetail()
 			"%c, %u, %.3f, %.3f, %.3f, %d, %d, "
 			"%c, %u, %.3f, %.3f, %.3f, %d, %d, ",
 			sync,
-			lit->channelName, lit->index, lit->startInSecond, lit->endInSecond, lit->duration, lit->type, 0, 
-			rit->channelName, rit->index, rit->startInSecond, rit->endInSecond, rit->duration, rit->type, 0);
+			lit->channelName, lit->index, lit->start, lit->end, lit->duration, lit->type, 0, 
+			rit->channelName, rit->index, rit->start, rit->end, rit->duration, rit->type, 0);
 
 		ReportProgress(lit->index, mPulseList[LCHANNEL].size());
 
@@ -458,7 +453,7 @@ void PulseAnalyzer::WriteSyncDetail()
 /* compare short list to long list and write value */ 
 void PulseAnalyzer::WriteRawSyncDetail()
 {
-	int32_t sync = 0;
+	double sync = 0;
 	double firstDiff = 0.0f;
 	double secondDiff = 0.0f;
 	double secondSLdiff = 0.0f;
@@ -505,19 +500,19 @@ void PulseAnalyzer::WriteRawSyncDetail()
 					if(fabs(secondSLdiff) > fabs(firstDiff)){
 						shortPulse = *itShort;
 						longPulse = *itLong;
-						sync = (int32_t)firstDiff;
+						sync = firstDiff;
 					}else{
 						shortPulse = *itShort;
 						if(itShortNext == shortChannel.end()){
 							longPulse = *itLong;
-							sync = (int32_t)firstDiff;
+							sync = firstDiff;
 						}
 					}
 				}else{
 					longPulse = *itLong;
 					if(itLongNext == longChannel.end()){
 						shortPulse = *itShort;
-						sync = (int32_t)firstDiff;
+						sync = firstDiff;
 					}
 				}
 			}else{
@@ -527,34 +522,30 @@ void PulseAnalyzer::WriteRawSyncDetail()
 					longPulse = *itLong;
 				}
 			}
-		}else if(itShort != shortChannel.end()){// only "L" channel
-			shortPulse = *itShort;
-		}else if(itLong != longChannel.end()){// only "R" channel
-			longPulse = *itLong;
 		}else{
 			break;
 		}
 		
 		if(!longPulse.IsInvalid() && !shortPulse.IsInvalid()){
-			file.WriteCsvLine("%d, "
+			file.WriteCsvLine("%.3f, "
 				"%c, %u, %.3f, %.3f, %.3f, %d, %d, "
 				"%c, %u, %.3f, %.3f, %.3f, %d, %d, ",
 				sync,
-				shortPulse.channelName, shortPulse.index, shortPulse.startInSecond, shortPulse.endInSecond, shortPulse.duration, shortPulse.type, 0, 
-				longPulse.channelName, longPulse.index, longPulse.startInSecond, longPulse.endInSecond, longPulse.duration, longPulse.type, 0);
+				shortPulse.channelName, shortPulse.index, shortPulse.start, shortPulse.end, shortPulse.duration, shortPulse.type, 0, 
+				longPulse.channelName, longPulse.index, longPulse.start, longPulse.end, longPulse.duration, longPulse.type, 0);
 			itShort++;
 			itLong++;
 		}else if (!longPulse.IsInvalid()){
 			file.WriteCsvLine(", "
 				" ,  ,  ,  ,  , , , "
 				"%c, %u, %.3f, %.3f, %.3f, %d, %d,",
-				longPulse.channelName, longPulse.index, longPulse.startInSecond, longPulse.endInSecond, longPulse.duration, longPulse.type, 0);
+				longPulse.channelName, longPulse.index, longPulse.start, longPulse.end, longPulse.duration, longPulse.type, 0);
 			itLong++;
 		}else if(!shortPulse.IsInvalid()){
 			file.WriteCsvLine(", "
 				"%c, %u, %.3f, %.3f, %.3f, %d, %d,"
 				", , , , , , , ",
-				shortPulse.channelName, shortPulse.index, shortPulse.startInSecond, shortPulse.endInSecond, shortPulse.duration, shortPulse.type, 0);
+				shortPulse.channelName, shortPulse.index, shortPulse.start, shortPulse.end, shortPulse.duration, shortPulse.type, 0);
 			itShort++;
 		}
 
@@ -663,7 +654,7 @@ void PulseAnalyzer::WriteSmoothDetail()
 			FrameDesc frame = mFramePulse[i];
 
 			file.WriteCsvLine("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %d, %d, "
-				, frame.index, frame.startInSecond, frame.endInSecond, frame.duration, frame.AVG, frame.offset, frame.STDEVP, frame.frameRate, frame.frameType, frame.level);
+				, frame.index, frame.start, frame.end, frame.duration, frame.AVG, frame.offset, frame.STDEVP, frame.frameRate, frame.frameType, frame.level);
 
 			ReportProgress(i, mFramePulse.size());
 			i++;

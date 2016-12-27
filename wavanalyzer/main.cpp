@@ -10,10 +10,10 @@
 #ifdef _DEBUG
 char* debug_args[] ={
 	"",
-	"e:\\smooth\\ios-sony-entertainment.wav",
-//	"e:\\smooth\\xiaomi4-sony-entertainment.wav",
+//	"e:\\smooth\\ios-sony-entertainment.wav",
+	"e:\\smooth\\xiaomi4-sony-entertainment.wav",
 //	"e:\\smooth\\mpc-hc-sony-entertainment-default-render.wav",
-	"-8",
+	"-14",
 	"30"
 };
 #endif
