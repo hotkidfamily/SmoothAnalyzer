@@ -11,9 +11,9 @@
 char* debug_args[] ={
 	"",
 //	"e:\\smooth\\ios-sony-entertainment.wav",
-	"e:\\smooth\\xiaomi4-sony-entertainment.wav",
-//	"e:\\smooth\\mpc-hc-sony-entertainment-default-render.wav",
-	"-14",
+//	"e:\\smooth\\xiaomi4-sony-entertainment.wav",
+	"e:\\smooth\\mpc-hc-sony-entertainment-default-render.wav",
+	"0",
 	"30"
 };
 #endif
@@ -63,7 +63,7 @@ static int32_t parse_parameters(SMOOTH_CONTEXT* ctx, const int32_t argc, char* a
 		double frameRate = 0.0f;
 		frameRate = atof(argv[3]);
 		if(frameRate != 0.0f){
-			ctx->analyzerParams.pulseWidth = 1000.0/frameRate;
+			ctx->analyzerParams.sampleFrameRate = frameRate;
 		}
 	}
 	

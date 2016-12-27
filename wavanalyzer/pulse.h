@@ -21,6 +21,17 @@ struct Pulse{
 		level = PULSE_LEVEL(duration);
 	}
 
+	void SetEnd(double newEnd){
+		end = newEnd;
+		duration = end - start;
+		level = PULSE_LEVEL(duration);
+	}
+	void SetStart(double newStart){
+		start = newStart;
+		duration = end - start;
+		level = PULSE_LEVEL(duration);
+	}
+
 	bool IsPulseInvalid(){
 		return (level != 0);
 	}
@@ -77,6 +88,7 @@ struct FrameDesc: public Pulse
 		, index(idx)
 	{}
 
+
 	int32_t index;
 	int32_t frameType;
 	double frameRate;
@@ -86,6 +98,7 @@ struct FrameDesc: public Pulse
 };
 
 typedef std::list<PulseDesc> PulseList;
+typedef std::vector<PulseDesc> PulseVector;
 typedef std::list<FrameDesc> FrameList;
 typedef std::vector<FrameDesc> FrameVector;
 

@@ -168,10 +168,13 @@ void WaveAnalyzer::RecordPulse(CHANNELID channelID, double start, double end)
 
 bool WaveAnalyzer::AnalyzeFilePulse()
 {
-	AnalyzeFileByChannel(LCHANNEL);
-	AnalyzeFileByChannel(RCHANNEL);
+	bool bRet = true;
+	if(bRet)
+		bRet = AnalyzeFileByChannel(LCHANNEL);
+	if(bRet)
+		bRet = AnalyzeFileByChannel(RCHANNEL);
 
-	return true;
+	return bRet;
 }
 
 /* open file for per channel, process one channel once */
