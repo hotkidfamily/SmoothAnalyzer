@@ -45,7 +45,7 @@ void WaveAnalyzer::FindPulse(analyzerContext *ctx, const int16_t *data, uint32_t
 	}
 	sum /= nb_samples;
 
-	Logger(Pulse, "sum = %d, threshold %d", sum, threshold);
+	Logger(PulseDect, "sum = %d, threshold %d", sum, threshold);
 
 	if(sum > threshold){
 		for(uint32_t i = 0; i<nb_samples; i++){
@@ -91,7 +91,7 @@ int32_t WaveAnalyzer::SplitDataAndFindPulse(analyzerContext *ctx, std::string &c
 		nbSampleSplitStep = nbTotalSamples;
 	}
 
-	Logger(Pulse, "analyzer size is %d", nbSampleSplitStep);
+	Logger(PulseDect, "analyzer size is %d", nbSampleSplitStep);
 
 	do{
 		if(nbSampleSplitStep + processedSamplesCount > nbTotalSamples){

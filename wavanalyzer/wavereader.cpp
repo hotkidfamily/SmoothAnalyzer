@@ -20,7 +20,7 @@ CWaveReader::~CWaveReader()
 bool CWaveReader::Open(const char* pFileName)
 {   
 	Close();   
-	fopen_s(&m_pFile, pFileName, "rb+");
+	fopen_s(&m_pFile, pFileName, "rb");
 	if( !m_pFile )   
 		return false;   
 

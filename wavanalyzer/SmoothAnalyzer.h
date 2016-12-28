@@ -23,6 +23,12 @@ enum syncRet{
 	RIGHTAHEAD,
 };
 
+enum fixRet{
+	ALLGO,
+	LEFTGO,
+	RIGHTGO,
+};
+
 typedef struct tagAnalyzerParams{
 	tagAnalyzerParams(){
 		ZeroMemory(this, sizeof(struct tagAnalyzerParams));
@@ -49,11 +55,12 @@ protected:
 
 	inline int32_t GetPulseType(PULSETYPE ltype, PULSETYPE rtype);
 
-	void SyncChannelsAndMakeNewList(double);
+	void CreateFrameInfo(double);
 	void WriteSyncDetail();
 	void WriteRawSyncDetail();
 
 	syncRet ifSync(PulseList::iterator &, PulseList::iterator &, PulseList::iterator &, PulseList::iterator &);
+	fixRet ifFix(PulseList::iterator &, PulseList::iterator &, Pulse &, const double &);
 
 	void WriteRawPulseDetail();
 
@@ -69,7 +76,7 @@ protected:
 	void PulseFilter();
 	void MergeOffset();
 
-	inline bool IsInvalidFrameDuration(const double &, const double &);
+	inline bool IsOneFrame(const double &, const double &);
 
 private:
 	std::list<PulseDesc>mPulseList[MAX_CHANNEL];

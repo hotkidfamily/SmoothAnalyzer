@@ -32,12 +32,8 @@ struct Pulse{
 		level = PULSE_LEVEL(duration);
 	}
 
-	bool IsPulseInvalid(){
-		return (level != 0);
-	}
-
-	bool IsLevelInvalid(){
-		return ((level <= 0) || (level>SYSTEM_RESOLUTION));
+	bool IsPulseValid(){
+		return (duration >= VALID_PULSE_DURATION);
 	}
 
 	double start;
@@ -65,7 +61,7 @@ struct PulseDesc: public Pulse
 		, index(idx)
 	{}
 
-	bool IsInvalid()
+	bool Empty()
 	{
 		return (type == PULSE_NONE) && (channelID == MAX_CHANNEL);
 	}
@@ -87,7 +83,6 @@ struct FrameDesc: public Pulse
 		, offset(duration - avg)
 		, index(idx)
 	{}
-
 
 	int32_t index;
 	int32_t frameType;

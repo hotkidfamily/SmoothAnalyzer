@@ -7,13 +7,21 @@
 #include "fileEnum.h"
 #include "SmoothAnalyzer.h"
 
+#define TEST 3
+
 #ifdef _DEBUG
 char* debug_args[] ={
 	"",
-//	"e:\\smooth\\ios-sony-entertainment.wav",
-//	"e:\\smooth\\xiaomi4-sony-entertainment.wav",
+#if (TEST == 1)
+	"e:\\smooth\\ios-sony-entertainment.wav",
+	"-8",
+#elif (TEST == 2)
+	"e:\\smooth\\xiaomi4-sony-entertainment.wav",
+	"-14",
+#else
 	"e:\\smooth\\mpc-hc-sony-entertainment-default-render.wav",
 	"0",
+#endif
 	"30"
 };
 #endif
