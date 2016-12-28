@@ -404,21 +404,10 @@ void PulseAnalyzer::SyncChannelsAndMakeNewList(double pulseWidth)
 		}else{ // drop all rest samples.
 			break;
 		}
-
-		if(!longPulse.IsInvalid() && !shortPulse.IsInvalid()){
-			if(!IsInvalidFrameDuration(longPulse.duration, pulseWidth)){ // if only one frame
-				if(IsInvalidFrameDuration(shortPulse.duration, pulseWidth)){
-					// most should be this saturation
-				}else{
-					// drop some frames
-				}
-			}
-		}
-
-		if (!longPulse.IsInvalid()) {
+		if(!longPulse.IsInvalid()){
 			itLong++;
-		} else {
-			if (itLong != longChannel.begin()) {
+		}else{
+			if(itLong != longChannel.begin()){
 				itLong--;
 				longPulse = *itLong;
 				itLong++;
@@ -427,13 +416,13 @@ void PulseAnalyzer::SyncChannelsAndMakeNewList(double pulseWidth)
 
 		rChannel.push_back(longPulse);
 
-		if (!shortPulse.IsInvalid()) {
+		if(!shortPulse.IsInvalid()){
 			PulseDesc pos(shortPulse.channelID, shortPulse.start, shortPulse.end, shortPulse.type, longPulse.index);
 			lChannel.push_back(pos);
 			itShort++;
-		} else {
-			if (itShort != shortChannel.begin()) {
-				itShort--;
+		}else{
+			if(itShort != shortChannel.begin()){
+				itShort --;
 				shortPulse = *itShort;
 				itShort++;
 				shortPulse.start += pulseWidth;
@@ -441,11 +430,6 @@ void PulseAnalyzer::SyncChannelsAndMakeNewList(double pulseWidth)
 			PulseDesc pos(shortPulse.channelID, shortPulse.start, shortPulse.end, shortPulse.type, longPulse.index);
 			lChannel.push_back(pos);
 		}
-
-
-		lChannel.push_back(shortPulse);
-		rChannel.push_back(longPulse);
-
 		ReportProgress(longPulse.index, longChannel.size());
 	}
 
@@ -693,8 +677,6 @@ void PulseAnalyzer::OutputResult()
 	GetPulseWidth(pulseWidth);
 
 	SyncChannelsAndMakeNewList(pulseWidth);
-
-	//WriteSyncDetail();
 
 	WriteSyncDetail();
 
