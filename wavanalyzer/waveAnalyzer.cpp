@@ -25,7 +25,7 @@ int32_t WaveAnalyzer::UpdateThreshold(std::string &channelData, analyzerContext 
 
 	if(ctx->totalSampleCount/mWavFormat.nSampleRate > 10){
 		ctx->isThresholdValid = true;
-		inter_log(Info, "threshold is %d, min %d, max %d", ctx->GetThreshold(), ctx->minThreshold, ctx->maxThreshold);
+		Logger(Info, "threshold is %d, min %d, max %d", ctx->GetThreshold(), ctx->minThreshold, ctx->maxThreshold);
 	}
 
 	return 0;
@@ -45,7 +45,7 @@ void WaveAnalyzer::FindPulse(analyzerContext *ctx, const int16_t *data, uint32_t
 	}
 	sum /= nb_samples;
 
-	inter_log(Pulse, "sum = %d, threshold %d", sum, threshold);
+	Logger(Pulse, "sum = %d, threshold %d", sum, threshold);
 
 	if(sum > threshold){
 		for(uint32_t i = 0; i<nb_samples; i++){
@@ -91,7 +91,7 @@ int32_t WaveAnalyzer::SplitDataAndFindPulse(analyzerContext *ctx, std::string &c
 		nbSampleSplitStep = nbTotalSamples;
 	}
 
-	inter_log(Pulse, "analyzer size is %d", nbSampleSplitStep);
+	Logger(Pulse, "analyzer size is %d", nbSampleSplitStep);
 
 	do{
 		if(nbSampleSplitStep + processedSamplesCount > nbTotalSamples){
@@ -147,7 +147,7 @@ void WaveAnalyzer::RecordPulse(CHANNELID channelID, double start, double end)
 		PulseDesc &lastTime = mPulseList[channelID].back();
 
 		if(lastTime.type != PULSE_HIGH ) {
-			inter_log(Error, "?? last pulse is \"%s\", not high pulse.", lastTime.type==PULSE_LOW?"low":"high");
+			Logger(Error, "?? last pulse is \"%s\", not high pulse.", lastTime.type==PULSE_LOW?"low":"high");
 			return ;
 		}
 

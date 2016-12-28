@@ -10,7 +10,7 @@ DataSeparater::DataSeparater(std::string &name)
 
 DataSeparater::~DataSeparater(void)
 {
-	inter_log(Error, "Data Separater %d bytes", mTotalSpDataSize);
+	Logger(Error, "Data Separater %d bytes", mTotalSpDataSize);
 }
 
 int32_t DataSeparater::SeparateChannelData(int32_t index, std::string &originalData, std::string &channelData)

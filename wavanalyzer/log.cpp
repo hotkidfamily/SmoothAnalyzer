@@ -21,7 +21,7 @@ static log_level log_level_base = Debug;
 static log_level log_level_base = Info;
 #endif
 
-void inter_log(log_level level, const char* format, ...)
+void Logger(log_level level, const char* format, ...)
 {
 	char str[4096] = "";
 	va_list vl = NULL;
@@ -37,4 +37,10 @@ void inter_log(log_level level, const char* format, ...)
 			fprintf(stderr, "%s: %s\n", level_strs[level], str);
 		}
 	}
+}
+
+void ReportProgress(int32_t progress, int32_t total)
+{
+	if(total)
+		fprintf(stderr, "\t progress %.3f\r", progress*100.0 / total);
 }

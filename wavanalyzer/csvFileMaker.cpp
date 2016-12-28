@@ -17,11 +17,11 @@ void CSVFile::flush()
 	if(!csvLines.empty()){
 		csvFile.open(csvFileName.c_str());
 		if(!csvFile.is_open()){
-			inter_log(Info, "Can not create file %s.", csvFileName.c_str());
+			Logger(Info, "Can not create file %s.", csvFileName.c_str());
 			return ;
 		}
 
-		inter_log(Info, "Create file %s.", csvFileName.c_str());
+		Logger(Info, "Create file %s.", csvFileName.c_str());
 	}
 
 	while(!csvLines.empty()){
@@ -42,6 +42,5 @@ void CSVFile::WriteCsvLine(const char* format, ...)
 	vsprintf_s((char*)csvLine.c_str(), csvLine.size(), format, args);
 	va_end(args);
 
-	//csvFile << csvLine << '\n';
 	csvLines.push_back(csvLine);
 }

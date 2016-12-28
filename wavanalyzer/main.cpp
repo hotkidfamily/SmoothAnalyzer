@@ -79,13 +79,13 @@ static int analyzeFile(PSMOOTH_CONTEXT ctx, std::string file)
 	smoothAnalyzer = new PulseAnalyzer(file);
 	WaveAnalyzer *wavAnalyzer = new WaveAnalyzer(file);
 
-	inter_log(Info, "File %s, channel offset %f", file.c_str(), ctx->analyzerParams.channelOffset);
+	Logger(Info, "File %s, channel offset %f", file.c_str(), ctx->analyzerParams.channelOffset);
 
 	smoothAnalyzer->SetWorkingParam(ctx->analyzerParams);
 	wavAnalyzer->AnalyzeFilePulse();
 	smoothAnalyzer->SetAnalyzerData(wavAnalyzer->GetPulseData());
 
-	inter_log(Info, "\nAnalyzer... ");
+	Logger(Info, "\nAnalyzer... ");
 
 	smoothAnalyzer->OutputResult();
 
@@ -108,7 +108,7 @@ static int GetAbsolutlyPath(const char* path, std::string &rPath)
 	LPSTR retPath = {NULL};
 	retVal = GetFullPathNameA(path, MAX_PATH, buffer, &retPath);
 	if (retVal == 0) {
-		inter_log(Error ,"Invalid file path %d, code %d\n", path, GetLastError());
+		Logger(Error ,"Invalid file path %d, code %d\n", path, GetLastError());
 		return -1;
 	}
 
@@ -135,13 +135,13 @@ int main(int argc, char* argv[])
 
 	pCtx->fileFinder = new FileEnumer();
 	if(!pCtx->fileFinder){
-		inter_log(Error, "Can not enum file.");
+		Logger(Error, "Can not enum file.");
 		goto cleanup;
 	}
 
 	ret = pCtx->fileFinder->IsDirectory(pCtx->targetPath);
 	if(ret < 0){
-		inter_log(Fatal, "path %s is invalid.", argv[1]);
+		Logger(Fatal, "path %s is invalid.", argv[1]);
 	}else if (ret > 0){
 		std::string file;
 		if(GetAbsolutlyPath(argv[1], pCtx->targetPath) < 0){

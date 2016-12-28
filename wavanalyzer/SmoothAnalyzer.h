@@ -68,9 +68,6 @@ protected:
 	void PulseLowFilter(std::list<PulseDesc> &);
 	void PulseFilter();
 	void MergeOffset();
-	void MergeChannelToFrame(const double &);
-
-	void ReportProgress(int32_t progress, int32_t total);
 
 	inline bool IsInvalidFrameDuration(const double &, const double &);
 

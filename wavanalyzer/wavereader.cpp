@@ -13,7 +13,7 @@ CWaveReader::CWaveReader()
 CWaveReader::~CWaveReader()   
 {   
 	Close();   
-	inter_log(Debug, "WaveReader %d bytes, duration %f seconds.", 
+	Logger(Debug, "WaveReader %d bytes, duration %f seconds.", 
 		m_totalReadLength, m_totalReadLength*1.0/m_WaveFormat.GetDataSizePerSecond());
 }   
 
@@ -27,7 +27,7 @@ bool CWaveReader::Open(const char* pFileName)
 	if( !ReadHeader() )
 		return false;
 
-	inter_log(Info, "file %s, %d bytes, %f seconds.", 
+	Logger(Info, "file %s, %d bytes, %f seconds.", 
 		pFileName, m_nDataLen, m_nDataLen*1.0/m_WaveFormat.GetDataSizePerSecond());
 
 	return true;      
@@ -149,7 +149,7 @@ int32_t CWaveReader::ReadData(std::string &data)
 	int32_t ret = 0;
 	uint32_t nbReadSamples = (m_WaveFormat.nSampleRate*ANALYZER_DURATION) / 1000;
 	uint32_t nbSampleDataSize = nbReadSamples * m_WaveFormat.nBlockAlign;
-	int32_t readDataLength = 0;
+	size_t readDataLength = 0;
 
 	data.resize(nbSampleDataSize, 0);
 

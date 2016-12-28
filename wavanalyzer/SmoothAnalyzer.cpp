@@ -32,12 +32,6 @@ PulseAnalyzer::~PulseAnalyzer(void)
 {
 }
 
-void PulseAnalyzer::ReportProgress(int32_t progress, int32_t total)
-{
-	if(total)
-		fprintf(stderr, "\t progress %.3f\r", progress*100.0 / total);
-}
-
 void PulseAnalyzer::SetWorkingParam(ANALYZER_PARAMS &params)
 {
 	mWorkParams.sampleFrameRate = params.sampleFrameRate;
@@ -103,7 +97,7 @@ void PulseAnalyzer::PulseLowFilter(PulseList &channelPulse)
 
 			if((itPre == sourceChannel.begin()) || (itPos == sourceChannel.end())){
 				// 
-				inter_log(Error, "pulse duration is to small at begin or end.");
+				Logger(Error, "pulse duration is to small at begin or end.");
 			}
 
 			if(itPre->type == itPos->type){
@@ -113,7 +107,7 @@ void PulseAnalyzer::PulseLowFilter(PulseList &channelPulse)
 				newChannel.pop_back();
 				newChannel.push_back(timeInsert);
 			}else{
-				inter_log(Error, "Can not merge two pulse, pre and post type is not equal.");
+				Logger(Error, "Can not merge two pulse, pre and post type is not equal.");
 			}
 		}else{
 			it->index = index;
@@ -130,7 +124,7 @@ void PulseAnalyzer::PulseLowFilter(PulseList &channelPulse)
 
 void PulseAnalyzer::PulseFilter()
 {
-	inter_log(Info, "Filter Raw Pulse... ");
+	Logger(Info, "Filter Raw Pulse... ");
 
 	for(int32_t i =0; i<MAX_CHANNEL; i++){
 		PulseLowFilter(mPulseList[i]);
@@ -210,14 +204,14 @@ BOOL PulseAnalyzer::GetPulseWidth(double &duration)
 {
 	BOOL bRet = FALSE;
 
-	inter_log(Info, "Calculate Pulse Width... ");
+	Logger(Info, "Calculate Pulse Width... ");
 
 	bRet = GetPulseWidthByInput(duration);
 	if(!bRet){
 		bRet = DetectPulseWidth(duration);
 	}
 
-	inter_log(Info, "Frame duration %.3f ms", duration);
+	Logger(Info, "Frame duration %.3f ms", duration);
 
 	return bRet;
 }
@@ -237,7 +231,7 @@ void PulseAnalyzer::GetFrameInfo(const double &duration)
 	lChannelIT = lChannel.begin();
 	rChannelIT = rChannel.begin();
 
-	inter_log(Info, "Detect Frame Info... ");
+	Logger(Info, "Detect Frame Info... ");
 
 	for(; lChannelIT != lChannel.end(); )
 	{
@@ -271,7 +265,7 @@ void PulseAnalyzer::WriteRawPulseDetail()
 	std::string filePath = mWorkParams.mSourceFileName + ".raw.pulse.csv";
 	CSVFile file(filePath);
 
-	inter_log(Info, "Write Raw Data... ");
+	Logger(Info, "Write Raw Data... ");
 
 	file.WriteCsvLine(" channel, index, start, end, duration, type, channel, index, start, end, duration, type, ");
 
@@ -389,7 +383,7 @@ void PulseAnalyzer::SyncChannelsAndMakeNewList(double pulseWidth)
 	itShort = shortChannel.begin();
 	itLong = longChannel.begin();
 
-	inter_log(Info, "Process Sync Data... ");
+	Logger(Info, "Process Sync Data... ");
 
 	while(1){
 		PulseDesc shortPulse, longPulse;
@@ -465,87 +459,6 @@ inline bool PulseAnalyzer::IsInvalidFrameDuration(const double &targetDuration, 
 	return (fabs(targetDuration - frameDuration) > durationThreadhold);
 }
 
-/* work after chanel sync */
-void PulseAnalyzer::MergeChannelToFrame(const double &pulseWidth)
-{
-	int32_t curFrameType = 0;
-	double fps = 0.0f;
-	double stdevp = 0.0f;
-	double avg = 0.0f;
-	std::size_t index = 0;
-
-	PulseVector lChannel;
-	PulseVector rChannel;
-	lChannel.assign(mPulseList[LCHANNEL].begin(), mPulseList[LCHANNEL].end());
-	rChannel.assign(mPulseList[RCHANNEL].begin(), mPulseList[RCHANNEL].end());
-
-	PulseVector::iterator lChannelIT = lChannel.begin();
-	PulseVector::iterator rChannelIT = rChannel.begin();
-
-	inter_log(Info, "Detect Frame Info... ");
-
-	//for(; lChannelIT != lChannel.end(); )
-	while(1)
-	{
-		double start, end;
-		start = end = 0;
-
-		curFrameType = GetPulseType(lChannelIT->type, rChannelIT->type);
-		if(curFrameType != INVALID_PULSETYPE)
-		{
-			mStdevpAlgorithm.CalcAvgStdAndFps(mFramePulse, avg, stdevp, fps);
-
-			if(!mFramePulse.empty()){
-				start = mFramePulse.back().end;
-
-				if(!IsInvalidFrameDuration(rChannelIT->duration, pulseWidth)){
-					end = rChannelIT->end;
-					lChannelIT->SetStart(rChannelIT->start);
-				}else{
-					end = start + pulseWidth;
-					rChannelIT++;
-				}
-
-				FrameDesc frame(curFrameType, start, end, fps, avg, stdevp, index);
-				mFramePulse.push_back(frame);
-			}else{
-				if(!IsInvalidFrameDuration(rChannelIT->duration, pulseWidth)){
-					start = rChannelIT->start;
-					end = rChannelIT->end;
-					lChannelIT->SetStart(rChannelIT->start);
-				}else{
-					start = lChannelIT->start;
-					end = start + pulseWidth;
-					rChannelIT++;
-				}
-
-				FrameDesc frame(curFrameType, start, end, fps, avg, stdevp, index);
-				mFramePulse.push_back(frame);
-			}
-
-			fps = stdevp = 0.0f;
-
-			ReportProgress(lChannelIT->index, rChannel.size());
-		}else{
-			if(lChannelIT->IsInvalid()){
-				lChannelIT++;
-			}
-			if(rChannelIT->IsInvalid()){
-				rChannelIT++;
-			}
-			continue;
-		}
-
-//		rChannelIT++;
-//		lChannelIT++;
-		index ++;
-
-		if(index > lChannel.size()){
-			break;
-		}
-	}
-}
-
 void PulseAnalyzer::WriteSyncDetail()
 {
 	int32_t sync = 0;
@@ -555,7 +468,7 @@ void PulseAnalyzer::WriteSyncDetail()
 	std::string filePath = mWorkParams.mSourceFileName + ".sync.detail.csv";
 	CSVFile file(filePath);
 
-	inter_log(Info, "Write Sync Data... ");
+	Logger(Info, "Write Sync Data... ");
 
 	file.WriteCsvLine("Left Right Sync Detail.,");
 
@@ -721,7 +634,7 @@ void PulseAnalyzer::WriteSmoothDetail()
 	std::size_t i=0;
 	std::string filePath = mWorkParams.mSourceFileName + ".smooth.csv";
 
-	inter_log(Info, "Write Smooth Data... ");
+	Logger(Info, "Write Smooth Data... ");
 
 	if(!mFramePulse.empty()){
 		CSVFile file(filePath);
@@ -780,9 +693,8 @@ void PulseAnalyzer::OutputResult()
 	GetPulseWidth(pulseWidth);
 
 	SyncChannelsAndMakeNewList(pulseWidth);
-//	WriteSyncDetail();
 
-	//MergeChannelToFrame(pulseWidth);
+	//WriteSyncDetail();
 
 	WriteSyncDetail();
 
@@ -792,5 +704,5 @@ void PulseAnalyzer::OutputResult()
 	
 	WriteSmoothDetail();
 
-	inter_log(Info, "end.");
+	Logger(Info, "end.");
 }
