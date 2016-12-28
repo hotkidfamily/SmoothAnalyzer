@@ -229,62 +229,38 @@ void PulseAnalyzer::GetFrameInfo(const double &duration)
 	double stdevp = 0.0f;
 	double avg = 0.0f;
 	int32_t index = 0;
-	double oneFrameMinDuration = duration/2;
-	double oneFrameMaxDuration = (duration*3)/2;
-// 	PulseList::iterator rChannelIT;
-// 	PulseList::iterator lChannelIT;
-// 	PulseList &lChannel = mPulseList[LCHANNEL];
-// 	PulseList &rChannel = mPulseList[RCHANNEL];
+	PulseList::iterator rChannelIT;
+	PulseList::iterator lChannelIT;
+	PulseList &lChannel = mPulseList[LCHANNEL];
+	PulseList &rChannel = mPulseList[RCHANNEL];
 
-	PulseVector lChannel;
-	PulseVector rChannel;
-	lChannel.assign(mPulseList[LCHANNEL].begin(), mPulseList[LCHANNEL].end());
-	rChannel.assign(mPulseList[RCHANNEL].begin(), mPulseList[RCHANNEL].end());
-
-	PulseVector::iterator lChannelIT = lChannel.begin();
-	PulseVector::iterator rChannelIT = rChannel.begin();
+	lChannelIT = lChannel.begin();
+	rChannelIT = rChannel.begin();
 
 	inter_log(Info, "Detect Frame Info... ");
 
 	for(; lChannelIT != lChannel.end(); )
 	{
 		curFrameType = GetPulseType(lChannelIT->type, rChannelIT->type);
-		if(curFrameType != INVALID_PULSETYPE)
 		{
 			mStdevpAlgorithm.CalcAvgStdAndFps(mFramePulse, avg, stdevp, fps);
 
 			if(!mFramePulse.empty()){
 				double pre_start = mFramePulse.back().end;
-				FrameDesc frame(curFrameType, pre_start, rChannelIT->start, fps, avg, stdevp, index);
+				FrameDesc frame(curFrameType, pre_start, rChannelIT->start, fps, avg, stdevp, index++);
 				mFramePulse.push_back(frame);
 			}else{
-				double start = min(rChannelIT->start, lChannelIT->start);
-				double end = max(rChannelIT->start, lChannelIT->start);
-				double duration = start - end;
-
-				if((duration > oneFrameMinDuration) 
-					&& (duration < oneFrameMaxDuration)){
-				}else{
-					end = start + duration;
-				}
-
-				if(lChannelIT->duration > rChannelIT->duration){
-					lChannelIT->SetStart(lChannelIT->start + duration);
-				}
-
-				FrameDesc frame(curFrameType, start, end, fps, avg, stdevp, index);
+				FrameDesc frame(curFrameType, 0, rChannelIT->start, fps, avg, stdevp, index++);
 				mFramePulse.push_back(frame);
 			}
 
 			fps = stdevp = 0.0f;
-
-			ReportProgress(lChannelIT->index, rChannel.size());
-
 		}
+
+		ReportProgress(lChannelIT->index, rChannel.size());
 
 		rChannelIT++;
 		lChannelIT++;
-		index ++;
 	}
 }
 
@@ -443,7 +419,6 @@ void PulseAnalyzer::SyncChannelsAndMakeNewList(double pulseWidth)
 					// drop some frames
 				}
 			}
-
 		}
 
 		if (!longPulse.IsInvalid()) {
