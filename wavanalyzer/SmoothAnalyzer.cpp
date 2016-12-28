@@ -108,11 +108,12 @@ void PulseAnalyzer::PulseLowFilter(PulseList &channelPulse)
 
 			if(itPre->type == itPos->type){
 				index --;
-				PulseDesc timeInsert(itPre->channelID, itPre->start, itPre->end, itPre->type, index);
+				PulseDesc timeInsert(itPre->channelID, itPre->start, itPos->end, itPre->type, index);
+				it = itPos;
 				newChannel.pop_back();
 				newChannel.push_back(timeInsert);
 			}else{
-				inter_log(Error, "pre and post type is not equal.");
+				inter_log(Error, "Can not merge two pulse, pre and post type is not equal.");
 			}
 		}else{
 			it->index = index;
@@ -401,19 +402,33 @@ void PulseAnalyzer::SyncChannelsAndMakeNewList(double pulseWidth)
 			break;
 		}
 
-		if(!longPulse.IsInvalid()){
-			if(shortPulse.IsInvalid()){
-				shortPulse = lChannel.back();
-				shortPulse.SetStart(lChannel.back().start+pulseWidth);
-			}
+		if (!longPulse.IsInvalid()) {
 			itLong++;
-		}else{
-			if(!shortPulse.IsInvalid()){				
-				longPulse = rChannel.back();
-				longPulse.SetStart(rChannel.back().start+pulseWidth);
-				itShort++;
+		} else {
+			if (itLong != longChannel.begin()) {
+				itLong--;
+				longPulse = *itLong;
+				itLong++;
 			}
 		}
+
+		rChannel.push_back(longPulse);
+
+		if (!shortPulse.IsInvalid()) {
+			PulseDesc pos(shortPulse.channelID, shortPulse.start, shortPulse.end, shortPulse.type, longPulse.index);
+			lChannel.push_back(pos);
+			itShort++;
+		} else {
+			if (itShort != shortChannel.begin()) {
+				itShort--;
+				shortPulse = *itShort;
+				itShort++;
+				shortPulse.start += pulseWidth;
+			}
+			PulseDesc pos(shortPulse.channelID, shortPulse.start, shortPulse.end, shortPulse.type, longPulse.index);
+			lChannel.push_back(pos);
+		}
+
 
 		lChannel.push_back(shortPulse);
 		rChannel.push_back(longPulse);
