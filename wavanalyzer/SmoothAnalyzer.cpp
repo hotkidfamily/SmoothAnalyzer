@@ -321,12 +321,12 @@ void PulseAnalyzer::WriteRawSyncDetail()
 			// find most suitable pulse
 			sync = 0;
 
-			syncRet ret = ifSync(itShort,shortChannel.end(), itLong, longChannel.end());
+			syncRet ret = ifStartSync(itShort,shortChannel.end(), itLong, longChannel.end());
 			if(ret == ALLSYNC){
 				shortPulse = *itShort;
 				longPulse = *itLong;
 				sync = shortPulse.start - longPulse.start;
-			}else if( ret == LEFTAHEAD){
+			}else if(ret == LEFTAHEAD){
 				shortPulse = *itShort;
 			}else {
 				longPulse = *itLong;
@@ -334,7 +334,7 @@ void PulseAnalyzer::WriteRawSyncDetail()
 		}else{
 			break;
 		}
-		
+
 		if(!longPulse.Empty() && !shortPulse.Empty()){
 			file.WriteCsvLine("%.3f, "
 				"%c, %u, %.3f, %.3f, %.3f, %d, %d, "
@@ -478,6 +478,11 @@ void PulseAnalyzer::WriteSmoothDetail()
 	}
 }
 
+inline bool PulseAnalyzer::IsPosSync(const double &diff)
+{
+	return (fabs(diff) < SYNC_THRESHOLD);
+}
+
 /*
  * if left and right element sync
  *
@@ -486,7 +491,7 @@ void PulseAnalyzer::WriteSmoothDetail()
  *				Negative - left ahead
  *				Positive - right
  */
-syncRet PulseAnalyzer::ifSync(PulseList::iterator &left, PulseList::iterator &leftEnd, 
+syncRet PulseAnalyzer::ifStartSync(PulseList::iterator &left, PulseList::iterator &leftEnd, 
 							  PulseList::iterator &right, PulseList::iterator &rightEnd)
 {
 	PulseList::iterator leftNext, rightNext;
@@ -508,7 +513,7 @@ syncRet PulseAnalyzer::ifSync(PulseList::iterator &left, PulseList::iterator &le
 	if(leftNext != leftEnd)
 		secondSLdiff = leftNext->start - right->start;
 
-	if(fabs(firstDiff) < SYNC_THRESHOLD){
+	if(IsPosSync(firstDiff)){
 		if(fabs(secondDiff) > fabs(firstDiff)){
 			if(fabs(secondSLdiff) > fabs(firstDiff)){
 				shortPulse = *left;
@@ -554,9 +559,10 @@ fixRet PulseAnalyzer::ifFix(PulseList::iterator &left, PulseList::iterator &righ
 
 	start = min(left->start, right->start);
 
-	if(right->end > left->end){
+	if(IsPosSync(left->end - right->end)){
+		end = min(left->end, right->end);
+	}else if(right->end > left->end){
 		end = left->end;
-		//right->SetStart(left->end);
 		PulseDesc newR = *right;
 		newR.SetStart(right->start + frameDuration);
 		if(newR.duration < VALID_PULSE_DURATION){
@@ -567,11 +573,10 @@ fixRet PulseAnalyzer::ifFix(PulseList::iterator &left, PulseList::iterator &righ
 		}
 	}else{
 		end = right->end;
-//		left->SetStart(right->end);
 		PulseDesc newR = *left;
 		newR.SetStart(left->start + frameDuration);
 		if(newR.duration < VALID_PULSE_DURATION){
-			//Logger(Debug, "Left (%.3f, %.3f, %.3f), duration < valid_pulse_duration skip.", left->start, left->end, left->duration);
+			Logger(Debug, "Left (%.3f, %.3f, %.3f), duration < valid_pulse_duration skip.", left->start, left->end, left->duration);
 		}else{
 			*left = newR;
 			ret = RIGHTGO;
@@ -615,7 +620,7 @@ void PulseAnalyzer::CreateFrameInfo(double frameDuration)
 		if((itShort != shortChannel.end()) && (itLong != longChannel.end())){
 			curFrameType = GetPulseType(itShort->type, itLong->type);
 			// find most suitable pulse
-			syncRet sRet = ifSync(itShort,shortChannel.end(), itLong, longChannel.end());
+			syncRet sRet = ifStartSync(itShort,shortChannel.end(), itLong, longChannel.end());
 			if(sRet == ALLSYNC){
 				fixRet fRet = ifFix(itShort, itLong, OutPulse, frameDuration);
 				if(fRet == ALLGO){

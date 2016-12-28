@@ -59,7 +59,8 @@ protected:
 	void WriteSyncDetail();
 	void WriteRawSyncDetail();
 
-	syncRet ifSync(PulseList::iterator &, PulseList::iterator &, PulseList::iterator &, PulseList::iterator &);
+	inline bool IsPosSync(const double &diff);
+	syncRet ifStartSync(PulseList::iterator &, PulseList::iterator &, PulseList::iterator &, PulseList::iterator &);
 	fixRet ifFix(PulseList::iterator &, PulseList::iterator &, Pulse &, const double &);
 
 	void WriteRawPulseDetail();
