@@ -331,6 +331,72 @@ void PulseAnalyzer::WriteRawPulseDetail()
 	}
 }
 
+/*
+ * if left and right element sync
+ *
+ * return value:
+ *				Zero - sync
+ *				Negative - left ahead
+ *				Positive - right
+ */
+syncRet PulseAnalyzer::ifSync(PulseList::iterator &left, PulseList::iterator &leftEnd, 
+							  PulseList::iterator &right, PulseList::iterator &rightEnd)
+{
+	PulseList::iterator leftNext, rightNext;
+	PulseDesc shortPulse, longPulse;
+	syncRet ret = ALLSYNC;
+
+	double firstDiff = 0.0f;
+	double secondDiff = 0.0f;
+	double secondSLdiff = 0.0f;
+
+	rightNext = right;
+	rightNext++;
+
+	firstDiff = (left->start - right->start);
+	if(rightNext != rightEnd)
+		secondDiff = (left->start - rightNext->start);
+	leftNext = left;
+	leftNext++;
+	if(leftNext != leftEnd)
+		secondSLdiff = leftNext->start - right->start;
+
+	if(fabs(firstDiff) < SYNC_THRESHOLD){
+		if(fabs(secondDiff) > fabs(firstDiff)){
+			if(fabs(secondSLdiff) > fabs(firstDiff)){
+				shortPulse = *left;
+				longPulse = *right;
+			}else{
+				shortPulse = *left;
+				if(leftNext == leftEnd){
+					longPulse = *right;
+				}
+			}
+		}else{
+			longPulse = *right;
+			if(rightNext == rightEnd){
+				shortPulse = *left;
+			}
+		}
+	}else{
+		if(firstDiff < 0){
+			shortPulse = *left;
+		}else{
+			longPulse = *right;
+		}
+	}
+
+	if(!shortPulse.IsInvalid() && !longPulse.IsInvalid()){
+		ret = ALLSYNC;
+	}else if (!longPulse.IsInvalid()){
+		ret = RIGHTAHEAD;
+	}else {
+		ret = LEFTAHEAD;
+	}
+
+	return ret;
+}
+
 /* compare short list to long list and write value */
 void PulseAnalyzer::SyncChannelsAndMakeNewList(double pulseWidth)
 {
@@ -338,9 +404,7 @@ void PulseAnalyzer::SyncChannelsAndMakeNewList(double pulseWidth)
 	PulseVector rChannel; // new right channel list
 
 	PulseList::iterator itShort;
-	PulseList::iterator itShortNext;
 	PulseList::iterator itLong;
-	PulseList::iterator itLongNext;
 	int32_t index = 0;
 
 	PulseList &shortChannel = mPulseList[LCHANNEL];
@@ -353,53 +417,33 @@ void PulseAnalyzer::SyncChannelsAndMakeNewList(double pulseWidth)
 
 	while(1){
 		PulseDesc shortPulse, longPulse;
-		double firstDiff = 0.0f;
-		double secondDiff = 0.0f;
-		double secondSLdiff = 0.0f;
 		double sync = 0.0f;
 
 		if((itShort != shortChannel.end()) && (itLong != longChannel.end())){
 			// find most suitable pulse
-			itLongNext = itLong;
-			itLongNext++;
-
-			firstDiff = (itShort->start - itLong->start);
-			if(itLongNext != longChannel.end())
-				secondDiff = (itShort->start - itLongNext->start);
-			itShortNext = itShort;
-			itShortNext++;
-			if(itShortNext != shortChannel.end())
-				secondSLdiff = (itShortNext->start - itLong->start);
-
-			if(fabs(firstDiff) < SYNC_THRESHOLD){
-				if(fabs(secondDiff) > fabs(firstDiff)){
-					if(fabs(secondSLdiff) > fabs(firstDiff)){
-						shortPulse = *itShort;
-						longPulse = *itLong;
-						sync = longPulse.start - shortPulse.start;
-					}else{
-						shortPulse = *itShort;
-						if(itShortNext == shortChannel.end()){
-							longPulse = *itLong;
-							sync = longPulse.start - shortPulse.start;
-						}
-					}
-				}else{
-					longPulse = *itLong;
-					if(itLongNext == longChannel.end()){
-						shortPulse = *itShort;
-						sync = longPulse.start - shortPulse.start;
-					}
-				}
-			}else{
-				if(firstDiff < 0){
-					shortPulse = *itShort;
-				}else{
-					longPulse = *itLong;
-				}
+			syncRet ret = ifSync(itShort,shortChannel.end(), itLong, longChannel.end());
+			if(ret == ALLSYNC){
+				shortPulse = *itShort;
+				longPulse = *itLong;
+				sync = shortPulse.start - longPulse.start;
+			}else if( ret == LEFTAHEAD){
+				shortPulse = *itShort;
+			}else {
+				longPulse = *itLong;
 			}
 		}else{ // drop all rest samples.
 			break;
+		}
+
+		if(!longPulse.IsInvalid() && !shortPulse.IsInvalid()){
+			if(!IsInvalidFrameDuration(longPulse.duration, pulseWidth)){ // if only one frame
+				if(IsInvalidFrameDuration(shortPulse.duration, pulseWidth)){
+					// most should be this saturation
+				}else{
+					// drop some frames
+				}
+			}
+
 		}
 
 		if (!longPulse.IsInvalid()) {
@@ -566,13 +610,9 @@ void PulseAnalyzer::WriteSyncDetail()
 void PulseAnalyzer::WriteRawSyncDetail()
 {
 	double sync = 0;
-	double firstDiff = 0.0f;
-	double secondDiff = 0.0f;
-	double secondSLdiff = 0.0f;
 	PulseList::iterator itShort;
-	PulseList::iterator itShortNext;
 	PulseList::iterator itLong;
-	PulseList::iterator itLongNext;
+
 	std::string filePath = mWorkParams.mSourceFileName + ".raw.sync.detail.csv";
 	CSVFile file(filePath);
 
@@ -588,51 +628,20 @@ void PulseAnalyzer::WriteRawSyncDetail()
 
 	while(1){
 		PulseDesc shortPulse, longPulse;
-		secondDiff = 0.0f;
-		firstDiff = 0.0f;
-		secondSLdiff = 0.0f;
 
 		if((itShort != shortChannel.end()) && (itLong != longChannel.end())){
 			// find most suitable pulse
 			sync = 0;
 
-			itLongNext = itLong;
-			itLongNext++;
-
-			firstDiff = itShort->start - itLong->start;
-			if(itLongNext != longChannel.end())
-				secondDiff = itShort->start - itLongNext->start;
-			itShortNext = itShort;
-			itShortNext++;
-			if(itShortNext != shortChannel.end())
-				secondSLdiff = itShortNext->start - itLong->start;
-
-			if(fabs(firstDiff) < SYNC_THRESHOLD){
-				if(fabs(secondDiff) > fabs(firstDiff)){
-					if(fabs(secondSLdiff) > fabs(firstDiff)){
-						shortPulse = *itShort;
-						longPulse = *itLong;
-						sync = firstDiff;
-					}else{
-						shortPulse = *itShort;
-						if(itShortNext == shortChannel.end()){
-							longPulse = *itLong;
-							sync = firstDiff;
-						}
-					}
-				}else{
-					longPulse = *itLong;
-					if(itLongNext == longChannel.end()){
-						shortPulse = *itShort;
-						sync = firstDiff;
-					}
-				}
-			}else{
-				if(firstDiff < 0){
-					shortPulse = *itShort;
-				}else{
-					longPulse = *itLong;
-				}
+			syncRet ret = ifSync(itShort,shortChannel.end(), itLong, longChannel.end());
+			if(ret == ALLSYNC){
+				shortPulse = *itShort;
+				longPulse = *itLong;
+				sync = shortPulse.start - longPulse.start;
+			}else if( ret == LEFTAHEAD){
+				shortPulse = *itShort;
+			}else {
+				longPulse = *itLong;
 			}
 		}else{
 			break;

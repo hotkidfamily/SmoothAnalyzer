@@ -17,6 +17,12 @@ enum FrameHistograms{
 	FH_COUNT
 };
 
+enum syncRet{
+	ALLSYNC,
+	LEFTAHEAD,
+	RIGHTAHEAD,
+};
+
 typedef struct tagAnalyzerParams{
 	tagAnalyzerParams(){
 		ZeroMemory(this, sizeof(struct tagAnalyzerParams));
@@ -46,6 +52,8 @@ protected:
 	void SyncChannelsAndMakeNewList(double);
 	void WriteSyncDetail();
 	void WriteRawSyncDetail();
+
+	syncRet ifSync(PulseList::iterator &, PulseList::iterator &, PulseList::iterator &, PulseList::iterator &);
 
 	void WriteRawPulseDetail();
 
