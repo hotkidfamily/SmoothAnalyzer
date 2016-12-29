@@ -112,7 +112,7 @@ static int GetAbsolutlyPath(const TCHAR* path, STRING &rPath)
 	DWORD retVal = 0;
 	STRING cupath = path;
 	TCHAR buffer[MAX_PATH] = {'\0'};
-	LPWSTR retPath = {NULL};
+	TCHAR *retPath = {NULL};
 	retVal = GetFullPathName(path, MAX_PATH, buffer, &retPath);
 	if (retVal == 0) {
 		Logger(Error ,"Invalid file path %d, code %d\n", path, GetLastError());
