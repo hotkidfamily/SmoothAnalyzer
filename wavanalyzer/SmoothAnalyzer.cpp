@@ -618,6 +618,107 @@ inline bool PulseAnalyzer::IsOneFrame(const double &targetDuration, const double
 	return (targetDuration < (frameDuration + VALID_PULSE_DURATION)) && (targetDuration > VALID_PULSE_DURATION);
 }
 
+inline bool IsBiggerThanOnePulse(double duration)
+{
+	return (duration > VALID_PULSE_DURATION);
+}
+
+inline bool IsBigger(double left, double right){
+	return (left>right);
+}
+
+//-----------------------------------------
+//   I      II      III     IV       V
+// -       - -      -	    _ -     - _
+// | -     | |      |       | |     | |
+// | |     | -      | -     | |     | |
+// | -     |        | |     | |     | |
+// -       -        - -     _ -     - _
+//-----------------------------------------
+inline bool IfleftContainRight(PulseDesc *left, PulseDesc *right)// I II III
+{
+	return (IsBigger(left->duration, right->duration) &&  IsBigger(right->start, left->start));
+}
+
+inline bool ifLeftAheadRight(PulseDesc* left, PulseDesc *right)
+{
+	if(IsBiggerThanOnePulse(fabs(left->start-right->start))){
+		if(left->start > right->start){
+
+		}else{
+
+		}
+	}
+
+
+}
+
+int32_t PulseAnalyzer::ifNeedSplitPulse(PulseDesc *left, PulseDesc *right)
+{
+	int32_t ret = 0;
+	double startDiff = fabs(left->start - right->start);
+	double endDiff = fabs(left->end - right->end);
+	bool bStartInOneFrame = !IsBiggerThanOnePulse(startDiff);
+	bool bEndInOneFrame = !IsBiggerThanOnePulse(endDiff);
+
+	if((left->end > right->start)  || (right->start > left->end)){
+
+	}
+
+	if(IsBigger(left->end, right->start)){
+		ret = LEFTGO;
+		goto cleanup;
+	}
+
+	if(IsBigger(right->end, left->start)){
+		ret = RIGHTGO;
+		goto cleanup;
+	}
+
+	if(IfleftContainRight(left, right)){
+		if(bStartInOneFrame && bEndInOneFrame){
+			ret = ALLGO;
+		}else if(bEndInOneFrame){
+
+		}else{
+
+		}
+	}
+
+	if(IfleftContainRight(right, left)){
+		if(bStartInOneFrame){
+			ret = RIGHTGO;
+		}
+	}
+
+	if(IsBigger(left->start, right->start)){
+		if(bStartInOneFrame){
+			// start sync 
+			if(IsBigger(left->end, right->end)){
+				if(bEndInOneFrame){
+					//end sync
+				}else{
+				}
+			}
+		}else{
+			if(IsBigger(left->end, right->end)){
+				if(bEndInOneFrame){
+					//end sync
+				}else{
+
+				}
+			}
+		}
+	}
+
+	if(IsBigger(right->start, left->start)){
+
+	}
+
+cleanup:
+	return ret;
+}
+
 /* compare short list to long list and write value */
 void PulseAnalyzer::CreateFrameInfo(double frameDuration)
 {

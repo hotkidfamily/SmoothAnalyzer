@@ -63,6 +63,7 @@ protected:
 	inline bool IsPosSync(const double &diff);
 	syncRet ifStartSync(PulseList::iterator &, PulseList::iterator &, PulseList::iterator &, PulseList::iterator &);
 	fixRet ifFix(PulseList::iterator &, PulseList::iterator &, Pulse &, const double &);
+	int32_t ifNeedSplitPulse(PulseDesc *, PulseDesc *);
 
 	void WriteRawPulseDetail();
 
