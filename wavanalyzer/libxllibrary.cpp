@@ -34,11 +34,30 @@ bool xlsOperator::CreateBook()
 		mBook->setKey(name.c_str(), key.c_str());
 
 		mBook->setDefaultFont(fontName.c_str(), 10);
+
 		bRet = true;
 	}
 
 cleanup:
 	return bRet;
+}
+
+Format *xlsOperator::CreateFormat()
+{
+	Format *xlsfmt = NULL;
+
+	if(mBook){
+		xlsfmt = mBook->addFormat();
+
+		if(xlsfmt){
+			xlsfmt->setNumFormat(NUMFORMAT_NUMBER_D2);
+			xlsfmt->setAlignH(ALIGNH_CENTER);
+			xlsfmt->setAlignV(ALIGNV_CENTER);
+			xlsfmt->setPatternBackgroundColor(COLOR_GRAY25);
+		}
+	}
+
+	return xlsfmt;
 }
 
 Sheet* xlsOperator::CreateSheet(STRING sheetName)
