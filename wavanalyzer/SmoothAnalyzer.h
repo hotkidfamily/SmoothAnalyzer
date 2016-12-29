@@ -30,6 +30,14 @@ enum fixRet{
 	RIGHTGO,
 };
 
+enum splitType{
+	splitNone,
+	splitRight,
+	splitLeft,
+	splitSkipRight,
+	splitSkipLeft,
+};
+
 typedef struct tagAnalyzerParams{
 	tagAnalyzerParams(){
 		ZeroMemory(this, sizeof(struct tagAnalyzerParams));
@@ -63,7 +71,7 @@ protected:
 	inline bool IsPosSync(const double &diff);
 	syncRet ifStartSync(PulseList::iterator &, PulseList::iterator &, PulseList::iterator &, PulseList::iterator &);
 	fixRet ifFix(PulseList::iterator &, PulseList::iterator &, Pulse &, const double &);
-	int32_t ifNeedSplitPulse(PulseDesc *, PulseDesc *);
+	splitType ifNeedSplitPulse(PulseDesc *, PulseDesc *);
 
 	void WriteRawPulseDetail();
 

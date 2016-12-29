@@ -627,14 +627,14 @@ inline bool IsBigger(double left, double right){
 	return (left>right);
 }
 
-//-----------------------------------------
-//   I      II      III     IV       V
-// -       - -      -	    _ -     - _
-// | -     | |      |       | |     | |
+//----------------------------------------------------------------------
+//   I      II      III     IV       V   
+// -       - -      -	    _ -     - _ 
+// | -     | |      |       | |     | |   
 // | |     | -      | -     | |     | |
 // | -     |        | |     | |     | |
 // -       -        - -     _ -     - _
-//-----------------------------------------
+//----------------------------------------------------------------------
 inline bool IfleftContainRight(PulseDesc *left, PulseDesc *right)// I II III
 {
 	return (IsBigger(left->duration, right->duration) &&  IsBigger(right->start, left->start));
@@ -642,80 +642,25 @@ inline bool IfleftContainRight(PulseDesc *left, PulseDesc *right)// I II III
 
 inline bool ifLeftAheadRight(PulseDesc* left, PulseDesc *right)
 {
-	if(IsBiggerThanOnePulse(fabs(left->start-right->start))){
-		if(left->start > right->start){
-
-		}else{
-
-		}
-	}
-
-
+	return IsBigger(right->start, left->end);
 }
 
-int32_t PulseAnalyzer::ifNeedSplitPulse(PulseDesc *left, PulseDesc *right)
+splitType PulseAnalyzer::ifNeedSplitPulse(PulseDesc *left, PulseDesc *right)
 {
-	int32_t ret = 0;
-	double startDiff = fabs(left->start - right->start);
-	double endDiff = fabs(left->end - right->end);
-	bool bStartInOneFrame = !IsBiggerThanOnePulse(startDiff);
-	bool bEndInOneFrame = !IsBiggerThanOnePulse(endDiff);
+	splitType ret = splitNone;
 
-	if((left->end > right->start)  || (right->start > left->end)){
-
+	if(ifLeftAheadRight(left,right)){  // IV, V
+		ret = splitSkipLeft;
+	}else if(ifLeftAheadRight(right, left)){
+		ret = splitSkipRight;
+	}else if(IfleftContainRight(left, right)){ // I II III
+		ret = splitLeft;
+	}else if(IfleftContainRight(right, left)){
+		ret = splitRight;
 	}
 
-	if(IsBigger(left->end, right->start)){
-		ret = LEFTGO;
-		goto cleanup;
-	}
+	Logger(Debug, "%.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %d\n", left->start, left->end, left->duration, right->start, right->end, right->duration, ret);
 
-	if(IsBigger(right->end, left->start)){
-		ret = RIGHTGO;
-		goto cleanup;
-	}
-
-	if(IfleftContainRight(left, right)){
-		if(bStartInOneFrame && bEndInOneFrame){
-			ret = ALLGO;
-		}else if(bEndInOneFrame){
-
-		}else{
-
-		}
-	}
-
-	if(IfleftContainRight(right, left)){
-		if(bStartInOneFrame){
-			ret = RIGHTGO;
-		}
-	}
-
-	if(IsBigger(left->start, right->start)){
-		if(bStartInOneFrame){
-			// start sync 
-			if(IsBigger(left->end, right->end)){
-				if(bEndInOneFrame){
-					//end sync
-				}else{
-				}
-			}
-		}else{
-			if(IsBigger(left->end, right->end)){
-				if(bEndInOneFrame){
-					//end sync
-				}else{
-
-				}
-			}
-		}
-	}
-
-	if(IsBigger(right->start, left->start)){
-
-	}
-
-cleanup:
 	return ret;
 }
 
@@ -738,32 +683,18 @@ void PulseAnalyzer::CreateFrameInfo(double frameDuration)
 
 		curFrameType = INVALID_FRAMETYPE;
 
-		if((itShort != shortChannel.end()) && (itLong != longChannel.end())){
-			curFrameType = GetPulseType(itShort->type, itLong->type);
-			// find most suitable pulse
-			syncRet sRet = ifStartSync(itShort,shortChannel.end(), itLong, longChannel.end());
-			if(sRet == ALLSYNC){
-				fixRet fRet = ifFix(itShort, itLong, OutPulse, frameDuration);
-				if(fRet == ALLGO){
-					itLong++;
-					itShort++;
-				}else if(fRet == LEFTGO){
-					itShort++;
-				}else{
-					itLong++;
-				}
-			}else if( sRet == LEFTAHEAD){ // must not happend
-				OutPulse = *itShort;
-				Logger(Info, "Left ahead, L %.3f, %.3f, %.3f, == %.3f, %.3f, %.3f", itShort->start, itShort->end, itShort->duration, OutPulse.start, OutPulse.end, OutPulse.duration);
-
-				itShort++;
-			}else { // must not happend
-				OutPulse = *itLong;
-				Logger(Info, "Right ahead, R %.3f, %.3f, %.3f, == %.3f, %.3f, %.3f", itLong->start, itLong->end, itLong->duration, OutPulse.start, OutPulse.end, OutPulse.duration);
-				itLong++;
-			}
-		}else{ // drop all rest samples.
-			break;
+		splitType ret = ifNeedSplitPulse(&(*itShort), &(*itLong));
+		switch(ret){
+			case splitLeft:
+				break;
+			case  splitRight:
+				break;
+			case splitSkipLeft:
+				break;
+			case splitSkipRight:
+				break;
+			default:
+				break;
 		}
 
 		ReportProgress(index, longChannel.size());
