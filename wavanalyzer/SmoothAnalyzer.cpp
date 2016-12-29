@@ -15,9 +15,14 @@ const struct tagPulseType{
 #define PULSETABLECOUNT (ARRAYSIZE(pulseTable))
 #define INVALID_FRAMETYPE (-1)
 
-#define RAW_PULSE_SHEET_NAME (TEXT("RAW"))
+#define RAW_PULSE_SHEET_NAME (TEXT("raw-pulse"))
+#define SYNC_SHEET_NAME (TEXT("sync"))
+#define RAW_SYNC_SHEET_NAME (TEXT("raw-sync"))
+#define RESULT_SHEET_NAME (TEXT("Result"))
+#define FRAME_SHEET_NAME (TEXT("Frame-detail"))
 
 PulseAnalyzer::PulseAnalyzer(std::string &filename)
+:xlsMachine(new xlsOperator)
 {
 	SYSTEMTIME systime;
 	char buffer[256] = {'\0'};
@@ -27,11 +32,14 @@ PulseAnalyzer::PulseAnalyzer(std::string &filename)
 	mWorkParams.mSourceFileName = filename + buffer;
 
 	ZeroMemory(mFrameHistograms, sizeof(mFrameHistograms));
-
+	if(!xlsMachine->CreateBook()){
+		return ;
+	}
 }
 
 PulseAnalyzer::~PulseAnalyzer(void)
 {
+	xlsMachine->SaveAndCloseBook(mWorkParams.mSourceFileName + ".smooth.analyzer.xls");
 }
 
 void PulseAnalyzer::SetWorkingParam(ANALYZER_PARAMS &params)
@@ -218,17 +226,6 @@ BOOL PulseAnalyzer::GetPulseWidth(double &duration)
 	return bRet;
 }
 
-const TCHAR* rawPulseHeaderTable[] = {
-	TEXT("channel"),
-	TEXT("index"),
-	TEXT("start"),
-	TEXT("end"),
-	TEXT("duration"),
-	TEXT("type")
-};
-
-#define SZ_RAW_PULSE_HEADER (ARRAYSIZE(rawPulseHeaderTable))
-
 void PulseAnalyzer::WriteRawPulseDetail()
 {
 	PulseList::iterator lit;
@@ -236,25 +233,13 @@ void PulseAnalyzer::WriteRawPulseDetail()
 	std::string filePath = mWorkParams.mSourceFileName + ".raw.pulse.xls";
 	int32_t rowIndex = 0;
 	int32_t colIndex = 0;
-	//CSVFile file(filePath);
 
 	Logger(Info, "Write Raw Data... ");
-	Book *book = NULL;
-	xlsOperator *xlsMachine = new xlsOperator;
-	if(!xlsMachine->CreateBook()){
-		return ;
-	}
 
-	Sheet* sheet = xlsMachine->CreateSheet(RAW_PULSE_SHEET_NAME);
+	Sheet* rawPulseSheet = xlsMachine->CreateSheet(RAW_PULSE_SHEET_NAME);
 
 	// write header 
-	colIndex = 0;
-	for(; colIndex<SZ_RAW_PULSE_HEADER; colIndex++){
-		sheet->writeStr(rowIndex, colIndex, rawPulseHeaderTable[colIndex]);
-		sheet->writeStr(rowIndex, colIndex+SZ_RAW_PULSE_HEADER, rawPulseHeaderTable[colIndex]);
-
-	}
-	rowIndex++;
+	xlsMachine->WriteLineWithString(rawPulseSheet, rowIndex++, colIndex, TEXT(" channel, index, start, end, duration, type, channel, index, start, end, duration, type, "));
 
 	lit = mPulseList[LCHANNEL].begin();
 	rit = mPulseList[RCHANNEL].begin();
@@ -262,52 +247,50 @@ void PulseAnalyzer::WriteRawPulseDetail()
 	while((lit != mPulseList[LCHANNEL].end()) && (rit!=mPulseList[RCHANNEL].end()))
 	{
 		colIndex = 0;
-		xlsMachine->WritePulseAtRowCol(sheet, rowIndex, colIndex, &(*lit), &(*rit));
+		xlsMachine->WriteMultiplePulseAtRowCol(rawPulseSheet, rowIndex++, colIndex, &(*lit), &(*rit));
 
 		lit++;
 		rit++;
-		rowIndex++;
 	}
 
 	while(lit!= mPulseList[LCHANNEL].end()){
 		colIndex = 5;
-		xlsMachine->WritePulseAtRowCol(sheet, rowIndex, colIndex, &(*lit), NULL);
+		xlsMachine->WriteMultiplePulseAtRowCol(rawPulseSheet, rowIndex++, colIndex, &(*lit), NULL);
 		lit++;
-		rowIndex++;
 	}
 
 	while(rit != mPulseList[RCHANNEL].end()){
 		colIndex = 0;
-		xlsMachine->WritePulseAtRowCol(sheet, rowIndex, colIndex, NULL, &(*rit));
+		xlsMachine->WriteMultiplePulseAtRowCol(rawPulseSheet, rowIndex++, colIndex, NULL, &(*rit));
 
 		rit++;
-		rowIndex++;
 	}
-	xlsMachine->SaveAndCloseBook(filePath);
 }
 
 void PulseAnalyzer::WriteSyncDetail()
 {
 	int32_t sync = 0;
+	int32_t row = 0; 
+	int32_t col = 0;
 	PulseList::iterator lit = mPulseList[LCHANNEL].begin();
 	PulseList::iterator rit = mPulseList[RCHANNEL].begin();
 
-	std::string filePath = mWorkParams.mSourceFileName + ".sync.detail.csv";
-	CSVFile file(filePath);
+	std::string filePath = mWorkParams.mSourceFileName + ".sync.detail.xls";
 
 	Logger(Info, "Write Sync Data... ");
 
-	file.WriteCsvLine("Left Right Sync Detail.,");
-
-	file.WriteCsvLine("sync,"
+	Sheet* syncSheet = xlsMachine->CreateSheet(SYNC_SHEET_NAME);
+	
+	xlsMachine->WriteLineWithString(syncSheet, row++, col, "sync,"
 		"channel, index, start, end, duration, type, interval, "
 		"channel, index, start, end, duration, type, interval, ");
 
 	while((lit != mPulseList[LCHANNEL].end()) && (rit != mPulseList[RCHANNEL].end()))
 	{
+		col = 0;
 		sync = (int32_t)(lit->start - rit->start);
 
-		file.WriteCsvLine("%d, "
+		xlsMachine->WriteLine(syncSheet, row++, col, "%d, "
 			"%c, %u, %.3f, %.3f, %.3f, %d, %d, "
 			"%c, %u, %.3f, %.3f, %.3f, %d, %d, ",
 			sync,
@@ -327,9 +310,10 @@ void PulseAnalyzer::WriteRawSyncDetail()
 	double sync = 0;
 	PulseList::iterator itShort;
 	PulseList::iterator itLong;
+	int32_t row = 0;
+	int32_t col = 0;
 
-	std::string filePath = mWorkParams.mSourceFileName + ".raw.sync.detail.csv";
-	CSVFile file(filePath);
+	Sheet* rawSyncSheet = xlsMachine->CreateSheet(RAW_SYNC_SHEET_NAME);
 
 	PulseList &shortChannel = mPulseList[LCHANNEL];
 	PulseList &longChannel = mPulseList[RCHANNEL];
@@ -337,7 +321,7 @@ void PulseAnalyzer::WriteRawSyncDetail()
 	itShort = shortChannel.begin();
 	itLong = longChannel.begin();
 
-	file.WriteCsvLine("sync, "
+	xlsMachine->WriteLineWithString(rawSyncSheet, row++, col, "sync, "
 		"channel, index, start, end, duration, type, interval, "
 		"channel, index, start, end, duration, type, interval, ");
 
@@ -363,24 +347,26 @@ void PulseAnalyzer::WriteRawSyncDetail()
 		}
 
 		if(!longPulse.Empty() && !shortPulse.Empty()){
-			file.WriteCsvLine("%.3f, "
-				"%c, %u, %.3f, %.3f, %.3f, %d, %d, "
-				"%c, %u, %.3f, %.3f, %.3f, %d, %d, ",
+			col = 0;
+			xlsMachine->WriteLine(rawSyncSheet, row++, col, 
+				_T("%.3f, ")
+				_T("%c, %u, %.3f, %.3f, %.3f, %d, %d, ")
+				_T("%c, %u, %.3f, %.3f, %.3f, %d, %d, "),
 				sync,
 				shortPulse.channelName, shortPulse.index, shortPulse.start, shortPulse.end, shortPulse.duration, shortPulse.type, 0, 
 				longPulse.channelName, longPulse.index, longPulse.start, longPulse.end, longPulse.duration, longPulse.type, 0);
+
 			itShort++;
 			itLong++;
 		}else if (!longPulse.Empty()){
-			file.WriteCsvLine(", "
-				" ,  ,  ,  ,  , , , "
-				"%c, %u, %.3f, %.3f, %.3f, %d, %d,",
+			col = 8;
+			xlsMachine->WriteLine(rawSyncSheet, row++, col, _T("%c, %u, %.3f, %.3f, %.3f, %d, %d,"), 
 				longPulse.channelName, longPulse.index, longPulse.start, longPulse.end, longPulse.duration, longPulse.type, 0);
+
 			itLong++;
 		}else if(!shortPulse.Empty()){
-			file.WriteCsvLine(", "
-				"%c, %u, %.3f, %.3f, %.3f, %d, %d,"
-				", , , , , , , ",
+			col = 1;
+			xlsMachine->WriteLine(rawSyncSheet, row++, col, _T("%c, %u, %.3f, %.3f, %.3f, %d, %d,"), 
 				shortPulse.channelName, shortPulse.index, shortPulse.start, shortPulse.end, shortPulse.duration, shortPulse.type, 0);
 			itShort++;
 		}
@@ -459,49 +445,55 @@ void PulseAnalyzer::AnalyzerSmoooth(const double &pulseWidth)
 void PulseAnalyzer::WriteSmoothDetail()
 {
 	std::size_t i=0;
-	std::string filePath = mWorkParams.mSourceFileName + ".smooth.csv";
+	int32_t row = 0;
+	int32_t col = 0;
 
 	Logger(Info, "Write Smooth Data... ");
 
 	if(!mFramePulse.empty()){
-		CSVFile file(filePath);
+		{
+			Sheet* resultSheet = xlsMachine->CreateSheet(RESULT_SHEET_NAME);
 
-		double avg = mStdevpAlgorithm.CalcAvgValue(mFramePulse);
-		double stdevp = mStdevpAlgorithm.CalcSTDEVP(mFramePulse, avg);
-		double fps = mStdevpAlgorithm.CalcFps(mFramePulse);
-		double detectfps = (mFrameHistograms[FH_TOTAL] - mFrameHistograms[FH_BAD])*1000.0 / (mFramePulse.back().end - mFramePulse.front().start);
-		file.WriteCsvLine("STDEVP, Avg, Frames, Duration, ");
-		file.WriteCsvLine("%.3f, %.3f, %d, %.3f, ", 
-			stdevp, avg, mFramePulse.size(), mFramePulse.back().end - mFramePulse.front().start);
-		file.WriteCsvLine("StaticFps, DetectFps, RealFps, ");
-		file.WriteCsvLine("%.3f, %.3f, %.3f, ",fps, detectfps, mWorkParams.sampleFrameRate);
+			double avg = mStdevpAlgorithm.CalcAvgValue(mFramePulse);
+			double stdevp = mStdevpAlgorithm.CalcSTDEVP(mFramePulse, avg);
+			double fps = mStdevpAlgorithm.CalcFps(mFramePulse);
+			double detectfps = (mFrameHistograms[FH_TOTAL] - mFrameHistograms[FH_BAD])*1000.0 / (mFramePulse.back().end - mFramePulse.front().start);
+			xlsMachine->WriteLineWithString(resultSheet, row++, col, _T("STDEVP, Avg, Frames, Duration, "));
+			xlsMachine->WriteLine(resultSheet, row++, col, _T("%.3f, %.3f, %d, %.3f, "),
+				stdevp, avg, mFramePulse.size(), mFramePulse.back().end - mFramePulse.front().start);
 
-		file.WriteCsvLine(",");
+			xlsMachine->WriteLineWithString(resultSheet, row++, col, _T("  , "));
 
-		file.WriteCsvLine("Total, Normal, Percent, 1Pulse, 2Pulse, 3Pulse, Bad, Drops,");
-		file.WriteCsvLine("%u, %u,"
-			"%.3f, "
-			" %u, %u, %u, %u, %u,", 
-			mFrameHistograms[FH_TOTAL], mFrameHistograms[FH_NORMAL], 
-			100.0 * mFrameHistograms[FH_NORMAL]/mFrameHistograms[FH_TOTAL],
-			mFrameHistograms[1], mFrameHistograms[2], mFrameHistograms[3], 
-			mFrameHistograms[FH_BAD], mFrameHistograms[FH_DROP]);
+			xlsMachine->WriteLineWithString(resultSheet, row++, col, _T("StaticFps, DetectFps, RealFps, "));
+			xlsMachine->WriteLine(resultSheet, row++, col, _T("%.3f, %.3f, %.3f, "), fps, detectfps, mWorkParams.sampleFrameRate);
 
-		file.WriteCsvLine(",");
-		file.WriteCsvLine("All data in millisecond,");
-		file.WriteCsvLine(",");
+			xlsMachine->WriteLineWithString(resultSheet, row++, col, _T("  , "));
 
-		file.WriteCsvLine("Index, Start, End, Duration, Average, Delta, STDEVP, FPS, Type, level, ");
-		while( i < mFramePulse.size()){
-			FrameDesc frame = mFramePulse[i];
+			xlsMachine->WriteLineWithString(resultSheet, row++, col, _T("Total, Normal, Percent, 1Pulse, 2Pulse, 3Pulse, Bad, Drops,"));
+			xlsMachine->WriteLine(resultSheet, row++, col, _T("%u, %u,")
+				_T("%.3f, ")
+				_T(" %u, %u, %u, %u, %u,"),
+				mFrameHistograms[FH_TOTAL], mFrameHistograms[FH_NORMAL], 
+				100.0 * mFrameHistograms[FH_NORMAL]/mFrameHistograms[FH_TOTAL],
+				mFrameHistograms[1], mFrameHistograms[2], mFrameHistograms[3], 
+				mFrameHistograms[FH_BAD], mFrameHistograms[FH_DROP]);
 
-			file.WriteCsvLine("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %d, %d, "
-				, frame.index, frame.start, frame.end, frame.duration, frame.AVG, frame.offset, frame.STDEVP, frame.frameRate, frame.frameType, frame.level);
-
-			ReportProgress(i, mFramePulse.size());
-			i++;
 		}
-		
+		{
+			Sheet *frameSheet = xlsMachine->CreateSheet(FRAME_SHEET_NAME);
+			row = 0;
+			col = 0;
+			xlsMachine->WriteLineWithString(frameSheet, row++, col, _T("Index, Start, End, Duration, Average, Delta, STDEVP, FPS, Type, level, "));
+			while( i < mFramePulse.size()){
+				FrameDesc frame = mFramePulse[i];
+
+				xlsMachine->WriteLine(frameSheet, row++, col, "%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %d, %d, "
+					, frame.index, frame.start, frame.end, frame.duration, frame.AVG, frame.offset, frame.STDEVP, frame.frameRate, frame.frameType, frame.level);
+
+				ReportProgress(i, mFramePulse.size());
+				i++;
+			}
+		}		
 	}
 }
 

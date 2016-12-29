@@ -12,6 +12,7 @@
 #include <string.h>
 #include <math.h>
 #include <stdarg.h>
+#include <tchar.h>
 
 #include <algorithm>
 #include <list>
@@ -24,6 +25,14 @@
 #include "stdint.h"
 
 #include "log.h" // project common file
+
+#ifdef UNICODE
+typedef std::wstring STRING;
+tyepdef std::wifstream IFSTREAM;
+#else
+typedef std::string STRING;
+typedef std::ifstream IFSTREAM;
+#endif
 
 // all data in millisecond
 

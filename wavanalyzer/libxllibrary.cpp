@@ -14,15 +14,9 @@ xlsOperator::~xlsOperator(void)
 bool xlsOperator::CreateBook()
 {
 	bool bRet = false;
-#ifdef UNICODE
-	std::wstring name;
-	std::wstring key;
-	std::wifstream keyfile;
-#else
-	std::string name;
-	std::string key;
-	std::ifstream keyfile;
-#endif
+	STRING name;
+	STRING key;
+	IFSTREAM keyfile;
 
 	keyfile.open(keyFileName);
 	if(!keyfile.is_open()){
@@ -43,23 +37,20 @@ cleanup:
 	return bRet;
 }
 
-Sheet* xlsOperator::CreateSheet(std::string sheetName)
+Sheet* xlsOperator::CreateSheet(STRING sheetName)
 {
 	return mBook->addSheet(sheetName.c_str());
 }
 
-bool xlsOperator::SaveAndCloseBook(std::string filename)
+bool xlsOperator::SaveAndCloseBook(STRING filename)
 {
 	bool ret = false;
 
 	if(mBook){
-		if(mBook->save(filename.c_str())) 
-		{
+		if(mBook->save(filename.c_str())) {
 			ret = true;
 			Logger(Info, "save file %s", filename.c_str());
-		}
-		else
-		{
+		} else {
 			ret = false;
 			Logger(Error, "save file %s - %s", filename.c_str(), mBook->errorMessage());
 		}
@@ -82,7 +73,7 @@ void xlsOperator::WritePulseAtRowCol(Sheet *&sheet, int32_t row, int32_t col, Pu
 	sheet->writeNum(row, col++, desc->type);
 }
 
-void xlsOperator::WritePulseAtRowCol(Sheet *&sheet, int32_t row, int32_t col, PulseDesc* lDesc, PulseDesc* rDesc)
+void xlsOperator::WriteMultiplePulseAtRowCol(Sheet *&sheet, int32_t row, int32_t col, PulseDesc* lDesc, PulseDesc* rDesc)
 {
 	if(lDesc){
 		WritePulseAtRowCol(sheet, row, col, lDesc);
@@ -93,3 +84,76 @@ void xlsOperator::WritePulseAtRowCol(Sheet *&sheet, int32_t row, int32_t col, Pu
 		WritePulseAtRowCol(sheet, row, col, rDesc);
 	}
 }
+
+void xlsOperator::WriteLineWithString(Sheet *&sheet, int32_t row, int32_t col, TCHAR *str)
+{
+	TCHAR *pstr = str;
+	TCHAR split = TEXT(',');
+	while(pstr){
+		TCHAR val[256]={0};
+
+#ifdef UNICODE
+		if(swscanf_s(pstr, "%255[,] ", val, _countof(val)) == 1){
+			sheet->writeStr(row, col++, val);
+			pstr = wcschr(pstr, &split);
+		}
+#else
+		if(sscanf_s(pstr, "%255[^,] ", val, _countof(val))){
+			sheet->writeStr(row, col++, val);
+			pstr = strchr(pstr, split);
+		}
+#endif
+		pstr += !!pstr;
+	}
+}
+
+#undef BUFFER_SIZE
+#define BUFFER_SIZE (2048)
+void xlsOperator::WriteLine(Sheet *&sheet, int32_t row, int32_t col, TCHAR *format, ...)
+{
+	va_list arg;
+	int32_t colIndex = col;
+	va_start(arg, format);
+	int32_t length = 0;
+
+	TCHAR ch;
+	while (ch = *(format++))
+	{
+		length = 0;
+		if (ch == '%')
+		{
+			while(ch = *(format++)){
+				if(isalpha(ch)){
+					break;
+				}
+			}
+			
+			//ch = *(format++);
+			if (ch == 's')
+			{
+				TCHAR *v = va_arg(arg, TCHAR *);
+				sheet->writeStr(row, colIndex++, v);
+			} else if (ch == 'c') {
+				TCHAR v = va_arg(arg, TCHAR);
+				STRING charistic;
+				charistic.assign(1, v);
+				sheet->writeStr(row, colIndex++, charistic.c_str());
+			} else if (ch == 'd') {
+				int v = va_arg(arg, int);
+				sheet->writeNum(row, colIndex++, v);
+			}else if (ch == 'f'){
+				double v = va_arg(arg, double);
+				sheet->writeNum(row, colIndex++, v);
+			}else if (ch == 'u'){
+				uint32_t v = va_arg(arg, uint32_t);
+				sheet->writeNum(row, colIndex++, v);
+			}else{
+				Logger(Error, "can not parse option: %c", ch);
+				continue;
+			}
+		}
+	}
+
+	va_end(arg);
+}
+#undef BUFFER_SIZE

@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 #include "pulse.h"
-#include "csvFileMaker.h"
+#include "libxllibrary.h"
 #include "StdevAlgorithm.h"
 
 enum FrameHistograms{
@@ -87,4 +87,7 @@ private:
 	ANALYZER_PARAMS mWorkParams;
 
 	StdevAlgorithm mStdevpAlgorithm;
+
+
+	xlsOperator *xlsMachine;
 };
