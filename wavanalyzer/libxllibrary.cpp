@@ -4,6 +4,7 @@
 static const TCHAR *keyFileName = TEXT("libxl.key");
 
 xlsOperator::xlsOperator(void)
+: mBook(NULL)
 {
 }
 
@@ -39,7 +40,11 @@ cleanup:
 
 Sheet* xlsOperator::CreateSheet(STRING sheetName)
 {
-	return mBook->addSheet(sheetName.c_str());
+	Sheet *temp = NULL;
+	if(mBook)
+		temp = mBook->addSheet(sheetName.c_str());
+
+	return temp;
 }
 
 bool xlsOperator::SaveAndCloseBook(STRING filename)
@@ -65,12 +70,14 @@ void xlsOperator::WritePulseAtRowCol(Sheet *&sheet, int32_t row, int32_t col, Pu
 {
 	std::string channle;
 	channle.assign(1, desc->channelName);
-	sheet->writeStr(row, col++, channle.c_str());
-	sheet->writeNum(row, col++, desc->index);
-	sheet->writeNum(row, col++, desc->start);
-	sheet->writeNum(row, col++, desc->end);
-	sheet->writeNum(row, col++, desc->duration);
-	sheet->writeNum(row, col++, desc->type);
+	if(sheet){
+		sheet->writeStr(row, col++, channle.c_str());
+		sheet->writeNum(row, col++, desc->index);
+		sheet->writeNum(row, col++, desc->start);
+		sheet->writeNum(row, col++, desc->end);
+		sheet->writeNum(row, col++, desc->duration);
+		sheet->writeNum(row, col++, desc->type);
+	}
 }
 
 void xlsOperator::WriteMultiplePulseAtRowCol(Sheet *&sheet, int32_t row, int32_t col, PulseDesc* lDesc, PulseDesc* rDesc)
@@ -94,12 +101,14 @@ void xlsOperator::WriteLineWithString(Sheet *&sheet, int32_t row, int32_t col, T
 
 #ifdef UNICODE
 		if(swscanf_s(pstr, "%255[,] ", val, _countof(val)) == 1){
-			sheet->writeStr(row, col++, val);
+			if(sheet)
+				sheet->writeStr(row, col++, val);
 			pstr = wcschr(pstr, &split);
 		}
 #else
 		if(sscanf_s(pstr, "%255[^,] ", val, _countof(val))){
-			sheet->writeStr(row, col++, val);
+			if(sheet)
+				sheet->writeStr(row, col++, val);
 			pstr = strchr(pstr, split);
 		}
 #endif
@@ -132,21 +141,26 @@ void xlsOperator::WriteLine(Sheet *&sheet, int32_t row, int32_t col, TCHAR *form
 			if (ch == 's')
 			{
 				TCHAR *v = va_arg(arg, TCHAR *);
-				sheet->writeStr(row, colIndex++, v);
+				if(sheet)
+					sheet->writeStr(row, colIndex++, v);
 			} else if (ch == 'c') {
 				TCHAR v = va_arg(arg, TCHAR);
 				STRING charistic;
 				charistic.assign(1, v);
-				sheet->writeStr(row, colIndex++, charistic.c_str());
+				if(sheet)
+					sheet->writeStr(row, colIndex++, charistic.c_str());
 			} else if (ch == 'd') {
 				int v = va_arg(arg, int);
-				sheet->writeNum(row, colIndex++, v);
+				if(sheet)
+					sheet->writeNum(row, colIndex++, v);
 			}else if (ch == 'f'){
 				double v = va_arg(arg, double);
-				sheet->writeNum(row, colIndex++, v);
+				if(sheet)
+					sheet->writeNum(row, colIndex++, v);
 			}else if (ch == 'u'){
 				uint32_t v = va_arg(arg, uint32_t);
-				sheet->writeNum(row, colIndex++, v);
+				if(sheet)
+					sheet->writeNum(row, colIndex++, v);
 			}else{
 				Logger(Error, "can not parse option: %c", ch);
 				continue;

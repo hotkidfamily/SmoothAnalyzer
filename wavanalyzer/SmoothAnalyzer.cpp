@@ -32,9 +32,8 @@ PulseAnalyzer::PulseAnalyzer(std::string &filename)
 	mWorkParams.mSourceFileName = filename + buffer;
 
 	ZeroMemory(mFrameHistograms, sizeof(mFrameHistograms));
-	if(!xlsMachine->CreateBook()){
-		return ;
-	}
+
+	xlsMachine->CreateBook();
 }
 
 PulseAnalyzer::~PulseAnalyzer(void)
