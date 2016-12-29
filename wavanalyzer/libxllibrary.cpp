@@ -84,14 +84,16 @@ Sheet* xlsOperator::InsertSheet(STRING sheetName)
 bool xlsOperator::SaveAndCloseBook(STRING filename)
 {
 	bool ret = false;
+	std::string str(filename.begin(), filename.end());
 
 	if(mBook){
 		if(mBook->save(filename.c_str())) {
 			ret = true;
-			Logger(Info, "save file %s", filename.c_str());
+
+			Logger(Info, "save file %s", str.c_str());
 		} else {
 			ret = false;
-			Logger(Error, "save file %s - %s", filename.c_str(), mBook->errorMessage());
+			Logger(Error, "save file %s - %s", str.c_str(), mBook->errorMessage());
 		}
 
 		mBook->release();

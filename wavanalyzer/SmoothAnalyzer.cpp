@@ -569,50 +569,6 @@ syncRet PulseAnalyzer::ifStartSync(PulseList::iterator &left, PulseList::iterato
 	return ret;
 }
 
-fixRet PulseAnalyzer::ifFix(PulseList::iterator &left, PulseList::iterator &right, Pulse &out, const double &frameDuration)
-{
-	fixRet ret = ALLGO;
-	double start, end, duration;
-	start = end = duration = 0.0f;
-
-	Logger(Debug, "\tI:\t%.3f, %.3f, %.3f, \t%.3f, %.3f, %.3f", left->start, left->end, left->duration, right->start, right->end, right->duration);
-
-	start = min(left->start, right->start);
-
-	if(IsPosSync(left->end - right->end)){
-		end = min(left->end, right->end);
-	}else if(right->end > left->end){
-		end = left->end;
-		PulseDesc newR = *right;
-		newR.SetStart(right->start + frameDuration);
-		if(newR.duration < VALID_PULSE_DURATION){
-			Logger(Debug, "right (%.3f, %.3f, %.3f), duration < valid_pulse_duration skip.", right->start, right->end, right->duration);
-		}else{
-			*right = newR;
-			ret = LEFTGO;
-		}
-	}else{
-		end = right->end;
-		PulseDesc newR = *left;
-		newR.SetStart(left->start + frameDuration);
-		if(newR.duration < VALID_PULSE_DURATION){
-			Logger(Debug, "Left (%.3f, %.3f, %.3f), duration < valid_pulse_duration skip.", left->start, left->end, left->duration);
-		}else{
-			*left = newR;
-			ret = RIGHTGO;
-		}
-	}
-	
-	duration = end - start;
-
-	Pulse pulse(start, end);
-	out = pulse;
-
-	Logger(Debug, "\tO ==> %.3f, %.3f, %.3f, ret %d", out.start, out.end, out.duration, ret);
-
-	return ret;
-}
-
 inline bool PulseAnalyzer::IsOneFrame(const double &targetDuration, const double &frameDuration)
 {
 	return (targetDuration < (frameDuration + VALID_PULSE_DURATION)) && (targetDuration > VALID_PULSE_DURATION);
@@ -624,7 +580,7 @@ inline bool IsBiggerThanOnePulse(double duration)
 }
 
 inline bool IsBigger(double left, double right){
-	return (left>right);
+	return (left>=right);
 }
 
 //----------------------------------------------------------------------
@@ -655,11 +611,20 @@ splitType PulseAnalyzer::ifNeedSplitPulse(PulseDesc *left, PulseDesc *right)
 		ret = splitSkipRight;
 	}else if(IfleftContainRight(left, right)){ // I II III
 		ret = splitLeft;
+		if ((left->start == right->start) 
+			&&  (IsBigger(left->end, right->end)))
+		{
+			ret = splitLeftRefRight;
+		}
 	}else if(IfleftContainRight(right, left)){
 		ret = splitRight;
+		if ( (right->start == left->start) && 
+			IsBigger(right->end, left->end)) {
+			ret = splitRightRefLeft;
+		}
 	}
 
-	Logger(Debug, "%.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %d\n", left->start, left->end, left->duration, right->start, right->end, right->duration, ret);
+	//Logger(Debug, "%.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %d\n", left->start, left->end, left->duration, right->start, right->end, right->duration, ret);
 
 	return ret;
 }
@@ -679,34 +644,87 @@ void PulseAnalyzer::CreateFrameInfo(double frameDuration)
 	Logger(Info, "Process Sync Data... ");
 
 	while(1){
-		Pulse OutPulse(0, 0);
-
+		double start, end;
+		start = end = 0;
 		curFrameType = INVALID_FRAMETYPE;
+
+		ReportProgress(itLong->index, longChannel.size());
 
 		splitType ret = ifNeedSplitPulse(&(*itShort), &(*itLong));
 		switch(ret){
 			case splitLeft:
+			{
+				start = itShort->start;
+				end = itLong->start;
+				itShort->SetStart(end);
+				if (itShort->duration <= 0) {
+					itShort++;
+				}
+			}
+				break;
+			case splitLeftRefRight:
+			{
+				start = itShort->start;
+				end = itLong->end;
+				itShort->SetStart(end);
+				if (itShort->duration <= 0) {
+					itShort++;
+				}
+				itLong++;
+			}
 				break;
 			case  splitRight:
+			{
+				start = itLong->start;
+				end = itShort->start;
+				itLong->SetStart(end);
+				if (itLong->duration <= 0) {
+					itLong++;
+				}
+			}
+				break;
+			case splitRightRefLeft:
+			{
+				start = itLong->start;
+				end = itShort->end;
+				itLong->SetStart(end);
+				if (itLong->duration <= 0) {
+					itLong++;
+				}
+				itShort++;
+			}
 				break;
 			case splitSkipLeft:
+			{
+				start = itShort->start;
+				end = itShort->end;
+				itShort++;
+			}
 				break;
 			case splitSkipRight:
+			{
+				start = itLong->start;
+				end = itLong->end;
+				itLong++;
+			}
 				break;
 			default:
 				break;
 		}
 
-		ReportProgress(index, longChannel.size());
-
 		{
 			double fps = 0.0f;
 			double stdevp = 0.0f;
 			double avg = 0.0f;
+			Pulse OutPulse(start, end);
 
 			mStdevpAlgorithm.CalcAvgStdAndFps(mFramePulse, avg, stdevp, fps);
 			FrameDesc frame(curFrameType, OutPulse.start, OutPulse.end, fps, avg, stdevp, index++);
 			mFramePulse.push_back(frame);
+		}
+
+		if (itLong == longChannel.end() || itShort == shortChannel.end()) {
+			break;
 		}
 	}
 }
@@ -718,7 +736,6 @@ void PulseAnalyzer::OutputResult()
 	WriteRawPulseDetail();
 
 	PulseFilter();
-
 	MergeOffset();
 
 	WriteRawSyncDetail();
@@ -726,11 +743,9 @@ void PulseAnalyzer::OutputResult()
 	GetPulseWidth(pulseWidth);
 
 	CreateFrameInfo(pulseWidth);
-
-	AnalyzerSmoooth(pulseWidth);
-	
 	WriteFrameDetail();
 
+	AnalyzerSmoooth(pulseWidth);
 	WriteSmoothDetail();
 
 	Logger(Info, "end.");
