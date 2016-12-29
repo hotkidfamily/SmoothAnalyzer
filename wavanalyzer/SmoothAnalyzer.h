@@ -72,6 +72,7 @@ protected:
 	void AnalyzerSmoooth(const double &);
 
 	void WriteSmoothDetail();
+	void WriteFrameDetail();
 
 	void PulseLowFilter(std::list<PulseDesc> &);
 	void PulseFilter();

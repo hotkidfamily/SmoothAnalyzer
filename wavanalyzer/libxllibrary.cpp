@@ -18,6 +18,7 @@ bool xlsOperator::CreateBook()
 	STRING name;
 	STRING key;
 	IFSTREAM keyfile;
+	STRING fontName(TEXT("Monaco"));
 
 	keyfile.open(keyFileName);
 	if(!keyfile.is_open()){
@@ -28,9 +29,11 @@ bool xlsOperator::CreateBook()
 	std::getline(keyfile, name);
 	std::getline(keyfile, key);
 
-	mBook = xlCreateBook();
+	mBook = xlCreateXMLBook();
 	if(mBook){
 		mBook->setKey(name.c_str(), key.c_str());
+
+		mBook->setDefaultFont(fontName.c_str(), 10);
 		bRet = true;
 	}
 
@@ -43,6 +46,18 @@ Sheet* xlsOperator::CreateSheet(STRING sheetName)
 	Sheet *temp = NULL;
 	if(mBook)
 		temp = mBook->addSheet(sheetName.c_str());
+	
+	return temp;
+}
+
+Sheet* xlsOperator::InsertSheet(STRING sheetName)
+{
+	Sheet *temp = NULL;
+	if(mBook){
+		temp = mBook->insertSheet(0, sheetName.c_str());
+		if(temp)
+			mBook->setActiveSheet(0);
+	}
 
 	return temp;
 }
@@ -118,7 +133,7 @@ void xlsOperator::WriteLineWithString(Sheet *&sheet, int32_t row, int32_t col, T
 
 #undef BUFFER_SIZE
 #define BUFFER_SIZE (2048)
-void xlsOperator::WriteLine(Sheet *&sheet, int32_t row, int32_t col, TCHAR *format, ...)
+void xlsOperator::Printf(Sheet *&sheet, int32_t row, int32_t col, TCHAR *format, ...)
 {
 	va_list arg;
 	int32_t colIndex = col;
@@ -137,7 +152,6 @@ void xlsOperator::WriteLine(Sheet *&sheet, int32_t row, int32_t col, TCHAR *form
 				}
 			}
 			
-			//ch = *(format++);
 			if (ch == 's')
 			{
 				TCHAR *v = va_arg(arg, TCHAR *);

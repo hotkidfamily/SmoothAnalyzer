@@ -19,7 +19,7 @@ const struct tagPulseType{
 #define SYNC_SHEET_NAME (TEXT("sync"))
 #define RAW_SYNC_SHEET_NAME (TEXT("raw-sync"))
 #define RESULT_SHEET_NAME (TEXT("Result"))
-#define FRAME_SHEET_NAME (TEXT("Frame-detail"))
+#define FRAME_SHEET_NAME (TEXT("frame-detail"))
 
 PulseAnalyzer::PulseAnalyzer(std::string &filename)
 :xlsMachine(new xlsOperator)
@@ -38,7 +38,7 @@ PulseAnalyzer::PulseAnalyzer(std::string &filename)
 
 PulseAnalyzer::~PulseAnalyzer(void)
 {
-	xlsMachine->SaveAndCloseBook(mWorkParams.mSourceFileName + ".smooth.analyzer.xls");
+	xlsMachine->SaveAndCloseBook(mWorkParams.mSourceFileName + ".smooth.analyzer.xlsx");
 }
 
 void PulseAnalyzer::SetWorkingParam(ANALYZER_PARAMS &params)
@@ -289,7 +289,7 @@ void PulseAnalyzer::WriteSyncDetail()
 		col = 0;
 		sync = (int32_t)(lit->start - rit->start);
 
-		xlsMachine->WriteLine(syncSheet, row++, col, "%d, "
+		xlsMachine->Printf(syncSheet, row++, col, "%d, "
 			"%c, %u, %.3f, %.3f, %.3f, %d, %d, "
 			"%c, %u, %.3f, %.3f, %.3f, %d, %d, ",
 			sync,
@@ -347,7 +347,7 @@ void PulseAnalyzer::WriteRawSyncDetail()
 
 		if(!longPulse.Empty() && !shortPulse.Empty()){
 			col = 0;
-			xlsMachine->WriteLine(rawSyncSheet, row++, col, 
+			xlsMachine->Printf(rawSyncSheet, row++, col, 
 				_T("%.3f, ")
 				_T("%c, %u, %.3f, %.3f, %.3f, %d, %d, ")
 				_T("%c, %u, %.3f, %.3f, %.3f, %d, %d, "),
@@ -359,13 +359,13 @@ void PulseAnalyzer::WriteRawSyncDetail()
 			itLong++;
 		}else if (!longPulse.Empty()){
 			col = 8;
-			xlsMachine->WriteLine(rawSyncSheet, row++, col, _T("%c, %u, %.3f, %.3f, %.3f, %d, %d,"), 
+			xlsMachine->Printf(rawSyncSheet, row++, col, _T("%c, %u, %.3f, %.3f, %.3f, %d, %d,"), 
 				longPulse.channelName, longPulse.index, longPulse.start, longPulse.end, longPulse.duration, longPulse.type, 0);
 
 			itLong++;
 		}else if(!shortPulse.Empty()){
 			col = 1;
-			xlsMachine->WriteLine(rawSyncSheet, row++, col, _T("%c, %u, %.3f, %.3f, %.3f, %d, %d,"), 
+			xlsMachine->Printf(rawSyncSheet, row++, col, _T("%c, %u, %.3f, %.3f, %.3f, %d, %d,"), 
 				shortPulse.channelName, shortPulse.index, shortPulse.start, shortPulse.end, shortPulse.duration, shortPulse.type, 0);
 			itShort++;
 		}
@@ -443,6 +443,41 @@ void PulseAnalyzer::AnalyzerSmoooth(const double &pulseWidth)
 
 void PulseAnalyzer::WriteSmoothDetail()
 {
+	int32_t row = 0;
+	int32_t col = 0;
+
+	if(!mFramePulse.empty())
+	{
+		Sheet* resultSheet = xlsMachine->InsertSheet(RESULT_SHEET_NAME);
+
+		double avg = mStdevpAlgorithm.CalcAvgValue(mFramePulse);
+		double stdevp = mStdevpAlgorithm.CalcSTDEVP(mFramePulse, avg);
+		double fps = mStdevpAlgorithm.CalcFps(mFramePulse);
+		double detectfps = (mFrameHistograms[FH_TOTAL] - mFrameHistograms[FH_BAD])*1000.0 / (mFramePulse.back().end - mFramePulse.front().start);
+		xlsMachine->WriteLineWithString(resultSheet, row++, col, _T("STDEVP, Avg, Frames, Duration, "));
+		xlsMachine->Printf(resultSheet, row++, col, _T("%.3f, %.3f, %d, %.3f, "),
+			stdevp, avg, mFramePulse.size(), mFramePulse.back().end - mFramePulse.front().start);
+
+		xlsMachine->WriteLineWithString(resultSheet, row++, col, _T("  , "));
+
+		xlsMachine->WriteLineWithString(resultSheet, row++, col, _T("StaticFps, DetectFps, RealFps, "));
+		xlsMachine->Printf(resultSheet, row++, col, _T("%.3f, %.3f, %.3f, "), fps, detectfps, mWorkParams.sampleFrameRate);
+
+		xlsMachine->WriteLineWithString(resultSheet, row++, col, _T("  , "));
+
+		xlsMachine->WriteLineWithString(resultSheet, row++, col, _T("Total, Normal, Percent, 1Pulse, 2Pulse, 3Pulse, Bad, Drops,"));
+		xlsMachine->Printf(resultSheet, row++, col, _T("%u, %u,")
+			_T("%.3f, ")
+			_T(" %u, %u, %u, %u, %u,"),
+			mFrameHistograms[FH_TOTAL], mFrameHistograms[FH_NORMAL], 
+			100.0 * mFrameHistograms[FH_NORMAL]/mFrameHistograms[FH_TOTAL],
+			mFrameHistograms[1], mFrameHistograms[2], mFrameHistograms[3], 
+			mFrameHistograms[FH_BAD], mFrameHistograms[FH_DROP]);
+	}
+}
+
+void PulseAnalyzer::WriteFrameDetail()
+{
 	std::size_t i=0;
 	int32_t row = 0;
 	int32_t col = 0;
@@ -450,49 +485,19 @@ void PulseAnalyzer::WriteSmoothDetail()
 	Logger(Info, "Write Smooth Data... ");
 
 	if(!mFramePulse.empty()){
-		{
-			Sheet* resultSheet = xlsMachine->CreateSheet(RESULT_SHEET_NAME);
+		Sheet *frameSheet = xlsMachine->CreateSheet(FRAME_SHEET_NAME);
+		row = 0;
+		col = 0;
+		xlsMachine->WriteLineWithString(frameSheet, row++, col, _T("Index, Start, End, Duration, Average, Delta, STDEVP, FPS, Type, level, "));
+		while( i < mFramePulse.size()){
+			FrameDesc frame = mFramePulse[i];
 
-			double avg = mStdevpAlgorithm.CalcAvgValue(mFramePulse);
-			double stdevp = mStdevpAlgorithm.CalcSTDEVP(mFramePulse, avg);
-			double fps = mStdevpAlgorithm.CalcFps(mFramePulse);
-			double detectfps = (mFrameHistograms[FH_TOTAL] - mFrameHistograms[FH_BAD])*1000.0 / (mFramePulse.back().end - mFramePulse.front().start);
-			xlsMachine->WriteLineWithString(resultSheet, row++, col, _T("STDEVP, Avg, Frames, Duration, "));
-			xlsMachine->WriteLine(resultSheet, row++, col, _T("%.3f, %.3f, %d, %.3f, "),
-				stdevp, avg, mFramePulse.size(), mFramePulse.back().end - mFramePulse.front().start);
+			xlsMachine->Printf(frameSheet, row++, col, "%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %d, %d, "
+				, frame.index, frame.start, frame.end, frame.duration, frame.AVG, frame.offset, frame.STDEVP, frame.frameRate, frame.frameType, frame.level);
 
-			xlsMachine->WriteLineWithString(resultSheet, row++, col, _T("  , "));
-
-			xlsMachine->WriteLineWithString(resultSheet, row++, col, _T("StaticFps, DetectFps, RealFps, "));
-			xlsMachine->WriteLine(resultSheet, row++, col, _T("%.3f, %.3f, %.3f, "), fps, detectfps, mWorkParams.sampleFrameRate);
-
-			xlsMachine->WriteLineWithString(resultSheet, row++, col, _T("  , "));
-
-			xlsMachine->WriteLineWithString(resultSheet, row++, col, _T("Total, Normal, Percent, 1Pulse, 2Pulse, 3Pulse, Bad, Drops,"));
-			xlsMachine->WriteLine(resultSheet, row++, col, _T("%u, %u,")
-				_T("%.3f, ")
-				_T(" %u, %u, %u, %u, %u,"),
-				mFrameHistograms[FH_TOTAL], mFrameHistograms[FH_NORMAL], 
-				100.0 * mFrameHistograms[FH_NORMAL]/mFrameHistograms[FH_TOTAL],
-				mFrameHistograms[1], mFrameHistograms[2], mFrameHistograms[3], 
-				mFrameHistograms[FH_BAD], mFrameHistograms[FH_DROP]);
-
-		}
-		{
-			Sheet *frameSheet = xlsMachine->CreateSheet(FRAME_SHEET_NAME);
-			row = 0;
-			col = 0;
-			xlsMachine->WriteLineWithString(frameSheet, row++, col, _T("Index, Start, End, Duration, Average, Delta, STDEVP, FPS, Type, level, "));
-			while( i < mFramePulse.size()){
-				FrameDesc frame = mFramePulse[i];
-
-				xlsMachine->WriteLine(frameSheet, row++, col, "%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %d, %d, "
-					, frame.index, frame.start, frame.end, frame.duration, frame.AVG, frame.offset, frame.STDEVP, frame.frameRate, frame.frameType, frame.level);
-
-				ReportProgress(i, mFramePulse.size());
-				i++;
-			}
-		}		
+			ReportProgress(i, mFramePulse.size());
+			i++;
+		}	
 	}
 }
 
@@ -695,6 +700,8 @@ void PulseAnalyzer::OutputResult()
 
 	AnalyzerSmoooth(pulseWidth);
 	
+	WriteFrameDetail();
+
 	WriteSmoothDetail();
 
 	Logger(Info, "end.");

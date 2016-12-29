@@ -14,9 +14,10 @@ public:
 
 	bool CreateBook();
 	Sheet* CreateSheet(STRING);
+	Sheet* InsertSheet(STRING);
 	bool SaveAndCloseBook(STRING);
 	void WriteMultiplePulseAtRowCol(Sheet *&,int32_t, int32_t, PulseDesc *, PulseDesc *);
-	void WriteLine(Sheet *&,int32_t, int32_t, TCHAR *format, ...);
+	void Printf(Sheet *&,int32_t, int32_t, TCHAR *format, ...);
 	void WriteLineWithString(Sheet *&sheet, int32_t row, int32_t col, TCHAR *str);
 
 protected:
