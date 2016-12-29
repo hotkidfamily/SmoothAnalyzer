@@ -1,9 +1,9 @@
 #include "StdAfx.h"
 #include "wavFileParse.h"
 
-DataSeparater::DataSeparater(std::string &name)
+DataSeparater::DataSeparater(STRING &name)
 : mTotalSpDataSize(0)
-, iDump(name + ".original.pcm")
+, iDump(name + _T(".original.pcm"))
 {
 }
 

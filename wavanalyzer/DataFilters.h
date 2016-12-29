@@ -23,7 +23,7 @@ class ABSFilter
 	, public iDump
 {
 public:
-	ABSFilter(std::string &filePath);
+	ABSFilter(STRING &filePath);
 	~ABSFilter(){};
 
 	virtual int32_t process(std::string &samples, int32_t Bps);
@@ -34,7 +34,7 @@ class RmNegativeFilter
 	, public iDump
 {
 public:
-	RmNegativeFilter(std::string &filePath);
+	RmNegativeFilter(STRING &filePath);
 	~RmNegativeFilter(){};
 
 	virtual int32_t process(std::string &samples, int32_t Bps);
@@ -45,7 +45,7 @@ class SmoothFilter
 	, public iDump
 {
 public:
-	SmoothFilter(std::string &filePath);
+	SmoothFilter(STRING &filePath);
 	~SmoothFilter(){};
 
 	virtual int32_t process(std::string &samples, int32_t Bps);
@@ -57,7 +57,7 @@ class LowFilter
 	, public iDump
 {
 public:
-	LowFilter(std::string &filePath);
+	LowFilter(STRING &filePath);
 	~LowFilter(){};
 
 	virtual int32_t process(std::string &samples, int32_t Bps);

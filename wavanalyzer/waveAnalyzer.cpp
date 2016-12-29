@@ -1,7 +1,7 @@
 #include "StdAfx.h"
 #include "waveAnalyzer.h"
 
-WaveAnalyzer::WaveAnalyzer(std::string &filePath)
+WaveAnalyzer::WaveAnalyzer(STRING &filePath)
 : mAnalyzerFile(filePath)
 {
 	ZeroMemory(mFrameId, sizeof(mFrameId));
@@ -184,7 +184,7 @@ bool WaveAnalyzer::AnalyzeFileByChannel(CHANNELID index)
 	int32_t ret = 0;
 	DataSeparater *dataSeparater = NULL;
 	CWaveReader *fileReader = NULL;
-	std::string workname = mAnalyzerFile + "." + chanenlIDNameList[index];
+	STRING workname = mAnalyzerFile + _T(".") + chanenlIDNameList[index];
 	analyzerContext ctx;
 
 	mFilters[FILTER_RMNEGTV] = new RmNegativeFilter(workname);

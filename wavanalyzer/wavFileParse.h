@@ -8,7 +8,7 @@
 class DataSeparater: public iDump
 {
 public:
-	DataSeparater(std::string &name);
+	DataSeparater(STRING &name);
 	~DataSeparater(void);
 
 	int32_t GetChannelData(int32_t index, std::string &source, std::string &samples);

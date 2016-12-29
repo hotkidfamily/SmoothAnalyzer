@@ -15,19 +15,19 @@ const struct tagPulseType{
 #define PULSETABLECOUNT (ARRAYSIZE(pulseTable))
 #define INVALID_FRAMETYPE (-1)
 
-#define RAW_PULSE_SHEET_NAME (TEXT("raw-pulse"))
-#define SYNC_SHEET_NAME (TEXT("sync"))
-#define RAW_SYNC_SHEET_NAME (TEXT("raw-sync"))
-#define RESULT_SHEET_NAME (TEXT("Result"))
-#define FRAME_SHEET_NAME (TEXT("frame-detail"))
+#define RAW_PULSE_SHEET_NAME (_T("raw-pulse"))
+#define SYNC_SHEET_NAME (_T("sync"))
+#define RAW_SYNC_SHEET_NAME (_T("raw-sync"))
+#define RESULT_SHEET_NAME (_T("Result"))
+#define FRAME_SHEET_NAME (_T("frame-detail"))
 
-PulseAnalyzer::PulseAnalyzer(std::string &filename)
+PulseAnalyzer::PulseAnalyzer(STRING &filename)
 :xlsMachine(new xlsOperator)
 {
 	SYSTEMTIME systime;
-	char buffer[256] = {'\0'};
+	TCHAR buffer[256] = {_T('\0')};
 	GetLocalTime(&systime);
-	sprintf_s(buffer, 256-1, "-%04d-%02d%02d-%02d%02d-%02d", systime.wYear, systime.wMonth, systime.wDay, systime.wHour, systime.wMinute, systime.wSecond);
+	_stprintf_s(buffer, 256-1, _T("-%04d-%02d%02d-%02d%02d-%02d"), systime.wYear, systime.wMonth, systime.wDay, systime.wHour, systime.wMinute, systime.wSecond);
 
 	mWorkParams.mSourceFileName = filename + buffer;
 
@@ -38,7 +38,7 @@ PulseAnalyzer::PulseAnalyzer(std::string &filename)
 
 PulseAnalyzer::~PulseAnalyzer(void)
 {
-	xlsMachine->SaveAndCloseBook(mWorkParams.mSourceFileName + ".smooth.analyzer.xlsx");
+	xlsMachine->SaveAndCloseBook(mWorkParams.mSourceFileName + _T(".smooth.analyzer.xlsx"));
 }
 
 void PulseAnalyzer::SetWorkingParam(ANALYZER_PARAMS &params)
@@ -229,7 +229,6 @@ void PulseAnalyzer::WriteRawPulseDetail()
 {
 	PulseList::iterator lit;
 	PulseList::iterator rit;
-	std::string filePath = mWorkParams.mSourceFileName + ".raw.pulse.xls";
 	int32_t rowIndex = 0;
 	int32_t colIndex = 0;
 
@@ -238,7 +237,7 @@ void PulseAnalyzer::WriteRawPulseDetail()
 	Sheet* rawPulseSheet = xlsMachine->CreateSheet(RAW_PULSE_SHEET_NAME);
 
 	// write header 
-	xlsMachine->WriteLineWithString(rawPulseSheet, rowIndex++, colIndex, TEXT(" channel, index, start, end, duration, type, channel, index, start, end, duration, type, "));
+	xlsMachine->WriteLineWithString(rawPulseSheet, rowIndex++, colIndex, _T(" channel, index, start, end, duration, type, channel, index, start, end, duration, type, "));
 
 	lit = mPulseList[LCHANNEL].begin();
 	rit = mPulseList[RCHANNEL].begin();
@@ -274,24 +273,24 @@ void PulseAnalyzer::WriteSyncDetail()
 	PulseList::iterator lit = mPulseList[LCHANNEL].begin();
 	PulseList::iterator rit = mPulseList[RCHANNEL].begin();
 
-	std::string filePath = mWorkParams.mSourceFileName + ".sync.detail.xls";
+	STRING filePath = mWorkParams.mSourceFileName + _T(".sync.detail.xls");
 
 	Logger(Info, "Write Sync Data... ");
 
 	Sheet* syncSheet = xlsMachine->CreateSheet(SYNC_SHEET_NAME);
 	
-	xlsMachine->WriteLineWithString(syncSheet, row++, col, "sync,"
-		"channel, index, start, end, duration, type, interval, "
-		"channel, index, start, end, duration, type, interval, ");
+	xlsMachine->WriteLineWithString(syncSheet, row++, col, _T("sync,")
+		_T("channel, index, start, end, duration, type, interval, ")
+		_T("channel, index, start, end, duration, type, interval, "));
 
 	while((lit != mPulseList[LCHANNEL].end()) && (rit != mPulseList[RCHANNEL].end()))
 	{
 		col = 0;
 		sync = (int32_t)(lit->start - rit->start);
 
-		xlsMachine->Printf(syncSheet, row++, col, "%d, "
-			"%c, %u, %.3f, %.3f, %.3f, %d, %d, "
-			"%c, %u, %.3f, %.3f, %.3f, %d, %d, ",
+		xlsMachine->Printf(syncSheet, row++, col, _T("%d, ")
+			_T("%c, %u, %.3f, %.3f, %.3f, %d, %d, ")
+			_T("%c, %u, %.3f, %.3f, %.3f, %d, %d, "),
 			sync,
 			lit->channelName, lit->index, lit->start, lit->end, lit->duration, lit->type, 0, 
 			rit->channelName, rit->index, rit->start, rit->end, rit->duration, rit->type, 0);
@@ -320,9 +319,9 @@ void PulseAnalyzer::WriteRawSyncDetail()
 	itShort = shortChannel.begin();
 	itLong = longChannel.begin();
 
-	xlsMachine->WriteLineWithString(rawSyncSheet, row++, col, "sync, "
-		"channel, index, start, end, duration, type, interval, "
-		"channel, index, start, end, duration, type, interval, ");
+	xlsMachine->WriteLineWithString(rawSyncSheet, row++, col, _T("sync, ")
+		_T("channel, index, start, end, duration, type, interval, ")
+		_T("channel, index, start, end, duration, type, interval, "));
 
 	while(1){
 		PulseDesc shortPulse, longPulse;
@@ -492,8 +491,8 @@ void PulseAnalyzer::WriteFrameDetail()
 		while( i < mFramePulse.size()){
 			FrameDesc frame = mFramePulse[i];
 
-			xlsMachine->Printf(frameSheet, row++, col, "%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %d, %d, "
-				, frame.index, frame.start, frame.end, frame.duration, frame.AVG, frame.offset, frame.STDEVP, frame.frameRate, frame.frameType, frame.level);
+			xlsMachine->Printf(frameSheet, row++, col, _T("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %d, %d, "), 
+				frame.index, frame.start, frame.end, frame.duration, frame.AVG, frame.offset, frame.STDEVP, frame.frameRate, frame.frameType, frame.level);
 
 			ReportProgress(i, mFramePulse.size());
 			i++;

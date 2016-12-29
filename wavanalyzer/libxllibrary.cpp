@@ -102,7 +102,7 @@ bool xlsOperator::SaveAndCloseBook(STRING filename)
 
 void xlsOperator::WritePulseAtRowCol(Sheet *&sheet, int32_t row, int32_t col, PulseDesc* desc)
 {
-	std::string channle;
+	STRING channle;
 	channle.assign(1, desc->channelName);
 	if(sheet){
 		sheet->writeStr(row, col++, channle.c_str());
@@ -131,21 +131,15 @@ void xlsOperator::WriteLineWithString(Sheet *&sheet, int32_t row, int32_t col, T
 	TCHAR *pstr = str;
 	TCHAR split = TEXT(',');
 	while(pstr){
-		TCHAR val[256]={0};
+		TCHAR val[256]={ _T('\0')};
 
-#ifdef UNICODE
-		if(swscanf_s(pstr, "%255[,] ", val, _countof(val)) == 1){
+		if(_stscanf_s(pstr, _T("%255[^,] "), val, _countof(val))){
 			if(sheet)
 				sheet->writeStr(row, col++, val);
-			pstr = wcschr(pstr, &split);
 		}
-#else
-		if(sscanf_s(pstr, "%255[^,] ", val, _countof(val))){
-			if(sheet)
-				sheet->writeStr(row, col++, val);
-			pstr = strchr(pstr, split);
-		}
-#endif
+
+		pstr = _tcschr(pstr, split);
+
 		pstr += !!pstr;
 	}
 }
@@ -163,7 +157,7 @@ void xlsOperator::Printf(Sheet *&sheet, int32_t row, int32_t col, TCHAR *format,
 	while (ch = *(format++))
 	{
 		length = 0;
-		if (ch == '%')
+		if (ch == _T('%'))
 		{
 			while(ch = *(format++)){
 				if(isalpha(ch)){
@@ -171,26 +165,26 @@ void xlsOperator::Printf(Sheet *&sheet, int32_t row, int32_t col, TCHAR *format,
 				}
 			}
 			
-			if (ch == 's')
+			if (ch == _T('s'))
 			{
 				TCHAR *v = va_arg(arg, TCHAR *);
 				if(sheet)
 					sheet->writeStr(row, colIndex++, v);
-			} else if (ch == 'c') {
+			} else if (ch == _T('c')) {
 				TCHAR v = va_arg(arg, TCHAR);
 				STRING charistic;
 				charistic.assign(1, v);
 				if(sheet)
 					sheet->writeStr(row, colIndex++, charistic.c_str());
-			} else if (ch == 'd') {
+			} else if (ch == _T('d')) {
 				int v = va_arg(arg, int);
 				if(sheet)
 					sheet->writeNum(row, colIndex++, v);
-			}else if (ch == 'f'){
+			}else if (ch == _T('f')){
 				double v = va_arg(arg, double);
 				if(sheet)
 					sheet->writeNum(row, colIndex++, v);
-			}else if (ch == 'u'){
+			}else if (ch == _T('u')){
 				uint32_t v = va_arg(arg, uint32_t);
 				if(sheet)
 					sheet->writeNum(row, colIndex++, v);

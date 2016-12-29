@@ -49,8 +49,7 @@ class WaveAnalyzer
 {
 public:
 	WaveAnalyzer(void);
-	WaveAnalyzer(CHANNELID id, std::string &filepath);
-	WaveAnalyzer(std::string &filepath);
+	WaveAnalyzer(STRING &filepath);
 	~WaveAnalyzer(void);
 
 	bool AnalyzeFilePulse();
@@ -73,5 +72,5 @@ private:
 	int32_t mFrameId[MAX_CHANNEL];
 	IFilter *mFilters[FILTER_COUNT];
 	std::list<PulseDesc> mPulseList[MAX_CHANNEL];
-	std::string mAnalyzerFile;
+	STRING mAnalyzerFile;
 };

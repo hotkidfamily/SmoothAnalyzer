@@ -9,19 +9,19 @@
 #define TEST 2
 
 #ifdef _DEBUG
-char* debug_args[] ={
-	"",
+TCHAR* debug_args[] ={
+	_T(""),
 #if (TEST == 1)
-	"e:\\smooth\\ios-sony-entertainment.wav",
-	"0",
+	_T("e:\\smooth\\ios-sony-entertainment.wav"),
+	_T("0"),
 #elif (TEST == 2)
-	"e:\\smooth\\xiaomi4-sony-entertainment.wav",
-	"-3",
+	_T("e:\\smooth\\xiaomi4-sony-entertainment.wav"),
+	_T("-3"),
 #else
-	"e:\\smooth\\mpc-hc-sony-entertainment-default-render.wav",
-	"0",
+	_T("e:\\smooth\\mpc-hc-sony-entertainment-default-render.wav"),
+	_T("0"),
 #endif
-	"30"
+	_T("30")
 };
 #endif
 
@@ -30,26 +30,26 @@ typedef struct programContext{
 		ZeroMemory(this, sizeof(struct programContext));
 	}
 	ANALYZER_PARAMS analyzerParams;
-	std::string targetPath;
+	STRING targetPath;
 	FileEnumer *fileFinder;
 }SMOOTH_CONTEXT, *PSMOOTH_CONTEXT;
 
-static void print_usage(const char *name)
+static void print_usage(const TCHAR *name)
 {
-	const char *help = "\n\tAnazlyer a smooth steam wave file.\n\n"
-		"Usage:\t%s <PATH>/<File Name> [Offset] [fps]\n"
-		"e.g., \t%s a.wav -8 30\n\n"
-		"Tips:\tIf you want indicate channels different Please fill [offset] in millisecond.\n"
-		"     \tAnd if you know frame rate Please fill [fps].\n"
-		"     \t[offset]- Negative indicate ahead, Positive indicate behind.\n"
-		"     \t[fps]	- Frame rate of analyzed view, if you want inut frame rate alone, you should make offset to 0.\n"
-		"     \t          e.g., frame rate is 30fps then input \"0 30\" .\n\n"
-		"Warning:Only Support .WAV File With 2 Channels.\n\n";
+	const TCHAR *help = _T("\n\tAnazlyer a smooth steam wave file.\n\n")
+		_T("Usage:\t%s <PATH>/<File Name> [Offset] [fps]\n")
+		_T("e.g., \t%s a.wav -8 30\n\n")
+		_T("Tips:\tIf you want indicate channels different Please fill [offset] in millisecond.\n")
+		_T("     \tAnd if you know frame rate Please fill [fps].\n")
+		_T("     \t[offset]- Negative indicate ahead, Positive indicate behind.\n")
+		_T("     \t[fps]	- Frame rate of analyzed view, if you want inut frame rate alone, you should make offset to 0.\n")
+		_T("     \t          e.g., frame rate is 30fps then input \"0 30\" .\n\n")
+		_T("Warning:Only Support .WAV File With 2 Channels.\n\n");
 
-	printf(help, name, name);
+	_tprintf(help, name, name);	
 }
 
-static int32_t parse_parameters(SMOOTH_CONTEXT* ctx, const int32_t argc, char* argv[])
+static int32_t parse_parameters(SMOOTH_CONTEXT* ctx, const int32_t argc, TCHAR* argv[])
 {
 	int32_t ret = 0;
 	if(argc < 2){
@@ -63,12 +63,12 @@ static int32_t parse_parameters(SMOOTH_CONTEXT* ctx, const int32_t argc, char* a
 	/* convert input millisecond to second */
 
 	if(argc >= 3){
-		ctx->analyzerParams.channelOffset = atof(argv[2]);
+		ctx->analyzerParams.channelOffset = _tstof(argv[2]);
 	}
 
 	if(argc >= 4){
 		double frameRate = 0.0f;
-		frameRate = atof(argv[3]);
+		frameRate = _tstof(argv[3]);
 		if(frameRate != 0.0f){
 			ctx->analyzerParams.sampleFrameRate = frameRate;
 		}
@@ -78,7 +78,7 @@ cleanup:
 	return ret;
 }
 
-static int analyzeFile(PSMOOTH_CONTEXT ctx, std::string file)
+static int analyzeFile(PSMOOTH_CONTEXT ctx, STRING file)
 {
 	std::string ChannelData;
 	int32_t ret = 0;
@@ -107,13 +107,13 @@ static int analyzeFile(PSMOOTH_CONTEXT ctx, std::string file)
 	return 0;
 }
 
-static int GetAbsolutlyPath(const char* path, std::string &rPath)
+static int GetAbsolutlyPath(const TCHAR* path, STRING &rPath)
 {
 	DWORD retVal = 0;
-	std::string cupath = path;
-	char buffer[MAX_PATH] = {'\0'};
-	LPSTR retPath = {NULL};
-	retVal = GetFullPathNameA(path, MAX_PATH, buffer, &retPath);
+	STRING cupath = path;
+	TCHAR buffer[MAX_PATH] = {'\0'};
+	LPWSTR retPath = {NULL};
+	retVal = GetFullPathName(path, MAX_PATH, buffer, &retPath);
 	if (retVal == 0) {
 		Logger(Error ,"Invalid file path %d, code %d\n", path, GetLastError());
 		return -1;
@@ -121,11 +121,11 @@ static int GetAbsolutlyPath(const char* path, std::string &rPath)
 
 	rPath.clear();
 	rPath = buffer;
-	rPath.insert(rPath.size(), "\\");
+	rPath.insert(rPath.size(), _T("\\"));
 	return 0;
 }
 
-int main(int argc, char* argv[])
+int main(int argc, TCHAR* argv[])
 {
 	int32_t ret = 0;
 	PSMOOTH_CONTEXT pCtx = new SMOOTH_CONTEXT;
@@ -150,11 +150,11 @@ int main(int argc, char* argv[])
 	if(ret < 0){
 		Logger(Fatal, "path %s is invalid.", argv[1]);
 	}else if (ret > 0){
-		std::string file;
+		STRING file;
 		if(GetAbsolutlyPath(argv[1], pCtx->targetPath) < 0){
 			goto cleanup;
 		}
-		pCtx->fileFinder->EnumDirectory(pCtx->targetPath + "*", ".wav");
+		pCtx->fileFinder->EnumDirectory(pCtx->targetPath + _T("*"), _T(".wav"));
 		while(!pCtx->fileFinder->GetFile(file)){
 			file.insert(0, pCtx->targetPath);
 			analyzeFile(pCtx, file);

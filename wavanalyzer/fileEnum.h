@@ -8,11 +8,11 @@ public:
 	FileEnumer(void);
 	~FileEnumer(void);
 
-	int32_t EnumDirectory(std::string path, std::string postFix);
-	int32_t IsDirectory(std::string &path);
+	int32_t EnumDirectory(STRING path, STRING postFix);
+	int32_t IsDirectory(STRING &path);
 	
-	int32_t GetFile(std::string &file);
+	int32_t GetFile(STRING &file);
 
 private:
-	std::list<std::string> m_filesList;
+	std::list<STRING> m_filesList;
 };

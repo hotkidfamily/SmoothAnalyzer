@@ -35,13 +35,13 @@ typedef struct tagAnalyzerParams{
 	}
 	double channelOffset;
 	double sampleFrameRate;
-	std::string mSourceFileName;
+	STRING mSourceFileName;
 }ANALYZER_PARAMS;
 
 class PulseAnalyzer
 {
 public:
-	PulseAnalyzer(std::string &filename);
+	PulseAnalyzer(STRING &filename);
 	~PulseAnalyzer(void);
 
 	void SetAnalyzerData(std::list<PulseDesc>*);

@@ -3,7 +3,7 @@
 
 class iDump{
 public:
-	iDump(std::string &filepath){
+	iDump(STRING &filepath){
 		//dumpfile.open(filepath.c_str(), std::ios::binary);
 	}
 

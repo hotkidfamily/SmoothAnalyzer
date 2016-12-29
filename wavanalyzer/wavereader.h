@@ -36,7 +36,7 @@ class CWaveReader
 public: 
     CWaveReader(); 
     ~CWaveReader(); 
-    bool Open(const char* pFileName);
+    bool Open(const TCHAR* pFileName);
     void Close(); 
     size_t ReadRawData(uint8_t* pData, int nLen); 
 	int32_t ReadData(std::string &data);

@@ -6,7 +6,7 @@ CSVFile::~CSVFile(void)
 	flush();
 }
 
-CSVFile::CSVFile(std::string &filename)
+CSVFile::CSVFile(STRING &filename)
 {
 	csvFileName.assign(filename);
 }
@@ -24,7 +24,7 @@ void CSVFile::flush()
 	}
 
 	while(!csvLines.empty()){
-		csvFile << csvLines.front() << '\n';
+		csvFile << csvLines.front() << _T('\n');
 		csvLines.pop_front();
 	}
 	
@@ -32,7 +32,7 @@ void CSVFile::flush()
 
 void CSVFile::WriteCsvLine(const char* format, ...)
 {
-	std::string csvLine;
+	STRING csvLine;
 	va_list args;
 
 	csvLine.resize(1024, 0);

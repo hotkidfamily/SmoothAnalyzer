@@ -3,8 +3,8 @@
 
 #define SMOOTH_STEP (22)
 
-SmoothFilter::SmoothFilter(std::string &filePath)
-	: iDump(filePath + ".smooth.pcm")
+SmoothFilter::SmoothFilter(STRING &filePath)
+	: iDump(filePath + _T(".smooth.pcm"))
 {
 }
 
@@ -39,8 +39,8 @@ int32_t SmoothFilter::process(std::string &channelData, int32_t Bps)
 	return 0;
 }
 
-RmNegativeFilter::RmNegativeFilter(std::string &filePath)
-	:iDump(filePath + ".RemoveNegative.pcm")
+RmNegativeFilter::RmNegativeFilter(STRING &filePath)
+	:iDump(filePath + _T(".RemoveNegative.pcm"))
 {
 }
 
@@ -62,8 +62,8 @@ int32_t RmNegativeFilter::process(std::string &channelData, int32_t Bps)
 }
 
 
-ABSFilter::ABSFilter(std::string &filePath)
-		:iDump(filePath + ".abs.pcm")
+ABSFilter::ABSFilter(STRING &filePath)
+		:iDump(filePath + _T(".abs.pcm"))
 {
 }
 

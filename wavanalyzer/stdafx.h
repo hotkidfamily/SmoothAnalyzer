@@ -28,7 +28,7 @@
 
 #ifdef UNICODE
 typedef std::wstring STRING;
-tyepdef std::wifstream IFSTREAM;
+typedef std::wifstream IFSTREAM;
 #else
 typedef std::string STRING;
 typedef std::ifstream IFSTREAM;

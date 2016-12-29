@@ -56,7 +56,7 @@ struct PulseDesc: public Pulse
 	PulseDesc(CHANNELID id, double start, double end, PULSETYPE pulseType, int32_t idx)
 		: Pulse(start, end)
 		, channelID(id)
-		, channelName(id==LCHANNEL?'L':'R')
+		, channelName(id==LCHANNEL?_T('L'):_T('R'))
 		, type(pulseType)
 		, index(idx)
 	{}
@@ -69,7 +69,7 @@ struct PulseDesc: public Pulse
 	int32_t index;
 	PULSETYPE type;
 	CHANNELID channelID;
-	char channelName;
+	TCHAR channelName;
 };
 
 struct FrameDesc: public Pulse
@@ -97,9 +97,9 @@ typedef std::vector<PulseDesc> PulseVector;
 typedef std::list<FrameDesc> FrameList;
 typedef std::vector<FrameDesc> FrameVector;
 
-#define to_str(x) #x
+#define to_str(x) _T(#x)
 
-static const char* chanenlIDNameList [] = {
+static const TCHAR* chanenlIDNameList [] = {
 	to_str(LCHANNEL),
 	to_str(RCHANNEL),
 };

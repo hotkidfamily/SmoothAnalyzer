@@ -16,10 +16,10 @@ CWaveReader::~CWaveReader()
 		m_totalReadLength, m_totalReadLength*1.0/m_WaveFormat.GetDataSizePerSecond());
 }   
 
-bool CWaveReader::Open(const char* pFileName)
+bool CWaveReader::Open(const TCHAR* pFileName)
 {   
 	Close();   
-	fopen_s(&m_pFile, pFileName, "rb");
+	_tfopen_s(&m_pFile, pFileName, _T("rb"));
 	if( !m_pFile )   
 		return false;   
 

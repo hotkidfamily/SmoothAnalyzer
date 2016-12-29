@@ -9,10 +9,10 @@ FileEnumer::~FileEnumer(void)
 {
 }
 
-int32_t FileEnumer::GetFile(std::string &filename)
+int32_t FileEnumer::GetFile(STRING &filename)
 {
 	int32_t ret = 0;
-	std::string listFile;
+	STRING listFile;
 	if(m_filesList.size()){
 		listFile = m_filesList.front();
 		m_filesList.pop_front();
@@ -24,11 +24,11 @@ int32_t FileEnumer::GetFile(std::string &filename)
 	return ret;
 }
 
-int32_t FileEnumer::IsDirectory(std::string &path)
+int32_t FileEnumer::IsDirectory(STRING &path)
 {
 	int32_t bRet = 0;
 	DWORD fileAttr = 0;
-	fileAttr = GetFileAttributesA(path.c_str());
+	fileAttr = GetFileAttributes(path.c_str());
 	if(fileAttr & FILE_ATTRIBUTE_DIRECTORY){
 		bRet = 1;
 	}else{
@@ -42,12 +42,12 @@ int32_t FileEnumer::IsDirectory(std::string &path)
 	return bRet;
 }
 
-int32_t FileEnumer::EnumDirectory(std::string path, std::string postPix)
+int32_t FileEnumer::EnumDirectory(STRING path, STRING postPix)
 {
-	std::string filename;
+	STRING filename;
 	try{
-		WIN32_FIND_DATAA fd = {0};
-		HANDLE hFindFile = FindFirstFileA(path.c_str(), &fd);
+		WIN32_FIND_DATA fd = {0};
+		HANDLE hFindFile = FindFirstFile(path.c_str(), &fd);
 		if(hFindFile == INVALID_HANDLE_VALUE){
 			Logger(Error, "Open path %s", path.c_str());
 			FindClose(hFindFile);
@@ -62,7 +62,7 @@ int32_t FileEnumer::EnumDirectory(std::string path, std::string postPix)
 					m_filesList.push_back(filename);
 				}
 			}
-		}while (FindNextFileA(hFindFile, &fd) != 0);
+		}while (FindNextFile(hFindFile, &fd) != 0);
 
 		FindClose(hFindFile);
 		
