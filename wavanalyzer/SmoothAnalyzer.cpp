@@ -569,18 +569,14 @@ syncRet PulseAnalyzer::ifStartSync(PulseList::iterator &left, PulseList::iterato
 	return ret;
 }
 
-inline bool PulseAnalyzer::IsOneFrame(const double &targetDuration, const double &frameDuration)
+inline bool IsBigger(double left, double right)
 {
-	return (targetDuration < (frameDuration + VALID_PULSE_DURATION)) && (targetDuration > VALID_PULSE_DURATION);
+	return ((left - right) >= MINIST_PULSE_DURATION);
 }
 
-inline bool IsBiggerThanOnePulse(double duration)
+inline bool IsEqual(double left, double right)
 {
-	return (duration > VALID_PULSE_DURATION);
-}
-
-inline bool IsBigger(double left, double right){
-	return (left>=right);
+	return (fabs(left - right) < MINIST_PULSE_DURATION);
 }
 
 //----------------------------------------------------------------------
@@ -593,12 +589,12 @@ inline bool IsBigger(double left, double right){
 //----------------------------------------------------------------------
 inline bool IfleftContainRight(PulseDesc *left, PulseDesc *right)// I II III
 {
-	return (IsBigger(left->duration, right->duration) &&  IsBigger(right->start, left->start));
+	return ((left->duration >= right->duration) && IsEqual(right->start, left->start));
 }
 
 inline bool ifLeftAheadRight(PulseDesc* left, PulseDesc *right)
 {
-	return IsBigger(right->start, left->end);
+	return ((right->start >= left->end) || IsEqual(right->start, left->end));
 }
 
 splitType PulseAnalyzer::ifNeedSplitPulse(PulseDesc *left, PulseDesc *right)
@@ -611,17 +607,36 @@ splitType PulseAnalyzer::ifNeedSplitPulse(PulseDesc *left, PulseDesc *right)
 		ret = splitSkipRight;
 	}else if(IfleftContainRight(left, right)){ // I II III
 		ret = splitLeft;
-		if ((left->start == right->start) 
-			&&  (IsBigger(left->end, right->end)))
+
+		if (IsEqual(left->start, right->start))
 		{
-			ret = splitLeftRefRight;
+			if (!IsEqual(left->end, right->end)) {
+				if (IsBigger(left->end, right->end)) {
+					ret = splitLeftRefRight;
+				} else {
+					ret = splitSkipLeft;
+				}
+			} else {
+				ret = splitSkipAll;
+			}
 		}
 	}else if(IfleftContainRight(right, left)){
 		ret = splitRight;
-		if ( (right->start == left->start) && 
-			IsBigger(right->end, left->end)) {
-			ret = splitRightRefLeft;
+
+		if (IsEqual(right->start, left->start))
+		{
+			if (!IsEqual(left->end , right->end)) {
+				if (IsBigger(left->end, right->end)) {
+					ret = splitRightRefLeft;
+				} else {
+					ret = splitSkipRight;
+				}
+			} else {
+				ret = splitSkipAll;
+			}
 		}
+	} else {
+		ret = ret;
 	}
 
 	//Logger(Debug, "%.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %d\n", left->start, left->end, left->duration, right->start, right->end, right->duration, ret);
@@ -643,10 +658,10 @@ void PulseAnalyzer::CreateFrameInfo(double frameDuration)
 
 	Logger(Info, "Process Sync Data... ");
 
-	while(1){
+	while (!(itLong == longChannel.end() || itShort == shortChannel.end())) {
 		double start, end;
 		start = end = 0;
-		curFrameType = INVALID_FRAMETYPE;
+		curFrameType = GetPulseType(itShort->type, itLong->type);
 
 		ReportProgress(itLong->index, longChannel.size());
 
@@ -708,6 +723,14 @@ void PulseAnalyzer::CreateFrameInfo(double frameDuration)
 				itLong++;
 			}
 				break;
+			case splitSkipAll:
+			{
+				start = (itLong->start + itShort->start)/2;
+				end = (itLong->end + itShort->end)/2;
+				itLong++;
+				itShort++;
+			}
+				break;
 			default:
 				break;
 		}
@@ -721,10 +744,6 @@ void PulseAnalyzer::CreateFrameInfo(double frameDuration)
 			mStdevpAlgorithm.CalcAvgStdAndFps(mFramePulse, avg, stdevp, fps);
 			FrameDesc frame(curFrameType, OutPulse.start, OutPulse.end, fps, avg, stdevp, index++);
 			mFramePulse.push_back(frame);
-		}
-
-		if (itLong == longChannel.end() || itShort == shortChannel.end()) {
-			break;
 		}
 	}
 }

@@ -38,6 +38,7 @@ enum splitType{
 	splitLeftRefRight,
 	splitSkipRight,
 	splitSkipLeft,
+	splitSkipAll,
 };
 
 typedef struct tagAnalyzerParams{
@@ -89,8 +90,6 @@ protected:
 	void PulseFilter();
 	void MergeOffset();
 
-	inline bool IsOneFrame(const double &, const double &);
-
 private:
 	std::list<PulseDesc>mPulseList[MAX_CHANNEL];
 	std::vector<FrameDesc> mFramePulse;
@@ -99,6 +98,8 @@ private:
 	ANALYZER_PARAMS mWorkParams;
 
 	StdevAlgorithm mStdevpAlgorithm;
+
+	double nextStart;
 
 	xlsOperator *xlsMachine;
 };
