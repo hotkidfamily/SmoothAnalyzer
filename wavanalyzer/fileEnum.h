@@ -1,11 +1,6 @@
 #pragma once
 
 #include "stdafx.h"
-#include <windows.h>
-#include <string>
-#include <list>
-
-#include "log.h"
 
 class FileEnumer
 {

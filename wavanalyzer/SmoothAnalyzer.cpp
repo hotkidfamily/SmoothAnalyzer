@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "SmoothAnalyzer.h"
-#include "log.h"
+#include "libxllibrary.h"
 
 const struct tagPulseType{
 	PULSETYPE lPulseType;
@@ -14,6 +14,8 @@ const struct tagPulseType{
 
 #define PULSETABLECOUNT (ARRAYSIZE(pulseTable))
 #define INVALID_FRAMETYPE (-1)
+
+#define RAW_PULSE_SHEET_NAME (TEXT("RAW"))
 
 PulseAnalyzer::PulseAnalyzer(std::string &filename)
 {
@@ -216,47 +218,72 @@ BOOL PulseAnalyzer::GetPulseWidth(double &duration)
 	return bRet;
 }
 
+const TCHAR* rawPulseHeaderTable[] = {
+	TEXT("channel"),
+	TEXT("index"),
+	TEXT("start"),
+	TEXT("end"),
+	TEXT("duration"),
+	TEXT("type")
+};
+
+#define SZ_RAW_PULSE_HEADER (ARRAYSIZE(rawPulseHeaderTable))
+
 void PulseAnalyzer::WriteRawPulseDetail()
 {
 	PulseList::iterator lit;
 	PulseList::iterator rit;
-	std::string filePath = mWorkParams.mSourceFileName + ".raw.pulse.csv";
-	CSVFile file(filePath);
+	std::string filePath = mWorkParams.mSourceFileName + ".raw.pulse.xls";
+	int32_t rowIndex = 0;
+	int32_t colIndex = 0;
+	//CSVFile file(filePath);
 
 	Logger(Info, "Write Raw Data... ");
+	Book *book = NULL;
+	xlsOperator *xlsMachine = new xlsOperator;
+	if(!xlsMachine->CreateBook()){
+		return ;
+	}
 
-	file.WriteCsvLine(" channel, index, start, end, duration, type, channel, index, start, end, duration, type, ");
+	Sheet* sheet = xlsMachine->CreateSheet(RAW_PULSE_SHEET_NAME);
+
+	// write header 
+	colIndex = 0;
+	for(; colIndex<SZ_RAW_PULSE_HEADER; colIndex++){
+		sheet->writeStr(rowIndex, colIndex, rawPulseHeaderTable[colIndex]);
+		sheet->writeStr(rowIndex, colIndex+SZ_RAW_PULSE_HEADER, rawPulseHeaderTable[colIndex]);
+
+	}
+	rowIndex++;
 
 	lit = mPulseList[LCHANNEL].begin();
 	rit = mPulseList[RCHANNEL].begin();
 
 	while((lit != mPulseList[LCHANNEL].end()) && (rit!=mPulseList[RCHANNEL].end()))
 	{
-		file.WriteCsvLine(
-			" %c, %d, %.3f, %.3f, %.3f, %d, "
-			" %c, %d, %.3f, %.3f, %.3f, %d, ",
-			lit->channelName, lit->index, lit->start, lit->end, lit->duration, lit->type, 
-			rit->channelName, rit->index, rit->start, rit->end, rit->duration, rit->type);
+		colIndex = 0;
+		xlsMachine->WritePulseAtRowCol(sheet, rowIndex, colIndex, &(*lit), &(*rit));
 
 		lit++;
 		rit++;
+		rowIndex++;
 	}
 
 	while(lit!= mPulseList[LCHANNEL].end()){
-		file.WriteCsvLine(
-			" %c, %d, %.3f, %.3f, %.3f, %d, "
-			" ,,,,,, ",
-			lit->channelName, lit->index, lit->start, lit->end, lit->duration, lit->type);
+		colIndex = 5;
+		xlsMachine->WritePulseAtRowCol(sheet, rowIndex, colIndex, &(*lit), NULL);
 		lit++;
+		rowIndex++;
 	}
 
 	while(rit != mPulseList[RCHANNEL].end()){
-		file.WriteCsvLine(
-			" ,,,,,, "
-			" %c, %d, %.3f, %.3f, %.3f, %d, ",
-			rit->channelName, rit->index, rit->start, rit->end, rit->duration, rit->type);
+		colIndex = 0;
+		xlsMachine->WritePulseAtRowCol(sheet, rowIndex, colIndex, NULL, &(*rit));
+
 		rit++;
+		rowIndex++;
 	}
+	xlsMachine->SaveAndCloseBook(filePath);
 }
 
 void PulseAnalyzer::WriteSyncDetail()

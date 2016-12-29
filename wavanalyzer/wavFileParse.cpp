@@ -1,5 +1,4 @@
 #include "StdAfx.h"
-#include "log.h"
 #include "wavFileParse.h"
 
 DataSeparater::DataSeparater(std::string &name)

@@ -2,22 +2,21 @@
 //
 
 #include "stdafx.h"
-#include "log.h"
 #include "waveAnalyzer.h"
 #include "fileEnum.h"
 #include "SmoothAnalyzer.h"
 
-#define TEST 3
+#define TEST 2
 
 #ifdef _DEBUG
 char* debug_args[] ={
 	"",
 #if (TEST == 1)
 	"e:\\smooth\\ios-sony-entertainment.wav",
-	"-8",
+	"0",
 #elif (TEST == 2)
 	"e:\\smooth\\xiaomi4-sony-entertainment.wav",
-	"-14",
+	"-3",
 #else
 	"e:\\smooth\\mpc-hc-sony-entertainment-default-render.wav",
 	"0",

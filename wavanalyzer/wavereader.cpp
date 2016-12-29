@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "wavereader.h"
-#include "log.h"
 
 // CWaveReader¿‡ µœ÷    
 CWaveReader::CWaveReader()   

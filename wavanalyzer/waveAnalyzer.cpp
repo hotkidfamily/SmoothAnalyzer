@@ -1,6 +1,5 @@
 #include "StdAfx.h"
 #include "waveAnalyzer.h"
-#include "log.h"
 
 WaveAnalyzer::WaveAnalyzer(std::string &filePath)
 : mAnalyzerFile(filePath)

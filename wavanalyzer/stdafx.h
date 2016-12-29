@@ -23,6 +23,8 @@
 
 #include "stdint.h"
 
+#include "log.h" // project common file
+
 // all data in millisecond
 
 #define ANALYZER_DURATION (1000)

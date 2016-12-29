@@ -1,6 +1,5 @@
 #include "StdAfx.h"
 #include "csvFileMaker.h"
-#include "log.h"
 
 CSVFile::~CSVFile(void)
 {
@@ -17,7 +16,7 @@ void CSVFile::flush()
 	if(!csvLines.empty()){
 		csvFile.open(csvFileName.c_str());
 		if(!csvFile.is_open()){
-			Logger(Info, "Can not create file %s.", csvFileName.c_str());
+			Logger(Error, "Can not create file %s.", csvFileName.c_str());
 			return ;
 		}
 
