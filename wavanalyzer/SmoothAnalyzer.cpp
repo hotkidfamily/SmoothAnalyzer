@@ -273,8 +273,6 @@ void PulseAnalyzer::WriteSyncDetail()
 	PulseList::iterator lit = mPulseList[LCHANNEL].begin();
 	PulseList::iterator rit = mPulseList[RCHANNEL].begin();
 
-	STRING filePath = mWorkParams.mSourceFileName + _T(".sync.detail.xls");
-
 	Logger(Info, "Write Sync Data... ");
 
 	Sheet* syncSheet = xlsMachine->CreateSheet(SYNC_SHEET_NAME);

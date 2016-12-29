@@ -19,6 +19,7 @@ enum FrameHistograms{
 
 enum syncRet{
 	ALLSYNC,
+	ENDSYNC,
 	LEFTAHEAD,
 	RIGHTAHEAD,
 };
