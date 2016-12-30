@@ -592,12 +592,17 @@ inline bool PulseAnalyzer::IsEqual(double left, double right)
 //----------------------------------------------------------------------
 inline bool PulseAnalyzer::IfleftContainRight(PulseDesc *left, PulseDesc *right)// I II III
 {
-	return ((left->duration >= right->duration) && IsEqual(right->start, left->start));
+	return ((left->duration >= right->duration) && (IsEqual(right->start, left->start) || (right->start > left->start)));
 }
 
 inline bool PulseAnalyzer::ifLeftAheadRight(PulseDesc* left, PulseDesc *right)
 {
-	return ((right->start >= left->end));
+	return ((right->start >= left->end) && (IsEqual(right->start , left->end) && (right->start >= left->start)));
+}
+
+inline bool PulseAnalyzer::ifLeftCrossRight(PulseDesc* left, PulseDesc *right) // IV V
+{
+	return ((left->start < right->start) && (left->end < right->end));
 }
 
 splitType PulseAnalyzer::ifNeedSplitPulse(PulseDesc *left, PulseDesc *right)
@@ -627,7 +632,7 @@ splitType PulseAnalyzer::ifNeedSplitPulse(PulseDesc *left, PulseDesc *right)
 
 		if (IsEqual(right->start, left->start)){
 			if (!IsEqual(left->end , right->end)) {
-				if (IsBigger(left->end, right->end)) {
+				if (IsBigger(right->end, left->end)) {
 					ret = splitRightRefLeft;
 				} else {
 					ret = splitSkipRight;
@@ -636,7 +641,11 @@ splitType PulseAnalyzer::ifNeedSplitPulse(PulseDesc *left, PulseDesc *right)
 				ret = splitSkipAll;
 			}
 		}
-	} else {
+	} else if(ifLeftCrossRight(left, right)){
+		ret = splitLeftRefRightEnd;
+	}else if(ifLeftCrossRight(right, left)){
+		ret = splitRightRefLeftEnd;
+	}else{
 		ret = ret;
 	}
 
@@ -669,13 +678,13 @@ void PulseAnalyzer::CreateFrameInfo(double frameDuration)
 		ReportProgress(itLong->index, longChannel.size());
 
 		splitType ret = ifNeedSplitPulse(&(*itShort), &(*itLong));
+		shortOrg = *itShort;
+		longOrg = *itLong;
 		switch(ret)
 		{
 			case splitLeft:
 				{
 					prePost = to_str(splitLeft);
-					shortOrg = *itShort;
-					longOrg = *itLong;
 
 					start = itShort->start;
 					end = itLong->start;
@@ -689,8 +698,6 @@ void PulseAnalyzer::CreateFrameInfo(double frameDuration)
 			case splitLeftRefRight:
 				{
 					prePost = to_str(splitLeftRefRight);
-					shortOrg = *itShort;
-					longOrg = *itLong;
 
 					start = (itLong->start + itShort->start)/2;
 					end = itLong->end;
@@ -704,8 +711,6 @@ void PulseAnalyzer::CreateFrameInfo(double frameDuration)
 			case  splitRight:
 				{
 					prePost = to_str(splitRight);
-					shortOrg = *itShort;
-					longOrg = *itLong;
 
 					start = itLong->start;
 					end = itShort->start;
@@ -718,8 +723,6 @@ void PulseAnalyzer::CreateFrameInfo(double frameDuration)
 			case splitRightRefLeft:
 				{
 					prePost = to_str(splitRightRefLeft);
-					shortOrg = *itShort;
-					longOrg = *itLong;
 
 					start = (itLong->start + itShort->start)/2;
 					end = itShort->end;
@@ -733,8 +736,6 @@ void PulseAnalyzer::CreateFrameInfo(double frameDuration)
 			case splitSkipLeft:
 				{
 					prePost = to_str(splitSkipLeft);
-					shortOrg = *itShort;
-					longOrg = *itLong;
 
 					start = itShort->start;
 					end = itShort->end;
@@ -744,8 +745,6 @@ void PulseAnalyzer::CreateFrameInfo(double frameDuration)
 			case splitSkipRight:
 				{
 					prePost = to_str(splitSkipRight);
-					shortOrg = *itShort;
-					longOrg = *itLong;
 
 					start = itLong->start;
 					end = itLong->end;
@@ -755,8 +754,6 @@ void PulseAnalyzer::CreateFrameInfo(double frameDuration)
 			case splitSkipAll:
 				{
 					prePost = to_str(splitSkipAll);
-					shortOrg = *itShort;
-					longOrg = *itLong;
 
 					start = (itLong->start + itShort->start)/2;
 					end = (itLong->end + itShort->end)/2;
@@ -764,8 +761,31 @@ void PulseAnalyzer::CreateFrameInfo(double frameDuration)
 					itShort++;
 				}
 				break;
+			case splitLeftRefRightEnd:
+				{
+					prePost = to_str(splitLeftRefRightEnd);
+
+					start = itShort->start;
+					end = itLong->end;
+					itShort->SetStart(end);
+					if (itShort->duration <= 0) {
+						itShort++;
+					}
+				}
+				break;
+			case splitRightRefLeftEnd:
+				{
+					prePost = to_str(splitRightRefLeftEnd);
+
+					start = itLong->start;
+					end = itShort->end;
+					itLong->SetStart(end);
+					if (itLong->duration <= 0) {
+						itLong++;
+					}
+				}
+				break;
 			default:
-				Logger(Error, "Unknow Pulse Split type.");
 				break;
 		}
 

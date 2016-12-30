@@ -33,8 +33,10 @@ enum fixRet{
 enum splitType{
 	splitNone,
 	splitRight,
+	splitRightRefLeftEnd,
 	splitRightRefLeft,
 	splitLeft,
+	splitLeftRefRightEnd,
 	splitLeftRefRight,
 	splitSkipRight,
 	splitSkipLeft,
@@ -95,6 +97,7 @@ protected:
 	inline bool IfleftContainRight(PulseDesc *left, PulseDesc *right);
 	inline bool IsEqual(double left, double right);
 	inline bool IsBigger(double left, double right);
+	inline bool ifLeftCrossRight(PulseDesc* left, PulseDesc *right);
 
 private:
 	std::list<PulseDesc>mPulseList[MAX_CHANNEL];
