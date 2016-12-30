@@ -4,7 +4,9 @@
 class iDump{
 public:
 	iDump(STRING &filepath){
-		//dumpfile.open(filepath.c_str(), std::ios::binary);
+		std::string file;
+		file.assign(filepath.begin(), filepath.end());
+		//dumpfile.open(file.c_str(), std::ios::binary);
 	}
 
 	int32_t DumpData(std::string &data)

@@ -45,11 +45,13 @@ int32_t FileEnumer::IsDirectory(STRING &path)
 int32_t FileEnumer::EnumDirectory(STRING path, STRING postPix)
 {
 	STRING filename;
+	std::string pathAsc;
+	pathAsc.assign(path.begin(), path.end());
 	try{
 		WIN32_FIND_DATA fd = {0};
 		HANDLE hFindFile = FindFirstFile(path.c_str(), &fd);
 		if(hFindFile == INVALID_HANDLE_VALUE){
-			Logger(Error, "Open path %s", path.c_str());
+			Logger(Error, "Open path %s", pathAsc.c_str());
 			FindClose(hFindFile);
 			return 0;
 		}
@@ -66,8 +68,8 @@ int32_t FileEnumer::EnumDirectory(STRING path, STRING postPix)
 
 		FindClose(hFindFile);
 		
-	}catch(...){ 
-		Logger(Fatal, "open %s.", path.c_str());
+	}catch(...){
+		Logger(Fatal, "open %s.", pathAsc.c_str());
 		return -1; 
 	}
 	return 0;

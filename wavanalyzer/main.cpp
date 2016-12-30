@@ -69,6 +69,7 @@ static void print_usage(const TCHAR *name)
 static int32_t parse_parameters(SMOOTH_CONTEXT* ctx, const int32_t argc, TCHAR* argv[])
 {
 	int32_t ret = 0;
+
 	if(argc < 2){
 		print_usage(argv[0]);
 		ret = -1;
@@ -156,9 +157,10 @@ static int GetAbsolutlyPath(const TCHAR* path, STRING &rPath)
 	return 0;
 }
 
-int main(int argc, TCHAR* argv[])
+int _tmain(int argc, TCHAR* argv[])
 {
 	int32_t ret = 0;
+	std::string pathAsc;
 	PSMOOTH_CONTEXT pCtx = new SMOOTH_CONTEXT;
 
 #ifdef _DEBUG
@@ -177,9 +179,11 @@ int main(int argc, TCHAR* argv[])
 		goto cleanup;
 	}
 
+	pathAsc.assign(pCtx->targetPath.begin(), pCtx->targetPath.end());
+
 	ret = pCtx->fileFinder->IsDirectory(pCtx->targetPath);
 	if(ret < 0){
-		Logger(Fatal, "path %s is invalid.", argv[1]);
+		Logger(Fatal, "path %s is invalid.", pathAsc.c_str());
 	}else if (ret > 0){
 		STRING file;
 		if(GetAbsolutlyPath(argv[1], pCtx->targetPath) < 0){
