@@ -52,15 +52,15 @@ static void print_usage(const TCHAR *name)
 {
 	const TCHAR *help = _T("\n\tAnazlyer a smooth steam wave file.\n\n")
 		_T("Usage:\t%s -i <PATH>/<File Name> -loglevlel -pulse -offset -fps\n")
-		_T("e.g., \t%s a.wav -loglevel 3 -pulse 16 -offset -8 -fps 30\n\n")
+		_T("e.g., \t%s -i a.wav -loglevel 3 -pulse 16 -offset -8 -fps 30\n\n")
 		_T("Tips:\tIf you want indicate channels different Please fill [offset] in millisecond.\n")
 		_T("     \tAnd if you know frame rate Please fill [fps].\n")
 		_T("     \t[i]         - Set input file name.\n")
-		_T("     \t[loglevel]  - Set log level, default is 3(debug), minist is 0, biggest is 7.\n")
+		_T("     \t[loglevel]  - Set log level, default is 3(debug), minist is 0, biggest is 7(Only output fatal message.).\n")
 		_T("     \t[pulse]     - Set Minist Pulse width for detect valid frame.\n")
 		_T("     \t[offset]    - Negative indicate ahead, Positive indicate behind.\n")
 		_T("     \t[fps]	   - Frame rate of analyzed view, if you want inut frame rate alone, you should make offset to 0.\n")
-		_T("     \t             e.g., frame rate is 30fps then input \"0 0 30\" .\n\n")
+		_T("     \t              e.g., frame rate is 30fps then input \"-fps 30\" .\n\n")
 		_T("Warning:Only Support .WAV File With 2 Channels.\n\n");
 
 	_tprintf(help, name, name);	
