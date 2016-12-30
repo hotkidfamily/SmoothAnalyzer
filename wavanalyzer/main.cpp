@@ -117,7 +117,7 @@ static int GetAbsolutlyPath(const TCHAR* path, STRING &rPath)
 {
 	DWORD retVal = 0;
 	STRING cupath = path;
-	TCHAR buffer[MAX_PATH] = {'\0'};
+	TCHAR buffer[MAX_PATH] = {_T('\0')};
 	TCHAR *retPath = {NULL};
 	retVal = GetFullPathName(path, MAX_PATH, buffer, &retPath);
 	if (retVal == 0) {
