@@ -6,7 +6,7 @@
 #include "fileEnum.h"
 #include "SmoothAnalyzer.h"
 
-#define TEST 5
+#define TEST 4
 
 #ifdef _DEBUG
 TCHAR* debug_args[] ={
@@ -25,7 +25,7 @@ TCHAR* debug_args[] ={
 	_T("-8"),
 #else
 	_T("C:\\workspace\\SmoothAnalyzer\\samples\\xiaomi4-sony-entertainment.wav"),
-	_T("-14"),
+	_T("-4"),
 #endif
 	_T("30")
 };

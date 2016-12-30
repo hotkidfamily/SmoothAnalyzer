@@ -113,6 +113,8 @@ void PulseAnalyzer::PulseLowFilter(PulseList &channelPulse)
 				index --;
 				PulseDesc timeInsert(itPre->channelID, itPre->start, itPos->end, itPre->type, index);
 				it = itPos;
+				Logger(Debug, "Merge (%.2f,%.2f) and (%.2f,%.2f) to (%.2f,%.2f)",
+					itPre->start, itPre->end, itPos->start, itPos->end, timeInsert.start, timeInsert.end);
 				newChannel.pop_back();
 				newChannel.push_back(timeInsert);
 			}else{
@@ -242,8 +244,7 @@ void PulseAnalyzer::WriteRawPulseDetail()
 	lit = mPulseList[LCHANNEL].begin();
 	rit = mPulseList[RCHANNEL].begin();
 
-	while((lit != mPulseList[LCHANNEL].end()) && (rit!=mPulseList[RCHANNEL].end()))
-	{
+	while((lit != mPulseList[LCHANNEL].end()) && (rit!=mPulseList[RCHANNEL].end())){
 		colIndex = 0;
 		xlsMachine->WriteMultiplePulseAtRowCol(rawPulseSheet, rowIndex++, colIndex, &(*lit), &(*rit));
 
@@ -281,8 +282,7 @@ void PulseAnalyzer::WriteSyncDetail()
 		_T("channel, index, start, end, duration, type, interval, ")
 		_T("channel, index, start, end, duration, type, interval, "));
 
-	while((lit != mPulseList[LCHANNEL].end()) && (rit != mPulseList[RCHANNEL].end()))
-	{
+	while((lit != mPulseList[LCHANNEL].end()) && (rit != mPulseList[RCHANNEL].end())){
 		col = 0;
 		sync = (int32_t)(lit->start - rit->start);
 
@@ -321,7 +321,8 @@ void PulseAnalyzer::WriteRawSyncDetail()
 		_T("channel, index, start, end, duration, type, interval, ")
 		_T("channel, index, start, end, duration, type, interval, "));
 
-	while(1){
+	while(1)
+	{
 		PulseDesc shortPulse, longPulse;
 
 		if((itShort != shortChannel.end()) && (itLong != longChannel.end())){
@@ -402,7 +403,8 @@ void PulseAnalyzer::JudgetDropFrame(const int32_t &NormalLevel, const double &pu
 	exceptNextType = frameVect[0].frameType;
 	shouldNextType = exceptNextType;
 
-	while(i<frameVect.size()){
+	while(i<frameVect.size())
+	{
 		curFrameType = frameVect[i].frameType;
 		if(curFrameType == exceptNextType){
 			exceptNextType = (exceptNextType+1)%PULSETABLECOUNT;
@@ -594,7 +596,7 @@ inline bool IfleftContainRight(PulseDesc *left, PulseDesc *right)// I II III
 
 inline bool ifLeftAheadRight(PulseDesc* left, PulseDesc *right)
 {
-	return ((right->start >= left->end) || IsEqual(right->start, left->end));
+	return ((right->start >= left->end));
 }
 
 splitType PulseAnalyzer::ifNeedSplitPulse(PulseDesc *left, PulseDesc *right)
@@ -608,8 +610,7 @@ splitType PulseAnalyzer::ifNeedSplitPulse(PulseDesc *left, PulseDesc *right)
 	}else if(IfleftContainRight(left, right)){ // I II III
 		ret = splitLeft;
 
-		if (IsEqual(left->start, right->start))
-		{
+		if (IsEqual(left->start, right->start)){
 			if (!IsEqual(left->end, right->end)) {
 				if (IsBigger(left->end, right->end)) {
 					ret = splitLeftRefRight;
@@ -623,8 +624,7 @@ splitType PulseAnalyzer::ifNeedSplitPulse(PulseDesc *left, PulseDesc *right)
 	}else if(IfleftContainRight(right, left)){
 		ret = splitRight;
 
-		if (IsEqual(right->start, left->start))
-		{
+		if (IsEqual(right->start, left->start)){
 			if (!IsEqual(left->end , right->end)) {
 				if (IsBigger(left->end, right->end)) {
 					ret = splitRightRefLeft;
@@ -639,11 +639,10 @@ splitType PulseAnalyzer::ifNeedSplitPulse(PulseDesc *left, PulseDesc *right)
 		ret = ret;
 	}
 
-	//Logger(Debug, "%.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %d\n", left->start, left->end, left->duration, right->start, right->end, right->duration, ret);
-
 	return ret;
 }
 
+#define to_str(x) #x
 /* compare short list to long list and write value */
 void PulseAnalyzer::CreateFrameInfo(double frameDuration)
 {
@@ -658,82 +657,120 @@ void PulseAnalyzer::CreateFrameInfo(double frameDuration)
 
 	Logger(Info, "Process Sync Data... ");
 
-	while (!(itLong == longChannel.end() || itShort == shortChannel.end())) {
+	while (!(itLong == longChannel.end() || itShort == shortChannel.end())) 
+	{
 		double start, end;
+		char *prePost = "Unknow";
+		PulseDesc shortOrg, longOrg;
 		start = end = 0;
 		curFrameType = GetPulseType(itShort->type, itLong->type);
 
 		ReportProgress(itLong->index, longChannel.size());
 
 		splitType ret = ifNeedSplitPulse(&(*itShort), &(*itLong));
-		switch(ret){
+		switch(ret)
+		{
 			case splitLeft:
-			{
-				start = itShort->start;
-				end = itLong->start;
-				itShort->SetStart(end);
-				if (itShort->duration <= 0) {
-					itShort++;
+				{
+					prePost = to_str(splitLeft);
+					shortOrg = *itShort;
+					longOrg = *itLong;
+
+					start = itShort->start;
+					end = itLong->start;
+					Logger(Debug, "splitLeft: (%.2f,%.2f) & (%.2f,%.2f) => (%.2f, %.2f)",
+						itShort->start, itShort->end, itLong->start, itLong->end, start, end);
+					itShort->SetStart(end);
+					if (itShort->duration <= 0) {
+						itShort++;
+					}
 				}
-			}
 				break;
 			case splitLeftRefRight:
-			{
-				start = itShort->start;
-				end = itLong->end;
-				itShort->SetStart(end);
-				if (itShort->duration <= 0) {
-					itShort++;
+				{
+					prePost = to_str(splitLeftRefRight);
+					shortOrg = *itShort;
+					longOrg = *itLong;
+
+					start = (itLong->start + itShort->start)/2;
+					end = itLong->end;
+					itShort->SetStart(end);
+					if (itShort->duration <= 0) {
+						itShort++;
+					}
+					itLong++;
 				}
-				itLong++;
-			}
 				break;
 			case  splitRight:
-			{
-				start = itLong->start;
-				end = itShort->start;
-				itLong->SetStart(end);
-				if (itLong->duration <= 0) {
-					itLong++;
+				{
+					prePost = to_str(splitRight);
+					shortOrg = *itShort;
+					longOrg = *itLong;
+
+					start = itLong->start;
+					end = itShort->start;
+					itLong->SetStart(end);
+					if (itLong->duration <= 0) {
+						itLong++;
+					}
 				}
-			}
 				break;
 			case splitRightRefLeft:
-			{
-				start = itLong->start;
-				end = itShort->end;
-				itLong->SetStart(end);
-				if (itLong->duration <= 0) {
-					itLong++;
+				{
+					prePost = to_str(splitRightRefLeft);
+					shortOrg = *itShort;
+					longOrg = *itLong;
+
+					start = (itLong->start + itShort->start)/2;
+					end = itShort->end;
+					itLong->SetStart(end);
+					if (itLong->duration <= 0) {
+						itLong++;
+					}
+					itShort++;
 				}
-				itShort++;
-			}
 				break;
 			case splitSkipLeft:
-			{
-				start = itShort->start;
-				end = itShort->end;
-				itShort++;
-			}
+				{
+					prePost = to_str(splitSkipLeft);
+					shortOrg = *itShort;
+					longOrg = *itLong;
+
+					start = itShort->start;
+					end = itShort->end;
+					itShort++;
+				}
 				break;
 			case splitSkipRight:
-			{
-				start = itLong->start;
-				end = itLong->end;
-				itLong++;
-			}
+				{
+					prePost = to_str(splitSkipRight);
+					shortOrg = *itShort;
+					longOrg = *itLong;
+
+					start = itLong->start;
+					end = itLong->end;
+					itLong++;
+				}
 				break;
 			case splitSkipAll:
-			{
-				start = (itLong->start + itShort->start)/2;
-				end = (itLong->end + itShort->end)/2;
-				itLong++;
-				itShort++;
-			}
+				{
+					prePost = to_str(splitSkipAll);
+					shortOrg = *itShort;
+					longOrg = *itLong;
+
+					start = (itLong->start + itShort->start)/2;
+					end = (itLong->end + itShort->end)/2;
+					itLong++;
+					itShort++;
+				}
 				break;
 			default:
+				Logger(Error, "Unknow Pulse Split type.");
 				break;
 		}
+
+		Logger(Debug, "%s: (%.2f,%.2f) & (%.2f,%.2f) => (%.2f, %.2f)", prePost,
+			shortOrg.start, shortOrg.end, longOrg.start, longOrg.end, start, end);
 
 		{
 			double fps = 0.0f;
@@ -747,6 +784,7 @@ void PulseAnalyzer::CreateFrameInfo(double frameDuration)
 		}
 	}
 }
+#undef to_str
 
 void PulseAnalyzer::OutputResult()
 {

@@ -138,7 +138,7 @@ retType WaveAnalyzer::Analyzer(analyzerContext *ctx, std::string &channelData, s
 
 void WaveAnalyzer::RecordPulse(CHANNELID channelID, double start, double end)
 {
-	if((end - start) < MINIST_PULSE_DURATION){
+	if((end - start) < VALID_PULSE_DURATION){
 		return ;
 	}
 
