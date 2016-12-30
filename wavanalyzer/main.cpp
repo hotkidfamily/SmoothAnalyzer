@@ -6,7 +6,7 @@
 #include "fileEnum.h"
 #include "SmoothAnalyzer.h"
 
-#define TEST 6
+#define TEST 5
 
 #ifdef _DEBUG
 TCHAR* debug_args[] ={
@@ -27,7 +27,7 @@ TCHAR* debug_args[] ={
 #elif (TEST == 5)
 	_T("C:\\workspace\\SmoothAnalyzer\\samples\\xiaomi4-sony-entertainment.wav"),
 	_T("-offset"),
-	_T("-14"),
+	_T("-4"),
 #else
 	_T("C:\\workspace\\SmoothAnalyzer\\samples\\mac-sony-entertainment.wav"),
 #endif
@@ -52,7 +52,7 @@ static void print_usage(const TCHAR *name)
 {
 	const TCHAR *help = _T("\n\tAnazlyer a smooth steam wave file.\n\n")
 		_T("Usage:\t%s -i <PATH>/<File Name> -loglevlel -pulse -offset -fps\n")
-		_T("e.g., \t%s a.wav -loglevel 3 -pulse 16 -8 30\n\n")
+		_T("e.g., \t%s a.wav -loglevel 3 -pulse 16 -offset -8 -fps 30\n\n")
 		_T("Tips:\tIf you want indicate channels different Please fill [offset] in millisecond.\n")
 		_T("     \tAnd if you know frame rate Please fill [fps].\n")
 		_T("     \t[i]         - Set input file name.\n")
