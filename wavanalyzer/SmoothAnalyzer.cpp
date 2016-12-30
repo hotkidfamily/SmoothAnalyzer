@@ -678,8 +678,7 @@ void PulseAnalyzer::CreateFrameInfo(double frameDuration)
 
 					start = itShort->start;
 					end = itLong->start;
-					Logger(Debug, "splitLeft: (%.2f,%.2f) & (%.2f,%.2f) => (%.2f, %.2f)",
-						itShort->start, itShort->end, itLong->start, itLong->end, start, end);
+
 					itShort->SetStart(end);
 					if (itShort->duration <= 0) {
 						itShort++;
@@ -769,7 +768,7 @@ void PulseAnalyzer::CreateFrameInfo(double frameDuration)
 				break;
 		}
 
-		Logger(Debug, "%s: (%.2f,%.2f) & (%.2f,%.2f) => (%.2f, %.2f)", prePost,
+		Logger(PulseSplit, "%s: (%.2f,%.2f) & (%.2f,%.2f) => (%.2f, %.2f)", prePost,
 			shortOrg.start, shortOrg.end, longOrg.start, longOrg.end, start, end);
 
 		{

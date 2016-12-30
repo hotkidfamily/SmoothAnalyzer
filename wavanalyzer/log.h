@@ -3,6 +3,7 @@
 enum log_level {
 	FileSystem,
 	PulseDect,
+	PulseSplit,
 	Debug,
 	Info,
 	Warning,
