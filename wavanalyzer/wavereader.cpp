@@ -18,7 +18,10 @@ CWaveReader::~CWaveReader()
 
 bool CWaveReader::Open(const TCHAR* pFileName)
 {   
-	Close();   
+	STRING filename = pFileName;
+	std::string fileNameAsc;
+	fileNameAsc.assign(filename.begin(), filename.end());
+	Close();
 	_tfopen_s(&m_pFile, pFileName, _T("rb"));
 	if( !m_pFile )   
 		return false;   
@@ -27,7 +30,7 @@ bool CWaveReader::Open(const TCHAR* pFileName)
 		return false;
 
 	Logger(Info, "file %s, %d bytes, %f seconds.", 
-		pFileName, m_nDataLen, m_nDataLen*1.0/m_WaveFormat.GetDataSizePerSecond());
+		fileNameAsc.c_str(), m_nDataLen, m_nDataLen*1.0/m_WaveFormat.GetDataSizePerSecond());
 
 	return true;      
 }   

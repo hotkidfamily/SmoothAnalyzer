@@ -6,28 +6,35 @@
 #include "fileEnum.h"
 #include "SmoothAnalyzer.h"
 
-#define TEST 4
+#define TEST 6
 
 #ifdef _DEBUG
 TCHAR* debug_args[] ={
 	_T(""),
+	_T("-i"),
 #if (TEST == 1)
 	_T("e:\\smooth\\ios-sony-entertainment.wav"),
-	_T("0"),
 #elif (TEST == 2)
 	_T("e:\\smooth\\xiaomi4-sony-entertainment.wav"),
+	_T("-offset"),
 	_T("-3"),
 #elif (TEST == 3)
 	_T("e:\\smooth\\mpc-hc-sony-entertainment-default-render.wav"),
-	_T("0"),
 #elif (TEST == 4)
 	_T("C:\\workspace\\SmoothAnalyzer\\samples\\ios-sony-entertainment.wav"),
+	_T("-offset"),
 	_T("-8"),
-#else
+#elif (TEST == 5)
 	_T("C:\\workspace\\SmoothAnalyzer\\samples\\xiaomi4-sony-entertainment.wav"),
-	_T("-4"),
+	_T("-offset"),
+	_T("-14"),
+#else
+	_T("C:\\workspace\\SmoothAnalyzer\\samples\\mac-sony-entertainment.wav"),
 #endif
-	_T("30")
+	_T("-fps"),
+	_T("30"),
+	_T("-loglevel"),
+	_T("3")
 };
 #endif
 
@@ -38,18 +45,22 @@ typedef struct programContext{
 	ANALYZER_PARAMS analyzerParams;
 	STRING targetPath;
 	FileEnumer *fileFinder;
+	int32_t logLevel;
 }SMOOTH_CONTEXT, *PSMOOTH_CONTEXT;
 
 static void print_usage(const TCHAR *name)
 {
 	const TCHAR *help = _T("\n\tAnazlyer a smooth steam wave file.\n\n")
-		_T("Usage:\t%s <PATH>/<File Name> [Offset] [fps]\n")
-		_T("e.g., \t%s a.wav -8 30\n\n")
+		_T("Usage:\t%s -i <PATH>/<File Name> -loglevlel -pulse -offset -fps\n")
+		_T("e.g., \t%s a.wav -loglevel 3 -pulse 16 -8 30\n\n")
 		_T("Tips:\tIf you want indicate channels different Please fill [offset] in millisecond.\n")
 		_T("     \tAnd if you know frame rate Please fill [fps].\n")
-		_T("     \t[offset]- Negative indicate ahead, Positive indicate behind.\n")
-		_T("     \t[fps]	- Frame rate of analyzed view, if you want inut frame rate alone, you should make offset to 0.\n")
-		_T("     \t          e.g., frame rate is 30fps then input \"0 30\" .\n\n")
+		_T("     \t[i]         - Set input file name.\n")
+		_T("     \t[loglevel]  - Set log level, default is 3(debug), minist is 0, biggest is 7.\n")
+		_T("     \t[pulse]     - Set Minist Pulse width for detect valid frame.\n")
+		_T("     \t[offset]    - Negative indicate ahead, Positive indicate behind.\n")
+		_T("     \t[fps]	   - Frame rate of analyzed view, if you want inut frame rate alone, you should make offset to 0.\n")
+		_T("     \t             e.g., frame rate is 30fps then input \"0 0 30\" .\n\n")
 		_T("Warning:Only Support .WAV File With 2 Channels.\n\n");
 
 	_tprintf(help, name, name);	
@@ -64,22 +75,32 @@ static int32_t parse_parameters(SMOOTH_CONTEXT* ctx, const int32_t argc, TCHAR* 
 		goto cleanup;
 	}
 
-	ctx->targetPath = argv[1];
-
-	/* convert input millisecond to second */
-
-	if(argc >= 3){
-		ctx->analyzerParams.channelOffset = _tstof(argv[2]);
-	}
-
-	if(argc >= 4){
-		double frameRate = 0.0f;
-		frameRate = _tstof(argv[3]);
-		if(frameRate != 0.0f){
-			ctx->analyzerParams.sampleFrameRate = frameRate;
+	for(int i = 1; i<argc; i++)
+	{
+		if (_tcscmp(_T("-i"), argv[i]) == 0 && (i + 1) < argc){
+			ctx->targetPath = argv[++i];
+		}
+		else if (_tcscmp(_T("-loglevel"), argv[i]) == 0 && (i + 1) < argc){
+			ctx->logLevel = _ttoi(argv[++i]);
+			if(ctx->logLevel>=FileSystem && ctx->logLevel<=Fatal){
+				SetLoggerLvel((log_level)ctx->logLevel);
+			}
+		}
+		else if (_tcscmp(_T("-pulse"), argv[i]) == 0 && (i + 1) < argc){
+			ctx->analyzerParams.validPulseWidth = _ttoi(argv[++i]);
+		}
+		else if (_tcscmp(_T("-fps"), argv[i]) == 0 && (i + 1) < argc){
+			double frameRate = 0.0f;
+			frameRate = _tstof(argv[++i]);
+			if(frameRate != 0.0f){
+				ctx->analyzerParams.sampleFrameRate = frameRate;
+			}
+		}
+		else if (_tcscmp(_T("-offset"), argv[i]) == 0 && (i + 1) < argc){
+			ctx->analyzerParams.channelOffset = _tstof(argv[++i]);
 		}
 	}
-	
+
 cleanup:
 	return ret;
 }
@@ -89,10 +110,12 @@ static int analyzeFile(PSMOOTH_CONTEXT ctx, STRING file)
 	std::string ChannelData;
 	int32_t ret = 0;
 	PulseAnalyzer *smoothAnalyzer = NULL;
+	std::string fileNameAsc;
+	fileNameAsc.assign(file.begin(), file.end());
 	smoothAnalyzer = new PulseAnalyzer(file);
 	WaveAnalyzer *wavAnalyzer = new WaveAnalyzer(file);
 
-	Logger(Info, "File %s, channel offset %f", file.c_str(), ctx->analyzerParams.channelOffset);
+	Logger(Info, "File %s, channel offset %f", fileNameAsc.c_str(), ctx->analyzerParams.channelOffset);
 
 	smoothAnalyzer->SetWorkingParam(ctx->analyzerParams);
 	wavAnalyzer->AnalyzeFilePulse();
@@ -117,11 +140,13 @@ static int GetAbsolutlyPath(const TCHAR* path, STRING &rPath)
 {
 	DWORD retVal = 0;
 	STRING cupath = path;
+	std::string fileNameAsc;
+	fileNameAsc.assign(cupath.begin(), cupath.end());
 	TCHAR buffer[MAX_PATH] = {_T('\0')};
 	TCHAR *retPath = {NULL};
 	retVal = GetFullPathName(path, MAX_PATH, buffer, &retPath);
 	if (retVal == 0) {
-		Logger(Error ,"Invalid file path %d, code %d\n", path, GetLastError());
+		Logger(Error ,"Invalid file path %d, code %d\n", fileNameAsc.c_str(), GetLastError());
 		return -1;
 	}
 

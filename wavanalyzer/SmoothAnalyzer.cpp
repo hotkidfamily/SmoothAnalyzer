@@ -43,6 +43,7 @@ PulseAnalyzer::~PulseAnalyzer(void)
 
 void PulseAnalyzer::SetWorkingParam(ANALYZER_PARAMS &params)
 {
+	mWorkParams.validPulseWidth = params.validPulseWidth;
 	mWorkParams.sampleFrameRate = params.sampleFrameRate;
 	mWorkParams.channelOffset = params.channelOffset;
 }
@@ -571,12 +572,12 @@ syncRet PulseAnalyzer::ifStartSync(PulseList::iterator &left, PulseList::iterato
 	return ret;
 }
 
-inline bool IsBigger(double left, double right)
+inline bool PulseAnalyzer::IsBigger(double left, double right)
 {
 	return ((left - right) >= MINIST_PULSE_DURATION);
 }
 
-inline bool IsEqual(double left, double right)
+inline bool PulseAnalyzer::IsEqual(double left, double right)
 {
 	return (fabs(left - right) < MINIST_PULSE_DURATION);
 }
@@ -589,12 +590,12 @@ inline bool IsEqual(double left, double right)
 // | -     |        | |     | |     | |
 // -       -        - -     _ -     - _
 //----------------------------------------------------------------------
-inline bool IfleftContainRight(PulseDesc *left, PulseDesc *right)// I II III
+inline bool PulseAnalyzer::IfleftContainRight(PulseDesc *left, PulseDesc *right)// I II III
 {
 	return ((left->duration >= right->duration) && IsEqual(right->start, left->start));
 }
 
-inline bool ifLeftAheadRight(PulseDesc* left, PulseDesc *right)
+inline bool PulseAnalyzer::ifLeftAheadRight(PulseDesc* left, PulseDesc *right)
 {
 	return ((right->start >= left->end));
 }

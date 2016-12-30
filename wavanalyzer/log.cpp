@@ -6,6 +6,7 @@
 const char* level_strs[] = {
 	to_str(FileSystem),
 	to_str(PulseDect),
+	to_str(PulseSplit),
 	to_str(Debug),
 	to_str(Info),
 	to_str(Warning),
@@ -21,6 +22,11 @@ static log_level log_level_base = Debug;
 static log_level log_level_base = Info;
 #endif
 
+void SetLoggerLvel(log_level level)
+{
+	log_level_base = level;
+}
+
 void Logger(log_level level, const char* format, ...)
 {
 	char str[4096] = "";
@@ -29,8 +35,7 @@ void Logger(log_level level, const char* format, ...)
 	_vsnprintf_s(str, 4096 - 1, _TRUNCATE, format, vl);
 	va_end(vl);
 
-	if (level >= log_level_base)
-	{
+	if (level >= log_level_base){
 		if(level > Error){
 			fprintf(stderr, "\n%s: %s\n\n", level_strs[level], str);
 		}else{
