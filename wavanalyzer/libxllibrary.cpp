@@ -35,6 +35,10 @@ bool xlsOperator::CreateBook()
 
 		mBook->setDefaultFont(fontName.c_str(), 10);
 
+		numbformat = mBook->addFormat();
+		int index = mBook->addCustomNumFormat(_T("0.00"));
+		numbformat->setNumFormat(index);
+		
 		bRet = true;
 	}
 
@@ -107,12 +111,8 @@ void xlsOperator::WritePulseAtRowCol(Sheet *&sheet, int32_t row, int32_t col, Pu
 	STRING channle;
 	channle.assign(1, desc->channelName);
 	if(sheet){
-		sheet->writeStr(row, col++, channle.c_str());
-		sheet->writeNum(row, col++, desc->index);
-		sheet->writeNum(row, col++, desc->start);
-		sheet->writeNum(row, col++, desc->end);
-		sheet->writeNum(row, col++, desc->duration);
-		sheet->writeNum(row, col++, desc->type);
+		Printf(sheet, row, col, _T("%c, %d, %f, %f, %f, %d, "), channle.c_str(), 
+			desc->index, desc->start, desc->end, desc->duration, desc->type);
 	}
 }
 
@@ -185,7 +185,7 @@ void xlsOperator::Printf(Sheet *&sheet, int32_t row, int32_t col, TCHAR *format,
 			}else if (ch == _T('f')){
 				double v = va_arg(arg, double);
 				if(sheet)
-					sheet->writeNum(row, colIndex++, v);
+					sheet->writeNum(row, colIndex++, v, numbformat);
 			}else if (ch == _T('u')){
 				uint32_t v = va_arg(arg, uint32_t);
 				if(sheet)

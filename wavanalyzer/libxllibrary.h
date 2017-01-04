@@ -28,4 +28,5 @@ protected:
 
 private:
 	Book *mBook;
+	Format *numbformat;
 };
