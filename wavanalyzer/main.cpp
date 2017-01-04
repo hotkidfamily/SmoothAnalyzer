@@ -31,7 +31,7 @@ TCHAR* debug_args[] ={
 #elif (TEST == 6)
 	_T("C:\\workspace\\SmoothAnalyzer\\samples\\ios-online-sony-entertainment.wav"),
 	_T("-offset"),
-	_T("-4"),
+	_T("0"),
 #else
 	_T("C:\\workspace\\SmoothAnalyzer\\samples\\mac-sony-entertainment.wav"),
 #endif

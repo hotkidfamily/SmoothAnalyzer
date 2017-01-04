@@ -574,12 +574,12 @@ syncRet PulseAnalyzer::ifStartSync(PulseList::iterator &left, PulseList::iterato
 
 inline bool PulseAnalyzer::IsBigger(double left, double right)
 {
-	return ((left - right) >= MINIST_PULSE_DURATION);
+	return ((left - right) >= VALID_PULSE_DURATION);
 }
 
 inline bool PulseAnalyzer::IsEqual(double left, double right)
 {
-	return (fabs(left - right) < MINIST_PULSE_DURATION);
+	return (fabs(left - right) < VALID_PULSE_DURATION);
 }
 
 //----------------------------------------------------------------------
@@ -677,9 +677,13 @@ void PulseAnalyzer::CreateFrameInfo(double frameDuration)
 
 		ReportProgress(itLong->index, longChannel.size());
 
-		splitType ret = ifNeedSplitPulse(&(*itShort), &(*itLong));
 		shortOrg = *itShort;
 		longOrg = *itLong;
+		Logger(PulseSplit, "Push >> (%.2f,%.2f) & (%.2f,%.2f)",
+			shortOrg.start, shortOrg.end, longOrg.start, longOrg.end);
+
+		splitType ret = ifNeedSplitPulse(&(*itShort), &(*itLong));
+
 		switch(ret)
 		{
 			case splitLeft:
@@ -789,7 +793,7 @@ void PulseAnalyzer::CreateFrameInfo(double frameDuration)
 				break;
 		}
 
-		Logger(PulseSplit, "%s: (%.2f,%.2f) & (%.2f,%.2f) => (%.2f, %.2f)", prePost,
+		Logger(PulseSplit, "\t\t\t %s << (%.2f, %.2f)", prePost,
 			shortOrg.start, shortOrg.end, longOrg.start, longOrg.end, start, end);
 
 		{
