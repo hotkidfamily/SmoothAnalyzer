@@ -138,6 +138,8 @@ retType WaveAnalyzer::Analyzer(analyzerContext *ctx, std::string &channelData, s
 
 void WaveAnalyzer::RecordPulse(CHANNELID channelID, double start, double end)
 {
+	Logger(PulseDect, "==>%c: %.3f ~ %.3f", channelID==LCHANNEL?'L':'R', start, end);
+
 	if((end - start) < VALID_PULSE_DURATION){
 		return ;
 	}

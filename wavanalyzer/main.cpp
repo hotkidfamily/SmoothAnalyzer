@@ -29,16 +29,16 @@ TCHAR* debug_args[] ={
 	_T("-offset"),
 	_T("-4"),
 #elif (TEST == 6)
+	_T("C:\\workspace\\SmoothAnalyzer\\samples\\pc-movie-tv-sony-entertainment.wav"),
+#elif (TEST == 7)
 	_T("C:\\workspace\\SmoothAnalyzer\\samples\\ios-online-sony-entertainment.wav"),
-	_T("-offset"),
-	_T("0"),
 #else
 	_T("C:\\workspace\\SmoothAnalyzer\\samples\\mac-sony-entertainment.wav"),
 #endif
 	_T("-fps"),
-	_T("30"),
+	_T("29.97"),
 	_T("-loglevel"),
-	_T("2")
+	_T("6")
 };
 #endif
 
@@ -60,7 +60,7 @@ static void print_usage(const TCHAR *name)
 		_T("Tips:\tIf you want indicate channels different Please fill [offset] in millisecond.\n")
 		_T("     \tAnd if you know frame rate Please fill [fps].\n")
 		_T("     \t[i]         - Set input file name.\n")
-		_T("     \t[loglevel]  - Set log level, default is 3(debug), minist is 0, biggest is 7(Only output fatal message.).\n")
+		_T("     \t[loglevel]  - Set log level, default is 3(debug), minist is 0 which means all message will print, biggest is 7(Only output fatal message.).\n")
 		_T("     \t[pulse]     - Set Minist Pulse width for detect valid frame.\n")
 		_T("     \t[offset]    - Negative indicate ahead, Positive indicate behind.\n")
 		_T("     \t[fps]	   - Frame rate of analyzed view, if you want inut frame rate alone, you should make offset to 0.\n")
@@ -87,8 +87,8 @@ static int32_t parse_parameters(SMOOTH_CONTEXT* ctx, const int32_t argc, TCHAR* 
 		}
 		else if (_tcscmp(_T("-loglevel"), argv[i]) == 0 && (i + 1) < argc){
 			ctx->logLevel = _ttoi(argv[++i]);
-			if(ctx->logLevel>=FileSystem && ctx->logLevel<=Fatal){
-				SetLoggerLvel((log_level)ctx->logLevel);
+			if(ctx->logLevel>=Fatal && ctx->logLevel<=FileSystem){
+				SetLoggerLevel((log_level)ctx->logLevel);
 			}
 		}
 		else if (_tcscmp(_T("-pulse"), argv[i]) == 0 && (i + 1) < argc){

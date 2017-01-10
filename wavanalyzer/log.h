@@ -1,16 +1,16 @@
 #pragma once
 
 enum log_level {
-	FileSystem,
-	PulseDect,
-	PulseSplit,
-	Debug,
-	Info,
-	Warning,
+	Fatal,
 	Error,
-	Fatal
+	Warning,
+	Info,
+	Debug,
+	PulseSplit,
+	PulseDect,
+	FileSystem,
 };
 
 void Logger(log_level level, const char* format, ...);
-void SetLoggerLvel(log_level level);
+void SetLoggerLevel(log_level level);
 void ReportProgress(int32_t progress, int32_t total);
