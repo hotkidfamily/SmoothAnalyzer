@@ -597,7 +597,7 @@ inline bool PulseAnalyzer::IfleftContainRight(PulseDesc *left, PulseDesc *right)
 
 inline bool PulseAnalyzer::ifLeftAheadRight(PulseDesc* left, PulseDesc *right)
 {
-	return ((right->start >= left->end) && (IsEqual(right->start , left->end) && (right->start >= left->start)));
+	return ((right->start >= left->end) || (IsEqual(right->start , left->end) && (right->start >= left->start)));
 }
 
 inline bool PulseAnalyzer::ifLeftCrossRight(PulseDesc* left, PulseDesc *right) // IV V

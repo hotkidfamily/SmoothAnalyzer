@@ -38,7 +38,7 @@ TCHAR* debug_args[] ={
 	_T("-fps"),
 	_T("29.97"),
 	_T("-loglevel"),
-	_T("6")
+	_T("5")
 };
 #endif
 

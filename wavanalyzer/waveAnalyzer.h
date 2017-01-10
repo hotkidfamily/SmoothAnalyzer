@@ -28,7 +28,7 @@ struct 	analyzerContext{
 		bInPulse = false;
 		pulseSampleIndex = 0;
 		totalSampleCount = 0;
-		minThreshold = 0x7fff;
+		minThreshold = 0;
 		maxThreshold = 0;
 		isThresholdValid = false;
 	}

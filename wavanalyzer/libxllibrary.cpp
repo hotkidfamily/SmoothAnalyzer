@@ -108,10 +108,8 @@ bool xlsOperator::SaveAndCloseBook(STRING filename)
 
 void xlsOperator::WritePulseAtRowCol(Sheet *&sheet, int32_t row, int32_t col, PulseDesc* desc)
 {
-	STRING channle;
-	channle.assign(1, desc->channelName);
 	if(sheet){
-		Printf(sheet, row, col, _T("%c, %d, %f, %f, %f, %d, "), channle.c_str(), 
+		Printf(sheet, row, col, _T("%c, %d, %f, %f, %f, %d, "), desc->channelName, 
 			desc->index, desc->start, desc->end, desc->duration, desc->type);
 	}
 }
