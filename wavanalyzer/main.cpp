@@ -29,16 +29,19 @@ TCHAR* debug_args[] ={
 	_T("-offset"),
 	_T("-4"),
 #elif (TEST == 6)
-	_T("C:\\workspace\\SmoothAnalyzer\\samples\\pc-movie-tv-sony-entertainment.wav"),
+//	_T("C:\\workspace\\SmoothAnalyzer\\samples\\pc-movie-tv-sony-entertainment.wav"),
+	_T("C:\\workspace\\SmoothAnalyzer\\samples\\iphonese-render-sony-entertainment-30fps.wav"),
+	_T("-offset"),
+	_T("-3"),
 #elif (TEST == 7)
 	_T("C:\\workspace\\SmoothAnalyzer\\samples\\ios-online-sony-entertainment.wav"),
 #else
 	_T("C:\\workspace\\SmoothAnalyzer\\samples\\mac-sony-entertainment.wav"),
 #endif
 	_T("-fps"),
-	_T("29.97"),
+	_T("30"),
 	_T("-loglevel"),
-	_T("5")
+	_T("3")
 };
 #endif
 

@@ -156,17 +156,19 @@ int32_t CWaveReader::ReadData(std::string &data)
 	data.resize(nbSampleDataSize, 0);
 
 	readDataLength = ReadRawData((uint8_t*)data.c_str(), nbSampleDataSize);
-	if(readDataLength < nbSampleDataSize){
-		readDataLength = m_nDataLen - m_totalReadLength;
-		std::string newdata;
-		newdata.append(data.c_str(), readDataLength);
-		data.clear();
-		data.append(newdata);
-		if(readDataLength<0){
-			ret = -2;
-			goto cleanup;
-		}
+	if(readDataLength != nbSampleDataSize){
 		ret = EOF;
+
+		if(feof(m_pFile)){
+			std::string newdata;
+			newdata.append(data.c_str(), readDataLength);
+			data.resize(readDataLength);
+			data.append(newdata);
+			goto cleanup;
+		}else if(ferror(m_pFile)){
+			data.resize(0);
+			ret = EOF-1;
+		}
 	}
 
 	m_totalReadLength += readDataLength;

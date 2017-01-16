@@ -210,6 +210,9 @@ bool WaveAnalyzer::AnalyzeFileByChannel(CHANNELID index)
 		ChannelData.clear();
 		ret = fileReader->ReadData(sourceData);
 
+		if(ret < 0) // drop all rest data
+			break;
+
 		dataSeparater->GetChannelData(index, sourceData ,ChannelData);
 
 		retType retAnalyzer = RET_OK;
@@ -222,9 +225,6 @@ bool WaveAnalyzer::AnalyzeFileByChannel(CHANNELID index)
 				SamplePosList.pop_front();
 			}
 		}
-
-		if(ret < 0)
-			break;
 	}
 
 	fileReader->Close();
