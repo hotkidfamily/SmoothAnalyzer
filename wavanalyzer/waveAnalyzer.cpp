@@ -25,16 +25,18 @@ waveAnalyzer::waveAnalyzer(const char *dumpFileName)
 , nbBytesPerSample(2)
 , nbSampleRate(44100)
 {
+#ifdef _DEBUG
 	std::string file = dumpFileName;
-	file.insert(0, "c:/");
+	file.insert(0, "d:/");
 	file.insert(file.size(), "abs.pcm");
 	dumpfilter.open(file.c_str(), std::ios::binary);
 
 	file.clear();
 	file = dumpFileName;
-	file.insert(0, "c:/");
+	file.insert(0, "d:/");
 	file.insert(file.size(), "2value.pcm");
 	dump2Value.open(file.c_str(), std::ios::binary);
+#endif
 }
 
 waveAnalyzer::~waveAnalyzer(void)
@@ -48,7 +50,12 @@ int32_t waveAnalyzer::absFilter(std::string &channelData)
 
 	data = (int16_t *)filter_data;
 	for(size_t i=0; i<channelData.size()/getBytesPerSample(); i++){
-		*(data+i) = abs(*(data+i));
+		if (*(data + i) < -32767) {
+			*(data + i) = 0;
+		}
+		else {
+			*(data + i) = abs(*(data + i));
+		}
 	}
 
 	return 0;
@@ -63,6 +70,9 @@ int32_t waveAnalyzer::updateThreshold(std::string &channelData)
 		minThreshold = min(*data, minThreshold);
 		maxThreshold = max(*data, maxThreshold);
 		data ++;
+		if (*data == -32768) {
+			inter_log(Info, "value = 32768 %d", *data);
+		}
 	}
 
 	if(totalSampleCount/getSampleRate() > 10){
@@ -180,8 +190,10 @@ retType waveAnalyzer::analyzer(std::string &channelData, uint32_t &start, uint32
 {
 	absFilter(channelData);
 
+#ifdef _DEBUG
 	if(dumpfilter.is_open())
 		dumpfilter.write(channelData.c_str(), channelData.size());
+#endif
 
 	if(!ifThresholdValid()){
 		updateThreshold(channelData);
@@ -189,8 +201,10 @@ retType waveAnalyzer::analyzer(std::string &channelData, uint32_t &start, uint32
 		splitDataAndFindPulse(channelData, start, end);
 	}
 
+#ifdef _DEBUG
 	if(dump2Value.is_open())
 		dump2Value.write(channelData.c_str(), channelData.size());
+#endif
 
 	totalSampleCount += channelData.size()/getBytesPerSample();
 
